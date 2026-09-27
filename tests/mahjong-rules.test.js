@@ -607,6 +607,117 @@ test("Mahjong derives the same waits as complete structural validation", async (
   assert.equal(result.any_matched, true);
 });
 
+test("Mahjong keeps tenpai when one suit can be read two ways", async () => {
+  const result = await runScenario(`
+    local function ids(types)
+      local copies, tiles = {}, {}
+      for _, kind in ipairs(types) do
+        copies[kind] = (copies[kind] or 0) + 1
+        tiles[#tiles + 1] = (kind - 1) * 4 + copies[kind]
+      end
+      return tiles
+    end
+
+    -- Two open pons plus 4p, red 5p, 6s6s6s, 7s8s; the drawn 3s is the only
+    -- tenpai discard, waiting on 3p and 6p.
+    state = setup({ players = ${PLAYER_TABLE}, match = { randomSeed = "00000000000000000000000000000061" } })
+    state.hands.p1 = ids({ 13, 14, 24, 24, 24, 25, 26 })
+    state.melds.p1 = {
+      { kind = "pon", tiles = ids({ 4, 4, 4 }), calledTile = 15, fromIndex = 2 },
+      { kind = "pon", tiles = ids({ 8, 8, 8 }), calledTile = 31, fromIndex = 3 },
+    }
+    state.turnIndex, state.drawnTile, state.drawnPlayerIndex = 1, ids({ 21 })[1], 1
+
+    local waits = waiting_types(state.hands.p1, state.melds.p1)
+    local options = tenpai_discard_waits(state, "p1")
+
+    result = { waits = waits, options = options }
+  `);
+
+  assert.deepEqual(result.waits, [12, 15]);
+  assert.equal(result.options.length, 1);
+  assert.equal(result.options[0].tileId, 81);
+  assert.deepEqual(result.options[0].waits, [12, 15]);
+});
+
+test("Mahjong derives the same waits for open hands with two fixed groups", async () => {
+  const result = await runScenario(`
+    local function same_types(left, right)
+      if #left ~= #right then return false end
+      for index = 1, #left do
+        if left[index] ~= right[index] then return false end
+      end
+      return true
+    end
+
+    function ids(types)
+      local copies, tiles = {}, {}
+      for _, kind in ipairs(types) do
+        copies[kind] = (copies[kind] or 0) + 1
+        tiles[#tiles + 1] = (kind - 1) * 4 + copies[kind]
+      end
+      return tiles
+    end
+
+    local function reference_waits(hand, melds)
+      local result, locked_counts = {}, type_counts(hand)
+      for _, meld in ipairs(melds or {}) do
+        for _, tile in ipairs(meld.tiles or {}) do
+          local kind = tile_type(tile)
+          locked_counts[kind] = locked_counts[kind] + 1
+        end
+      end
+      for kind = 1, 34 do
+        if locked_counts[kind] < 4 then
+          local candidate = copy_array(hand)
+          candidate[#candidate + 1] = (kind - 1) * 4 + 1
+          if is_structural_win(candidate, melds) then
+            result[#result + 1] = kind
+          end
+        end
+      end
+      return result
+    end
+
+    local melds = {
+      { kind = "pon", tiles = ids({ 4, 4, 4 }), fromIndex = 2 },
+      { kind = "pon", tiles = ids({ 8, 8, 8 }), fromIndex = 3 },
+    }
+    local pool = { 13, 14, 15, 24, 25, 26, 28 }
+    local pool_counts = {}
+    for _, kind in ipairs(pool) do pool_counts[kind] = 0 end
+
+    local checked, matched = 0, true
+    local function evaluate()
+      local hand = {}
+      for _, kind in ipairs(pool) do
+        for _ = 1, pool_counts[kind] do hand[#hand + 1] = kind end
+      end
+      local tiles = ids(hand)
+      checked = checked + 1
+      matched = matched and same_types(waiting_types(tiles, melds), reference_waits(tiles, melds))
+    end
+
+    local function walk(index, remaining)
+      if index > #pool then
+        if remaining == 0 then evaluate() end
+        return
+      end
+      for take = 0, math.min(4, remaining) do
+        pool_counts[pool[index]] = take
+        walk(index + 1, remaining - take)
+      end
+      pool_counts[pool[index]] = 0
+    end
+
+    walk(1, 7)
+    result = { checked = checked, matched = matched }
+  `);
+
+  assert.ok(result.checked > 1000);
+  assert.equal(result.matched, true);
+});
+
 test("Mahjong terminal view reveals tile faces and red-five identity", async () => {
   const result = await runScenario(`
     state = setup({ players = ${PLAYER_TABLE}, match = { randomSeed = "00000000000000000000000000000007" } })

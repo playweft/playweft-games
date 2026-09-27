@@ -414,17 +414,17 @@ local function wait_component_signature(counts, first, last, sequences, cache)
 		cache[code] = 1
 		return 1
 	end
-	local signature = 0
+	local branches = {}
 	if counts[kind] >= 2 then
 		counts[kind] = counts[kind] - 2
-		signature = signature + wait_signature_add_pair(
+		branches[#branches + 1] = wait_signature_add_pair(
 			wait_component_signature(counts, first, last, sequences, cache)
 		)
 		counts[kind] = counts[kind] + 2
 	end
 	if counts[kind] >= 3 then
 		counts[kind] = counts[kind] - 3
-		signature = signature + wait_signature_add_group(
+		branches[#branches + 1] = wait_signature_add_group(
 			wait_component_signature(counts, first, last, sequences, cache)
 		)
 		counts[kind] = counts[kind] + 3
@@ -432,11 +432,25 @@ local function wait_component_signature(counts, first, last, sequences, cache)
 	if sequences and kind <= last - 2 and counts[kind + 1] > 0 and counts[kind + 2] > 0 then
 		counts[kind], counts[kind + 1], counts[kind + 2] =
 			counts[kind] - 1, counts[kind + 1] - 1, counts[kind + 2] - 1
-		signature = signature + wait_signature_add_group(
+		branches[#branches + 1] = wait_signature_add_group(
 			wait_component_signature(counts, first, last, sequences, cache)
 		)
 		counts[kind], counts[kind + 1], counts[kind + 2] =
 			counts[kind] + 1, counts[kind + 1] + 1, counts[kind + 2] + 1
+	end
+	-- The branches are bit sets, so they must be merged bitwise: adding them
+	-- arithmetically carries whenever two decompositions of one component reach
+	-- the same (groups, pair) state -- `6s6s6s7s8s` reads both as `678` plus a
+	-- pair and as `666` plus a pair.  A carried mask invents an unreachable
+	-- state while dropping the real one, which reports a legal wait as noten.
+	local signature = 0
+	for _, branch in ipairs(branches) do
+		for index = 1, 10 do
+			local bit = WAIT_SIGNATURE_BITS[index]
+			if math.floor(branch / bit) % 2 == 1 and math.floor(signature / bit) % 2 == 0 then
+				signature = signature + bit
+			end
+		end
 	end
 	cache[code] = signature
 	return signature
