@@ -2362,18 +2362,28 @@ test("mahjong centre console labels each score with its canonical wind", () => {
   );
 });
 
-test("mahjong centre console temporarily formats score differences with signed colors", () => {
-  const state = {
-    scores: [28500, 23700, 25000, 21800],
-  };
-  assert.equal(scoreDifference(state, 1, 1), 0);
-  assert.equal(scoreDifference(state, 2, 1), -4800);
-  assert.equal(scoreDifference(state, 3, 1), -3500);
+test("mahjong centre console measures each rival against the viewer, not the rival's surplus", () => {
+  const trailing = { scores: [21800, 28500, 25000, 23700] };
+  const rivals = [2, 3, 4];
+  const behind = rivals.map((seat) => scoreDifference(trailing, seat, 1));
+  assert.deepEqual(behind, [-6700, -3200, -1900]);
+  assert.ok(behind.every((difference) => difference < 0 && scoreDifferenceColor(difference) === scoreDifferenceColor(-1)));
+  assert.equal(scoreDifference(trailing, 1, 1), 0);
+
+  const leading = { scores: [28500, 23700, 25000, 21800] };
+  const ahead = rivals.map((seat) => scoreDifference(leading, seat, 1));
+  assert.deepEqual(ahead, [4800, 3500, 6700]);
+  assert.ok(ahead.every((difference) => difference > 0 && scoreDifferenceColor(difference) === scoreDifferenceColor(1)));
+  assert.notEqual(scoreDifferenceColor(1), scoreDifferenceColor(-1));
+
+  // The same seats read from another viewer's perspective, which is what a
+  // spectator or a future switchable view uses.
+  const fromSouth = [3, 4, 1].map((seat) => scoreDifference(leading, seat, 2));
+  assert.deepEqual(fromSouth, [-1300, 1900, -4800]);
+  assert.equal(scoreDifference(leading, 2, 2), 0);
+
   assert.equal(formatScoreDisplay(3500, true), "+3500");
   assert.equal(formatScoreDisplay(-1300, true), "-1300");
-  assert.equal(scoreDifferenceColor(3500), "#72d99a");
-  assert.equal(scoreDifferenceColor(-1300), "#ef8d82");
-  assert.notEqual(scoreDifferenceColor(3500), scoreDifferenceColor(-1300));
 });
 
 test("mahjong centre console leaves the wind label clear of a six-digit score", () => {

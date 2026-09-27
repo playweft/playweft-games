@@ -17,7 +17,10 @@ const LOGICAL_HEIGHT = Math.round((LOGICAL_WIDTH * 5) / 5.8);
 const TEXTURE_SCALE = 2;
 const PANEL_BORDER_INSET = 16;
 const SCORE_WIND_ANCHOR = "888888";
-export const SCORE_DISPLAY_DURATION_MS = 1000;
+// Long enough to scan all four seats and glance back at your own score, short
+// enough that the real scores come back before the mode reads as a toggle.
+// Every tap restarts this window, so a longer look only costs another tap.
+export const SCORE_DISPLAY_DURATION_MS = 1800;
 
 export const TABLE_CONSOLE_SCORE_LAYOUT = Object.freeze({
   panelBorderInset: PANEL_BORDER_INSET,
@@ -297,12 +300,19 @@ function drawScores(context, state, ui = {}) {
   });
 }
 
+/**
+ * Difference shown at another player's seat, expressed from the viewer's own
+ * perspective: a positive value means the viewer leads that seat, a negative
+ * one means the viewer trails it.  The console paints positive values green
+ * and negative values red, so the reader always gets "green = I lead, red =
+ * I trail" instead of the rival's surplus.
+ */
 export function scoreDifference(state, seat, viewerSeat = 1) {
   const index = Number(seat) - 1;
   const current = Number(state?.scores?.[index]) || 0;
   const viewerIndex = Number(viewerSeat) - 1;
   const ownScore = Number(state?.scores?.[viewerIndex]) || 0;
-  return current - ownScore;
+  return ownScore - current;
 }
 
 export function formatScoreDisplay(value, difference = false) {
