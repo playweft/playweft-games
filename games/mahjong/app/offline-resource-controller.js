@@ -38,7 +38,9 @@ export function createMahjongOfflineResourceController({
     button.setAttribute("aria-label", action);
     button.setAttribute("title", action);
     button.innerHTML = `<span class="settings-general-list-label">离线资源包</span><span class="settings-list-trailing settings-offline-action-content"><span>${label}</span><i data-lucide="${icon}" aria-hidden="true"></i></span>`;
-    createIconsImpl?.({ icons });
+    // Scoped to this button: an unscoped scan would replace every icon in the
+    // document, detaching the references other controllers hold.
+    createIconsImpl?.({ icons, root: button });
   }
 
   async function download() {

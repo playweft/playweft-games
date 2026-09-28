@@ -58,6 +58,52 @@ a {
   pointer-events: none;
 }
 
+/* Sits directly above the settings control with their right edges aligned. The
+   indicator is absolutely positioned, so the settings control keeps its place.
+   The viewport root is 26px and typography scales with it: the smallest label
+   elsewhere is 0.75em, so 0.65em keeps this quieter than the table chrome while
+   staying legible. The icon is one em of that label, so the pair scales
+   together. */
+.table-connection-status {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+  color: #72d99a;
+  font-family: "Roboto Slab", ui-monospace, monospace;
+  font-size: 0.65em;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.table-connection-status[hidden] {
+  display: none;
+}
+
+.table-connection-icon {
+  width: 1em;
+  height: 1em;
+  stroke-width: 2.4;
+}
+
+.table-connection-status.is-strong {
+  color: #72d99a;
+}
+
+.table-connection-status.is-medium {
+  color: #f2ce7a;
+}
+
+.table-connection-status.is-weak {
+  color: #ef8d82;
+}
+
 .table-control {
   display: flex;
   width: 48px;
@@ -266,7 +312,8 @@ a {
 }
 
 @keyframes mahjong-pending-claim-breath {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow:
       0 0 0 1px rgba(255, 209, 86, 0.76),
       0 0 5px rgba(255, 203, 79, 0.2),

@@ -86,6 +86,15 @@
   <main id="mahjong-app" class="mahjong-app" aria-busy="true">
     <div id="mahjong-viewport" class="mahjong-viewport">
       <nav class="table-controls" aria-label="牌桌导航">
+        <span id="connection-status" class="table-connection-status" hidden>
+          <span id="connection-latency" class="table-connection-latency"></span>
+          <i data-lucide="signal-high" class="table-connection-icon" data-connection-level="strong"
+            aria-hidden="true"></i>
+          <i data-lucide="signal-medium" class="table-connection-icon" data-connection-level="medium" aria-hidden="true"
+            hidden></i>
+          <i data-lucide="signal-low" class="table-connection-icon" data-connection-level="weak" aria-hidden="true"
+            hidden></i>
+        </span>
         <button id="settings-button" class="table-control table-control-settings" type="button" aria-label="打开设置"
           aria-haspopup="dialog" aria-expanded="false">
           <i data-lucide="cog" aria-hidden="true"></i>
@@ -254,7 +263,7 @@
                 <input id="settings-theme-upload" type="file"
                   accept=".zip,application/zip,application/x-zip-compressed" />
               </label>
-            <ul id="settings-theme-list" class="settings-list-card settings-theme-list" aria-label="主题包列表"></ul>
+              <ul id="settings-theme-list" class="settings-list-card settings-theme-list" aria-label="主题包列表"></ul>
             </div>
             <div id="settings-appearance-panel" class="settings-tab-panel settings-appearance-panel" role="tabpanel"
               aria-labelledby="settings-appearance-tab" data-settings-panel="appearance" hidden>

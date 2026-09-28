@@ -10,6 +10,9 @@ import {
   LoaderCircle,
   Pause,
   Play,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
   SkipBack,
   SkipForward,
   Trash2,
@@ -47,6 +50,7 @@ import { createMahjongPlayerPresentationStore } from "./player-presentation-stor
 import { applyMahjongReplayPlayerPresentations } from "./replay-player-presentations.js";
 import { createMahjongPageLifecycle } from "./page-lifecycle.js";
 import { createMahjongSoloMatchController } from "./solo-match-controller.js";
+import { createMahjongConnectionStatus } from "./connection-status.js";
 import { createMahjongSoloSaveController } from "./solo-save-controller.js";
 import { createMahjongAutoActionController } from "./auto-action-controller.js";
 import { createMahjongSetupScreenController } from "./setup-screen-controller.js";
@@ -103,6 +107,9 @@ export function createMahjongApplication({
     LoaderCircle,
     Pause,
     Play,
+    SignalHigh,
+    SignalLow,
+    SignalMedium,
     SkipBack,
     SkipForward,
     Trash2,
@@ -138,9 +145,17 @@ export function createMahjongApplication({
   let session;
   let tableController;
   let playweftClient;
+  let connectionStatus;
   let replayController;
   let soloController;
   let releaseUiBindings;
+  // Built after `createIcons`, so the three signal icons are already SVG.
+  connectionStatus = createMahjongConnectionStatus({
+    element: document.querySelector("#connection-status"),
+    latencyElement: document.querySelector("#connection-latency"),
+    resolveIcon: (level) =>
+      document.querySelector(`[data-connection-level="${level}"]`),
+  });
   const replayPlayerPresentationStore = createMahjongPlayerPresentationStore();
   const soloPlayerPresentationStore = createMahjongPlayerPresentationStore();
   const matchCoordinator = createMahjongMatchCoordinator({
@@ -149,6 +164,7 @@ export function createMahjongApplication({
       if (previousMode === "replay" && nextMode !== "replay") {
         replayPlayerPresentationStore.clear();
       }
+      connectionStatus?.setRoomActive(nextMode === "room");
       syncReplayHandVisibilityControl();
     },
   });
@@ -602,6 +618,7 @@ export function createMahjongApplication({
         onActionResult: (...args) =>
           roomController?.handleActionResult(...args),
         onError: (...args) => roomController?.handleError(...args),
+        onLatency: (rttMs) => connectionStatus?.setLatency(rttMs),
         onPlayerProfileChanged: (change) =>
           roomController?.handlePlayerProfileChanged(change),
       });

@@ -322,6 +322,48 @@ test("Playweft room client uses bridge v1 and Manifest-owned initialization", as
   }
 });
 
+test("Playweft client reports platform latency samples and ignores invalid ones", async () => {
+  const harness = createEmbeddedHarness();
+  const samples = [];
+  const ids = ["initialize-123"];
+  const originalWindow = globalThis.window;
+  const originalCrypto = globalThis.crypto;
+  globalThis.window = harness.fakeWindow;
+  Object.defineProperty(globalThis, "crypto", {
+    configurable: true,
+    value: { randomUUID: () => ids.shift() },
+  });
+
+  try {
+    const client = createPlayweftClient({
+      onLatency: (rttMs) => samples.push(rttMs),
+    });
+    harness.connect();
+    respond(harness.fakePort, "initialize-123", {
+      mode: "room",
+      protocolVersion: 1,
+      capabilities: [],
+      phase: "playing",
+      playerId: "player-one",
+    });
+    await Promise.resolve();
+
+    notify(harness.fakePort, "platform.latency", { rttMs: 96 });
+    notify(harness.fakePort, "platform.latency", { rttMs: 0 });
+    notify(harness.fakePort, "platform.latency", {});
+    notify(harness.fakePort, "platform.latency", { rttMs: -5 });
+    notify(harness.fakePort, "platform.latency", { rttMs: "slow" });
+    assert.deepEqual(samples, [96, 0]);
+    client.destroy();
+  } finally {
+    globalThis.window = originalWindow;
+    Object.defineProperty(globalThis, "crypto", {
+      configurable: true,
+      value: originalCrypto,
+    });
+  }
+});
+
 test("Playweft client maps JSON-RPC failures to the originating action", async () => {
   const harness = createEmbeddedHarness();
   const errors = [];

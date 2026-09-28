@@ -15,6 +15,7 @@ export function createPlayweftClient({
   onActionResult,
   onError,
   onContext,
+  onLatency,
   onPlayerProfileChanged,
 } = {}) {
   let playerId;
@@ -39,6 +40,11 @@ export function createPlayweftClient({
           error?.message ?? "Platform error",
           error?.code ?? "PLATFORM_ERROR",
         );
+        return;
+      }
+      if (method === "platform.latency") {
+        const rttMs = Number(params?.rttMs);
+        if (Number.isFinite(rttMs) && rttMs >= 0) onLatency?.(rttMs);
         return;
       }
       if (method === "room.players.profileChanged") {
