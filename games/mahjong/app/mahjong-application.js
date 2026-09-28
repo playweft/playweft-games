@@ -115,7 +115,7 @@ export function createMahjongApplication({
     Trash2,
     X,
   };
-  createIcons({ icons: lucideIcons });
+  createIcons({ icons: lucideIcons, root: document });
 
   deferMahjongDecorativeAssets({
     document,
@@ -149,7 +149,7 @@ export function createMahjongApplication({
   let replayController;
   let soloController;
   let releaseUiBindings;
-  // Built after `createIcons`, so the three signal icons are already SVG.
+  // Static icons are mounted once; dynamic controllers scope later renders.
   connectionStatus = createMahjongConnectionStatus({
     element: document.querySelector("#connection-status"),
     latencyElement: document.querySelector("#connection-latency"),
@@ -257,7 +257,6 @@ export function createMahjongApplication({
   const offlineResourceController = createMahjongOfflineResourceController({
     button: document.querySelector("#mahjong-offline-action-button"),
     feedback: document.querySelector("#mahjong-offline-feedback"),
-    icons: lucideIcons,
     createIconsImpl: createIcons,
     confirm: (message) =>
       isStandalone ? window.confirm(message) : playweftClient?.confirm(message),

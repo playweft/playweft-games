@@ -59,13 +59,14 @@ export function createMahjongConnectionStatus({
     const visible = inRoom && level !== "";
     if (element) element.hidden = !visible;
     if (!visible) return;
-    // Resolve the icons on every render: an unscoped createIcons() call
-    // replaces icon elements, so a cached reference would keep updating a
-    // detached node while the table shows a stale signal level.
+    // Resolve the icons on every render instead of caching them: the table is
+    // re-rendered by other controllers, and a cached node would keep receiving
+    // the level while the visible icon stayed at its original state.
     for (const name of MAHJONG_CONNECTION_LEVELS) {
       resolveIcon?.(name)?.toggleAttribute?.("hidden", name !== level);
     }
-    if (latencyElement) latencyElement.textContent = formatMahjongLatency(rttMs);
+    if (latencyElement)
+      latencyElement.textContent = formatMahjongLatency(rttMs);
     element?.classList?.remove?.(...LEVEL_CLASSES);
     element?.classList?.add?.(`is-${level}`);
     element?.setAttribute?.(

@@ -6,10 +6,9 @@ import { createMahjongOfflineResourceController } from "../games/mahjong/app/off
 function fakeButton() {
   const classes = new Set();
   return {
-    innerHTML: "",
     classes,
     classList: {
-      toggle: (name, active) => (active ? classes.add(name) : classes.delete(name)),
+      toggle: (name, active) => active ? classes.add(name) : classes.delete(name),
       contains: (name) => classes.has(name),
     },
     attributes: new Map(),
@@ -19,20 +18,17 @@ function fakeButton() {
   };
 }
 
-test("mahjong offline resource button replaces only the icon it renders", () => {
+test("mahjong offline resource button scopes lucide rendering to itself", () => {
   const button = fakeButton();
-  const roots = [];
+  const calls = [];
   createMahjongOfflineResourceController({
     button,
-    icons: { Download: [] },
-    createIconsImpl: ({ root }) => roots.push(root),
+    createIconsImpl: (options) => calls.push(options),
   });
 
+  assert.match(button.innerHTML, /离线资源包/);
   assert.match(button.innerHTML, /data-lucide="download"/);
-  assert.equal(roots.length, 1, "the first render draws the button icon once");
-  assert.equal(
-    roots[0],
-    button,
-    "scanning the whole document again would replace every other icon in it",
-  );
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].root, button);
+  assert.deepEqual(Object.keys(calls[0].icons), ["Download", "LoaderCircle", "Trash2"]);
 });

@@ -33,9 +33,7 @@ import {
   getMahjongBuiltinCharacterName,
 } from "./builtin-characters.js";
 import { chooseMahjongPortraitSource } from "../app/player-presentation-resolver.js";
-import {
-  mahjongPlayerPortraitSlots,
-} from "../rules/seat-order.js";
+import { mahjongPlayerPortraitSlots } from "../rules/seat-order.js";
 
 const DEFAULT_VISUAL_PACK_ID = "__default__";
 
@@ -216,7 +214,10 @@ export function createMahjongThemeController({
   themeElements.list.addEventListener("keydown", onThemeListKeydown);
   appearanceElements.controls.addEventListener("change", onAppearanceChange);
   soundElements.controls.addEventListener("change", onAppearanceChange);
-  browserWindow.addEventListener("mahjong:asset-pack-changed", onAssetPackChanged);
+  browserWindow.addEventListener(
+    "mahjong:asset-pack-changed",
+    onAssetPackChanged,
+  );
   void assetPacksReady.then(() => {
     ensureDefaultCharacter();
     void applyPackAvatars();
@@ -307,7 +308,10 @@ export function createMahjongThemeController({
   }
 
   function getOnlineAiCharacterAssignments(playerIds, randomSeed = "") {
-    const portraits = getMahjongOnlineAiPortraitAssignments(playerIds, randomSeed);
+    const portraits = getMahjongOnlineAiPortraitAssignments(
+      playerIds,
+      randomSeed,
+    );
     return Object.fromEntries(
       (Array.isArray(playerIds) ? playerIds : []).map((playerId) => {
         const portrait = portraits[playerId];
@@ -315,7 +319,9 @@ export function createMahjongThemeController({
           `${randomSeed}:${playerId}`,
         );
         const themeCharacter = portrait?.portraitId
-          ? activePortraitCatalog.find((entry) => entry.id === portrait.portraitId)
+          ? activePortraitCatalog.find(
+              (entry) => entry.id === portrait.portraitId,
+            )
           : undefined;
         return [
           playerId,
@@ -363,7 +369,9 @@ export function createMahjongThemeController({
     const fallbackPortraits = {};
     const builtinCharacters = {};
     const names = {};
-    for (const [position, portraitSlot] of Object.entries(portraitSlotByPosition)) {
+    for (const [position, portraitSlot] of Object.entries(
+      portraitSlotByPosition,
+    )) {
       const selected = chooseMahjongPortraitSource({
         themeSource: getMahjongAssetUrl(`portrait-${portraitSlot}`),
         platformSource:
@@ -376,7 +384,8 @@ export function createMahjongThemeController({
       fallbackPortraits[position] = selected.fallbackSource;
       builtinCharacters[position] =
         getMahjongBuiltinCharacterForPortraitSlot(portraitSlot);
-      if (position !== "bottom") names[position] = defaultNames[portraitSlot] || "";
+      if (position !== "bottom")
+        names[position] = defaultNames[portraitSlot] || "";
     }
     const applied = setPlayerIdentityState?.({
       portraits,
@@ -401,33 +410,38 @@ export function createMahjongThemeController({
     playerPortraitSlotsById = mahjongPlayerPortraitSlots(ids, viewerPlayerId);
     refreshPlayerPresentationBindings();
     return Object.fromEntries(
-      ids.map((player, index) => {
-        const playerId = String(
-          typeof player === "object" ? player?.id || "" : player || "",
-        );
-        const portraitSlot = playerPortraitSlotsById.get(playerId) || "";
-        const characterId = String(portraits[portraitSlot] || "");
-        const selected = chooseMahjongPortraitSource({
-          themeSource: getMahjongAssetUrl(`portrait-${portraitSlot}`),
-          platformSource:
-            portraitSlot === "self" && platformAvatarAllowed()
-              ? platformAvatarSource
-              : "",
-          avatarPreference: avatarSourcePreference(),
-        });
-        return [playerId, {
-          source: selected.source,
-          ...(selected.fallbackSource
-            ? { fallbackSource: selected.fallbackSource }
-            : {}),
-          ...(characterId
-            ? { themeCharacter: { packId: context.packId, characterId } }
-            : {}),
-          builtinCharacterId:
-            getMahjongBuiltinCharacterForPortraitSlot(portraitSlot),
-          avatarPreference: avatarSourcePreference(),
-        }];
-      }).filter(([playerId]) => playerId),
+      ids
+        .map((player, index) => {
+          const playerId = String(
+            typeof player === "object" ? player?.id || "" : player || "",
+          );
+          const portraitSlot = playerPortraitSlotsById.get(playerId) || "";
+          const characterId = String(portraits[portraitSlot] || "");
+          const selected = chooseMahjongPortraitSource({
+            themeSource: getMahjongAssetUrl(`portrait-${portraitSlot}`),
+            platformSource:
+              portraitSlot === "self" && platformAvatarAllowed()
+                ? platformAvatarSource
+                : "",
+            avatarPreference: avatarSourcePreference(),
+          });
+          return [
+            playerId,
+            {
+              source: selected.source,
+              ...(selected.fallbackSource
+                ? { fallbackSource: selected.fallbackSource }
+                : {}),
+              ...(characterId
+                ? { themeCharacter: { packId: context.packId, characterId } }
+                : {}),
+              builtinCharacterId:
+                getMahjongBuiltinCharacterForPortraitSlot(portraitSlot),
+              avatarPreference: avatarSourcePreference(),
+            },
+          ];
+        })
+        .filter(([playerId]) => playerId),
     );
   }
 
@@ -443,11 +457,14 @@ export function createMahjongThemeController({
               : "",
           avatarPreference: avatarSourcePreference(),
         });
-        return [playerId, {
-          ...selected,
-          builtinCharacterId:
-            getMahjongBuiltinCharacterForPortraitSlot(portraitSlot),
-        }];
+        return [
+          playerId,
+          {
+            ...selected,
+            builtinCharacterId:
+              getMahjongBuiltinCharacterForPortraitSlot(portraitSlot),
+          },
+        ];
       }),
     );
   }
@@ -497,13 +514,13 @@ export function createMahjongThemeController({
         active.className = "settings-theme-current";
         active.setAttribute("aria-label", "当前使用中");
         active.title = "当前使用中";
-        const icon = document.createElement("i");
-        icon.dataset.lucide = "check";
-        icon.setAttribute("aria-hidden", "true");
-        active.append(icon);
+        active.innerHTML = '<i data-lucide="check" aria-hidden="true"></i>';
         actions.append(active);
       }
-      if (!pack.isDefault) actions.append(createVisualPackButton("删除", "delete", pack.id, "trash-2"));
+      if (!pack.isDefault)
+        actions.append(
+          createVisualPackButton("删除", "delete", pack.id, "trash-2"),
+        );
       item.append(select, actions);
       return item;
     });
@@ -525,14 +542,22 @@ export function createMahjongThemeController({
         details.append(title, summary);
         const actions = document.createElement("span");
         actions.className = "settings-theme-actions";
-        const download = createVisualPackButton("下载", "download", "", "download");
+        const download = createVisualPackButton(
+          "下载",
+          "download",
+          "",
+          "download",
+        );
         download.dataset.packUrl = pack.url;
         actions.append(download);
         item.append(details, actions);
         return item;
       });
     themeElements.list.replaceChildren(...localItems, ...remoteItems);
-    createIcons({ icons: { Check, Download, Trash2 }, root: themeElements.list });
+    createIcons({
+      icons: { Check, Download, Trash2 },
+      root: themeElements.list,
+    });
     renderAppearanceSettings();
     renderSoundSettings();
   }
@@ -560,29 +585,44 @@ export function createMahjongThemeController({
         ),
       );
     }
-    if (catalog.portraits.length) controls.append(createAppearanceCard("角色", portraitRows));
+    if (catalog.portraits.length)
+      controls.append(createAppearanceCard("角色", portraitRows));
 
     const surfaceRows = [];
     for (const [label, key, options, selected] of [
       ["桌布", "tablecloth", catalog.tablecloths, pack.appearance.tablecloth],
-      ["背景", "tableBackground", catalog.tableBackgrounds, pack.appearance.tableBackground],
+      [
+        "背景",
+        "tableBackground",
+        catalog.tableBackgrounds,
+        pack.appearance.tableBackground,
+      ],
       ["牌背", "tileBack", catalog.tileBacks, pack.appearance.tileBack],
     ]) {
-      if (options.length) surfaceRows.push(createAppearanceSelect(label, key, options, selected));
+      if (options.length)
+        surfaceRows.push(createAppearanceSelect(label, key, options, selected));
     }
-    if (surfaceRows.length) controls.append(createAppearanceCard("牌桌画面", surfaceRows));
+    if (surfaceRows.length)
+      controls.append(createAppearanceCard("牌桌画面", surfaceRows));
     if (catalog.lobbyBackgrounds.length) {
-      controls.append(createAppearanceCard("大厅", [createAppearanceSelect(
-        "大厅背景",
-        "lobbyBackground",
-        catalog.lobbyBackgrounds,
-        pack.appearance.lobbyBackground,
-      )]));
+      controls.append(
+        createAppearanceCard("大厅", [
+          createAppearanceSelect(
+            "大厅背景",
+            "lobbyBackground",
+            catalog.lobbyBackgrounds,
+            pack.appearance.lobbyBackground,
+          ),
+        ]),
+      );
     }
     const hasControls = controls.childElementCount > 0;
     appearanceElements.controls.replaceChildren(controls);
     appearanceElements.controls.hidden = !hasControls;
-    createIcons({ icons: { ChevronsUpDown }, root: appearanceElements.controls });
+    createIcons({
+      icons: { ChevronsUpDown },
+      root: appearanceElements.controls,
+    });
   }
 
   function renderSoundSettings() {
@@ -609,13 +649,18 @@ export function createMahjongThemeController({
     ];
     soundElements.controls.replaceChildren(createAppearanceList(rows));
     soundElements.controls.hidden = false;
-    createIcons({ icons: { ChevronsUpDown }, root: soundElements.controls });
+    createIcons({
+      icons: { ChevronsUpDown },
+      root: soundElements.controls,
+    });
   }
 
   function getActiveVisualPack() {
-    return visualPacks.find((candidate) => candidate.active) || getMahjongDefaultPack();
+    return (
+      visualPacks.find((candidate) => candidate.active) ||
+      getMahjongDefaultPack()
+    );
   }
-
 
   function createAppearanceCard(title, rows) {
     const section = document.createElement("section");
@@ -672,10 +717,10 @@ export function createMahjongThemeController({
     const control = document.createElement("span");
     control.className = "settings-appearance-select";
     control.append(select);
-    const icon = document.createElement("i");
-    icon.dataset.lucide = "chevrons-up-down";
-    icon.setAttribute("aria-hidden", "true");
-    control.append(icon);
+    control.insertAdjacentHTML(
+      "beforeend",
+      '<i class="settings-general-select-icon" data-lucide="chevrons-up-down" aria-hidden="true"></i>',
+    );
     row.append(text, control);
     return row;
   }
@@ -689,10 +734,8 @@ export function createMahjongThemeController({
     button.title = label;
     if (iconName) {
       button.className = "settings-theme-icon-button";
-      const icon = document.createElement("i");
-      icon.dataset.lucide = iconName;
-      icon.setAttribute("aria-hidden", "true");
-      button.append(icon);
+      button.innerHTML =
+        '<i data-lucide="' + iconName + '" aria-hidden="true"></i>';
     } else {
       button.textContent = label;
     }
@@ -728,14 +771,26 @@ export function createMahjongThemeController({
     getRiichiMusicUrl: getMahjongRiichiMusicUrl,
     destroy() {
       themeElements.upload.removeEventListener("change", onUploadChange);
-      themeElements.uploadZone?.removeEventListener("dragover", onUploadDragOver);
-      themeElements.uploadZone?.removeEventListener("dragleave", onUploadDragLeave);
+      themeElements.uploadZone?.removeEventListener(
+        "dragover",
+        onUploadDragOver,
+      );
+      themeElements.uploadZone?.removeEventListener(
+        "dragleave",
+        onUploadDragLeave,
+      );
       themeElements.uploadZone?.removeEventListener("drop", onUploadDrop);
       themeElements.list.removeEventListener("click", onThemeListClick);
       themeElements.list.removeEventListener("keydown", onThemeListKeydown);
-      appearanceElements.controls.removeEventListener("change", onAppearanceChange);
+      appearanceElements.controls.removeEventListener(
+        "change",
+        onAppearanceChange,
+      );
       soundElements.controls.removeEventListener("change", onAppearanceChange);
-      browserWindow.removeEventListener("mahjong:asset-pack-changed", onAssetPackChanged);
+      browserWindow.removeEventListener(
+        "mahjong:asset-pack-changed",
+        onAssetPackChanged,
+      );
     },
   };
 }
