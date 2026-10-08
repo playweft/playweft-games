@@ -1,0 +1,47 @@
+{
+  "$schema": "https://play.longern.com/schemas/game-manifest-v1.json",
+  "manifest_version": 1,
+  "id": "/chess/",
+  "version": "1.0.0",
+  "protocol": {
+    "min": 1,
+    "max": 1
+  },
+  "start_url": "./",
+  "name": "Chess",
+  "name_localized": {
+    "zh-CN": "国际象棋"
+  },
+  "description": "Command the black and white pieces to outthink and checkmate your opponent.",
+  "description_localized": {
+    "zh-CN": "执掌黑白棋子，运子攻防，在六十四格间将死对手。"
+  },
+  "categories": [
+    "Strategy"
+  ],
+  "icons": [
+    {
+      "src": "../chess.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "background_color": "#f3f2ec",
+  "theme_color": "#315448",
+  "help_url": "./help.html",
+  "modes": {
+    "solo": {},
+    "room": {
+      "players": {
+        "min": 2,
+        "max": 2
+      },
+      "server": {
+        "runtime": "lua",
+        "entry": "./game.lua",
+        "persistence": "durable"
+      }
+    }
+  }
+}

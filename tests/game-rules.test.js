@@ -151,6 +151,7 @@ test("All room games implement the current Playweft protocol contract", async ()
     ["games/go/game.lua", 2],
     ["games/gomoku/game.lua", 2],
     ["games/xiangqi/game.lua", 2],
+    ["games/chess/game.lua", 2],
     ["games/mahjong/game.lua", 4],
   ]);
 

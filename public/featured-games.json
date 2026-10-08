@@ -9,6 +9,9 @@
     "manifestUrl": "./xiangqi/playweft.json"
   },
   {
+    "manifestUrl": "./chess/playweft.json"
+  },
+  {
     "manifestUrl": "./uno/playweft.json"
   },
   {

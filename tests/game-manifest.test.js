@@ -13,11 +13,13 @@ const ROOM_GAMES = new Map([
   ["go", [2, 2]],
   ["gomoku", [2, 2]],
   ["xiangqi", [2, 2]],
+  ["chess", [2, 2]],
 ]);
 const ALL_GAMES = [
   "dou-dizhu",
   "mahjong",
   "xiangqi",
+  "chess",
   "uno",
   "werewolf-dealer",
   "gomoku",
@@ -120,7 +122,7 @@ test("Every game package has a strict Playweft Manifest v1 for bridge v1", async
         },
       },
     };
-    if (["go", "dou-dizhu", "gomoku", "xiangqi", "werewolf-dealer", "mahjong"].includes(game)) {
+    if (["go", "dou-dizhu", "gomoku", "xiangqi", "chess", "werewolf-dealer", "mahjong"].includes(game)) {
       expectedModes.solo = {};
     }
     assert.deepEqual(manifest.modes, expectedModes);

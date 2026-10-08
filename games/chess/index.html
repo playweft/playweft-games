@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#315448" />
+    <meta name="description" content="Playweft 国际象棋：执掌黑白棋子，在六十四格间布局、攻防、将死对手。" />
+    <title>国际象棋 | Playweft</title>
+    <script type="module" src="./main.js"></script>
+  </head>
+  <body class="chess-game">
+    <header class="game-header">
+      <div class="game-brand"><img src="/chess.svg" alt="" /><div><h1>国际象棋</h1><p>六十四格，步步为营</p></div></div>
+      <div class="header-meta"><span id="round-number" class="round-tag">第 1 局</span><div id="connection" class="connection-status" data-mode="waiting"><span>准备棋盘中</span></div></div>
+    </header>
+    <main class="chess-layout">
+      <section class="board-column" aria-label="对弈区">
+        <div id="board-status" class="board-status"></div>
+        <div class="board-stage"><div class="board-stack">
+        <div id="top-player" class="player-card"><span class="player-avatar"></span><div class="player-info"><strong></strong><span class="player-detail"></span></div><div class="captured" aria-label="已吃棋子"></div><span class="turn-tag">行棋中</span></div>
+          <div class="board-frame"><div id="board" class="chess-board" role="group" aria-label="国际象棋棋盘"></div></div>
+        <div id="bottom-player" class="player-card"><span class="player-avatar"></span><div class="player-info"><strong></strong><span class="player-detail"></span></div><div class="captured" aria-label="已吃棋子"></div><span class="turn-tag">行棋中</span></div>
+        </div></div>
+        <nav class="board-toolbar" aria-label="棋盘操作">
+          <button id="flip-button" class="toolbar-button" type="button"><i data-lucide="arrow-down-up"></i><span>翻转</span></button>
+          <button id="details-button" class="toolbar-button details-button" type="button" aria-haspopup="dialog"><i data-lucide="list"></i><span>棋谱 / 对局</span><span class="attention-dot" hidden aria-label="有待回应的和棋提议"></span></button>
+          <button id="cancel-button" class="toolbar-button" type="button" hidden>取消选择</button>
+          <button id="claim-button" class="primary-action" type="button" hidden>申请和棋</button>
+          <button id="rematch-button" class="primary-action" type="button" hidden><i data-lucide="rotate-ccw"></i>再来一局</button>
+        </nav>
+      </section>
+      <aside id="match-panel" class="match-panel" aria-label="对局详情">
+        <div id="players-strip" class="players-strip"></div>
+        <section id="match-status" class="status-panel" aria-live="polite"><p id="status-kicker" class="eyebrow">白方先行</p><h2 id="status-title">准备开局</h2><p id="status-detail">正在准备棋盘…</p><div id="notice" class="notice" role="status" hidden></div></section>
+        <section class="history-panel"><div class="panel-heading"><h3>行棋记录</h3><span id="move-count">0 步</span></div><div class="history-columns"><span>回合</span><span>白方</span><span>黑方</span></div><div id="history" class="history-list" tabindex="0" aria-label="行棋记录"><p class="history-empty">每一步，都是新的开始。</p></div></section>
+        <div class="actions"><div id="draw-response" class="draw-response" hidden><p>对方提议和棋</p><button id="accept-draw" class="primary-action" type="button">接受</button><button id="decline-draw" class="secondary-action" type="button">继续对弈</button></div><div class="action-row"><button id="draw-button" class="secondary-action" type="button">提议和棋</button><button id="resign-button" class="secondary-action" type="button">认输</button></div></div>
+        <a class="rules-link" href="./help.html" target="_blank" rel="noopener"><i data-lucide="circle-help"></i>玩法与棋子走法<i data-lucide="arrow-up-right"></i></a>
+      </aside>
+    </main>
+    <dialog id="details-dialog" class="details-dialog" aria-labelledby="details-title"><header class="details-heading"><h2 id="details-title">棋谱与对局</h2><button id="details-close" class="toolbar-button" type="button" aria-label="关闭对局详情"><i data-lucide="x"></i></button></header><div id="details-content" class="details-content"></div></dialog>
+    <dialog id="promotion-dialog" aria-labelledby="promotion-title"><p class="eyebrow">PAWN PROMOTION</p><h2 id="promotion-title">兵已抵达底线</h2><p>选择要升变的棋子</p><div id="promotion-options" class="promotion-options"></div><button id="promotion-cancel" class="text-button" type="button">返回棋盘</button></dialog>
+    <dialog id="resign-dialog" aria-labelledby="resign-title"><h2 id="resign-title">确认认输？</h2><p>认输后本局结束，对方获胜。</p><div class="action-row"><button id="resign-cancel" class="secondary-action" type="button">继续对弈</button><button id="resign-confirm" class="primary-action" type="button">确认认输</button></div></dialog>
+  </body>
+</html>

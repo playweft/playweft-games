@@ -16,6 +16,7 @@ const games = [
   "go",
   "gomoku",
   "xiangqi",
+  "chess",
   "mahjong",
 ];
 const THREE_VENDOR_CHUNK = "three-r185.1";
