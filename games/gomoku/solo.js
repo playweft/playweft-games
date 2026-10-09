@@ -7,6 +7,7 @@ const DIRECTIONS = [
 ];
 
 const DEFAULT_SETTINGS = {
+  opponent: "ai",
   size: BOARD_SIZE,
   blackMode: "random",
   forbiddenMoves: false,
@@ -19,7 +20,7 @@ export function createSoloGomokuState() {
 export function applySoloGomokuAction(
   sourceState,
   action,
-  { now = Date.now(), random = Math.random } = {},
+  { now = Date.now(), random = Math.random, actorIndex } = {},
 ) {
   const state = structuredClone(sourceState);
   if (!action || typeof action !== "object") return rejected("INVALID_ACTION");
@@ -27,6 +28,9 @@ export function applySoloGomokuAction(
   if (state.phase === "setup") {
     if (action.type !== "start" && action.type !== "update_settings") {
       return rejected("SETUP_REQUIRED");
+    }
+    if (action.opponent !== undefined && !["ai", "local"].includes(action.opponent)) {
+      return rejected("INVALID_OPPONENT");
     }
     const settings = normalizeSettings(action);
     if (!settings) {
@@ -67,6 +71,9 @@ export function applySoloGomokuAction(
 
   if (state.ended) return rejected("GAME_OVER");
   if (action.type !== "play") return rejected("INVALID_ACTION");
+  if (actorIndex !== undefined && actorIndex !== state.current) {
+    return rejected("NOT_YOUR_TURN");
+  }
 
   const row = Number(action.row);
   const column = Number(action.column);
@@ -157,6 +164,7 @@ function normalizeSettings(action) {
   }
   if (typeof action.forbiddenMoves !== "boolean") return undefined;
   return {
+    opponent: action.opponent ?? "ai",
     size: BOARD_SIZE,
     blackMode: action.blackMode,
     forbiddenMoves: action.forbiddenMoves,
@@ -281,17 +289,34 @@ function winningExtensions(board, anchorRow, anchorColumn, direction) {
 }
 
 function openThreeInDirection(board, anchorRow, anchorColumn, direction) {
+  const originalLength = lineLength(
+    board,
+    anchorRow,
+    anchorColumn,
+    1,
+    direction[0],
+    direction[1],
+  );
+  if (originalLength >= 4) return false;
+
   for (let offset = -4; offset <= 4; offset += 1) {
     const row = anchorRow + direction[0] * offset;
     const column = anchorColumn + direction[1] * offset;
     if (inside(board, row, column) && board[row - 1][column - 1] === 0) {
       board[row - 1][column - 1] = 1;
-      const extensions = winningExtensions(
+      // A three must become a straight four containing the added stone.
+      // Completing a five, or leaving an unrelated four intact, is not a three.
+      const length = lineLength(
         board,
         anchorRow,
         anchorColumn,
-        direction,
+        1,
+        direction[0],
+        direction[1],
       );
+      const extensions = length === 4
+        ? winningExtensions(board, anchorRow, anchorColumn, direction)
+        : 0;
       board[row - 1][column - 1] = 0;
       if (extensions >= 2) return true;
     }
@@ -299,7 +324,9 @@ function openThreeInDirection(board, anchorRow, anchorColumn, direction) {
   return false;
 }
 
-function forbiddenReason(board, row, column) {
+// Shared with the AI so simulated black moves obey the same local rules.
+// The stone must already be placed; temporary extensions are restored in place.
+export function forbiddenReason(board, row, column) {
   for (const [rowStep, columnStep] of DIRECTIONS) {
     if (lineLength(board, row, column, 1, rowStep, columnStep) > 5) {
       return "FORBIDDEN_OVERLINE";

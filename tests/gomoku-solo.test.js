@@ -119,3 +119,44 @@ test("Solo Gomoku can return to editable setup after a finished game", () => {
   assert.equal(result.state.settings.blackMode, "player2");
   assert.equal(result.state.settings.forbiddenMoves, true);
 });
+
+test("Local two-player Gomoku accepts both seats and preserves the mode across rounds", () => {
+  let state = startSolo({ opponent: "local", blackMode: "player2" });
+  assert.equal(state.settings.opponent, "local");
+  const sequence = [
+    [8, 4], [1, 1], [8, 5], [1, 2], [8, 6], [1, 3], [8, 7], [1, 4], [8, 8],
+  ];
+  for (const [row, column] of sequence) {
+    const result = applySoloGomokuAction(state, { type: "play", row, column }, {
+      actorIndex: state.current, now: 200,
+    });
+    assert.equal(result.accepted, true);
+    state = result.state;
+  }
+  assert.equal(state.winnerIndex, 2);
+  const rematch = applySoloGomokuAction(state, { type: "rematch" }).state;
+  assert.equal(rematch.settings.opponent, "local");
+  assert.equal(rematch.blackIndex, 1);
+  const setup = applySoloGomokuAction(state, { type: "configure" }).state;
+  assert.equal(setup.settings.opponent, "local");
+  const switched = applySoloGomokuAction(setup, {
+    type: "update_settings", opponent: "ai", blackMode: "player1", forbiddenMoves: true,
+  });
+  assert.equal(switched.accepted, true);
+  assert.equal(switched.state.settings.opponent, "ai");
+  assert.equal(switched.state.phase, "setup");
+});
+
+test("Local Gomoku defaults to AI and rejects invalid opponent choices without mutation", () => {
+  assert.equal(startSolo().settings.opponent, "ai");
+  const state = createSoloGomokuState();
+  const before = structuredClone(state);
+  for (const type of ["start", "update_settings"]) {
+    const result = applySoloGomokuAction(state, {
+      type, opponent: "remote", blackMode: "player1", forbiddenMoves: false,
+    });
+    assert.equal(result.accepted, false);
+    assert.equal(result.error.code, "INVALID_OPPONENT");
+    assert.deepEqual(state, before);
+  }
+});

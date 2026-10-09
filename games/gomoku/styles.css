@@ -45,10 +45,6 @@ body.has-setup-modal {
     opacity 200ms ease;
 }
 
-.setup-panel[hidden] {
-  display: none;
-}
-
 .setup-panel[data-state="open"] {
   background: rgba(237, 239, 234, 0.72);
   opacity: 1;
@@ -57,13 +53,14 @@ body.has-setup-modal {
 }
 
 .setup-form {
+  --setup-padding: 24px;
   position: relative;
   display: grid;
   width: min(620px, 100%);
   max-height: calc(100dvh - 48px);
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  padding: 24px;
+  grid-template-columns: 1fr;
+  gap: 0;
+  padding: 0;
   border: 1px solid rgba(183, 178, 165, 0.7);
   border-radius: 14px;
   outline: 0;
@@ -84,15 +81,11 @@ body.has-setup-modal {
   transform: translateY(0) scale(1);
 }
 
-.setup-heading,
-.setup-rule,
-.setup-feedback,
-.start-action {
-  grid-column: 1 / -1;
-}
-
 .setup-heading {
-  margin-bottom: 4px;
+  display: flex;
+  height: 60px;
+  align-items: center;
+  padding: 0 var(--setup-padding);
 }
 
 .setup-heading h2 {
@@ -101,49 +94,111 @@ body.has-setup-modal {
   font-weight: 850;
 }
 
-.setup-heading p {
-  margin: 4px 0 0;
-  color: #74766f;
-  font-size: 0.76rem;
+.setup-content {
+  display: grid;
+  background: whitesmoke;
+}
+
+.settings-list {
+  margin: 16px 0;
+  padding: 0;
+  background: white;
+  list-style: none;
+}
+
+.settings-divider hr {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid #e9eae5;
 }
 
 .setting-field {
+  position: relative;
   display: flex;
   min-width: 0;
-  flex-direction: column;
-  gap: 7px;
-  color: #5d6059;
-  font-size: 0.74rem;
-  font-weight: 800;
+  min-height: 62px;
+  padding: 0 var(--setup-padding);
+  align-items: center;
+  gap: 14px;
+  color: #202229;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.setting-title {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.setting-value {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  color: #777970;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.setting-chevron {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #a9aba3;
+}
+
+.setting-title,
+.setting-value,
+.setting-chevron {
+  pointer-events: none;
 }
 
 .setting-field select {
-  width: 100%;
-  height: 43px;
-  padding: 0 12px;
-  border: 1px solid #d4d5cf;
-  border-radius: 7px;
+  /* Keep the native picker on the right; the row forwards clicks to it. */
+  position: absolute;
+  inset: 0 var(--setup-padding) 0 auto;
+  width: min(
+    240px,
+    calc(100% - 90px - var(--setup-padding) - var(--setup-padding))
+  );
+  height: 100%;
+  margin: 0;
+  border: 0;
   outline: 0;
-  background: #fff;
-  color: #202229;
+  opacity: 0;
+  cursor: pointer;
   font: inherit;
-  font-size: 0.82rem;
+  font-size: 16px;
 }
 
-.setting-field select:focus {
-  border-color: #a96a28;
-  box-shadow: 0 0 0 3px rgba(169, 106, 40, 0.1);
+.setting-field:has(select:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
-.setup-rule {
-  margin: 1px 0 0;
-  color: #777970;
-  font-size: 0.72rem;
-  line-height: 1.55;
+.setting-field select:disabled {
+  cursor: not-allowed;
+}
+
+.setting-field:not(:has(select:disabled)):focus-within {
+  background-color: rgba(32, 34, 41, 0.04);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .setting-field:not(:has(select:disabled)):hover,
+  .start-action:not(:disabled):hover {
+    background-color: rgba(32, 34, 41, 0.04);
+  }
+
+  .setting-field:not(:has(select:disabled)):active,
+  .start-action:not(:disabled):active {
+    background-color: rgba(32, 34, 41, 0.08);
+  }
 }
 
 .setup-feedback {
-  margin: -2px 0 0;
+  margin: 0 var(--setup-padding) 14px;
   padding: 10px 12px;
   border-radius: 7px;
   font-size: 0.74rem;
@@ -161,25 +216,27 @@ body.has-setup-modal {
   color: #a43b31;
 }
 
-.setup-feedback[hidden] {
-  display: none;
+.setup-actions {
+  display: grid;
+  background: white;
 }
 
 .start-action {
-  min-height: 46px;
-  border: 1px solid #202229;
-  border-radius: 7px;
-  background: #202229;
-  color: #fff;
+  width: 100%;
+  min-height: 60px;
+  margin: 0;
+  padding: 0 var(--setup-padding);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #1976d2;
   cursor: pointer;
-  font-weight: 850;
-  box-shadow: 0 3px 0 #050506;
+  transition: background-color 120ms ease;
 }
 
 .start-action:disabled {
   cursor: not-allowed;
   opacity: 0.42;
-  box-shadow: none;
 }
 
 .players-panel,
@@ -606,19 +663,10 @@ body.has-setup-modal {
   }
 
   .setup-form {
-    width: 100%;
+    --setup-padding: 18px;
     max-height: calc(100dvh - 24px);
-    grid-template-columns: 1fr;
-    padding: 18px;
     border-radius: 16px;
     transform: translateY(32px) scale(0.99);
-  }
-
-  .setup-heading,
-  .setup-rule,
-  .setup-feedback,
-  .start-action {
-    grid-column: 1;
   }
 
   .player-card {

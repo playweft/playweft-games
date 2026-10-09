@@ -189,17 +189,35 @@ local function open_three_in_direction(
   anchor_column,
   direction
 )
+  local original_length = line_length(
+    board,
+    anchor_row,
+    anchor_column,
+    1,
+    direction[1],
+    direction[2]
+  )
+  if original_length >= 4 then return false end
+
   for offset = -4, 4 do
     local row = anchor_row + direction[1] * offset
     local column = anchor_column + direction[2] * offset
     if inside(board, row, column) and board[row][column] == 0 then
       board[row][column] = 1
-      local extensions = winning_extensions(
+      -- A three must become a straight four containing the added stone.
+      -- Completing a five, or leaving an unrelated four intact, is not a three.
+      local length = line_length(
         board,
         anchor_row,
         anchor_column,
-        direction
+        1,
+        direction[1],
+        direction[2]
       )
+      local extensions = 0
+      if length == 4 then
+        extensions = winning_extensions(board, anchor_row, anchor_column, direction)
+      end
       board[row][column] = 0
       if extensions >= 2 then return true end
     end

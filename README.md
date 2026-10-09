@@ -17,12 +17,22 @@ the Manifest before opening the game iframe.
 | 中国象棋 | 2 | `http://localhost:5174/xiangqi/` | `dist/xiangqi/index.html` |
 | UNO | 2–4 | `http://localhost:5174/uno/` | `dist/uno/index.html` |
 | Werewolf dealer | 6-12 | `http://localhost:5174/werewolf-dealer/` | `dist/werewolf-dealer/index.html` |
-| 五子棋 | 2 | `http://localhost:5174/gomoku/` | `dist/gomoku/index.html` |
+| 五子棋 | 1–2 | `http://localhost:9139/gomoku/` | `dist/gomoku/index.html` |
 | Sudoku | 1 | `http://localhost:5174/sudoku/` | `dist/sudoku/index.html` |
 | Texas Hold'em | 2–6 | `http://localhost:5174/texas-holdem/` | `dist/texas-holdem/index.html` |
 | 围棋 | 1–2 | `http://localhost:5174/go/` | `dist/go/index.html` |
 | Connect Four | 2 | `http://localhost:5174/connect-four/` | `dist/connect-four/index.html` |
 | Pig Dice | 2 | `http://localhost:5174/pig-dice/` | `dist/pig-dice/index.html` |
+
+Gomoku non-room play offers human versus a local JavaScript AI or two humans
+taking turns on the same device. In AI games, the human can
+choose either color or random colors; rematches swap colors. Its two-ply
+search runs in a module Worker, considers up to eight moves and six replies,
+and checks a 25 ms deadline between branches, with at most 48 evaluated replies. Immediate wins and
+mandatory blocks scan the whole board before the bounded search. Simulated
+black moves use the same forbidden-move checks as local play. Worker failures
+use a short local fallback; search requests are cancelled when the game closes
+or changes rounds. No model download, Wasm, GPU or background pondering is used.
 
 ## Run locally
 

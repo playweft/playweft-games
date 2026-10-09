@@ -35,41 +35,59 @@
         hidden
       >
         <form id="setup-form" class="setup-form" tabindex="-1">
-          <div class="setup-heading">
+          <header class="setup-heading">
             <h2 id="setup-title">对局设置</h2>
-            <p id="setup-note">房主确认设置后开始</p>
+          </header>
+
+          <div class="setup-content">
+            <ul class="settings-list" role="list" aria-label="对局选项">
+              <li id="opponent-setting-item" class="setting-field" hidden>
+                <span id="opponent-setting-label" class="setting-title">对战方式</span>
+                <span id="opponent-setting-value" class="setting-value" aria-hidden="true">人机对战</span>
+                <i class="setting-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+                <select id="opponent-setting" name="opponent" aria-labelledby="opponent-setting-label">
+                  <option value="ai">人机对战</option>
+                  <option value="local">本地双人</option>
+                </select>
+              </li>
+              <li id="opponent-setting-divider" class="settings-divider" role="presentation" hidden><hr /></li>
+              <li class="setting-field">
+                <span id="black-setting-label" class="setting-title">执黑方式</span>
+                <span id="black-setting-value" class="setting-value" aria-hidden="true">随机执黑</span>
+                <i class="setting-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+                <select id="black-setting" name="blackMode" aria-labelledby="black-setting-label">
+                  <option value="random">随机执黑</option>
+                  <option value="player1">玩家 1 执黑</option>
+                  <option value="player2">玩家 2 执黑</option>
+                </select>
+              </li>
+
+              <li class="settings-divider" role="presentation"><hr /></li>
+              <li class="setting-field">
+                <span id="forbidden-setting-label" class="setting-title">禁手规则</span>
+                <span id="forbidden-setting-value" class="setting-value" aria-hidden="true">无禁手</span>
+                <i class="setting-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+                <select id="forbidden-setting" name="forbiddenMoves" aria-labelledby="forbidden-setting-label">
+                  <option value="none" data-display="无禁手">无禁手 · 休闲规则</option>
+                  <option value="renju" data-display="黑方禁手">黑方禁手 · 三三、四四、长连</option>
+                </select>
+              </li>
+            </ul>
+
+            <p
+              id="setup-feedback"
+              class="setup-feedback"
+              role="status"
+              aria-live="polite"
+              hidden
+            ></p>
           </div>
 
-          <label class="setting-field">
-            <span>执黑方式</span>
-            <select id="black-setting" name="blackMode">
-              <option value="random">随机执黑</option>
-              <option value="player1">玩家 1 执黑</option>
-              <option value="player2">玩家 2 执黑</option>
-            </select>
-          </label>
-
-          <label class="setting-field">
-            <span>禁手规则</span>
-            <select id="forbidden-setting" name="forbiddenMoves">
-              <option value="none">无禁手 · 休闲规则</option>
-              <option value="renju">黑方禁手 · 三三、四四、长连</option>
-            </select>
-          </label>
-
-          <p class="setup-rule">
-            固定 15 路棋盘，黑方先行；横、竖或斜线连续五子即获胜。再来一局时双方交换先后手。
-          </p>
-          <p
-            id="setup-feedback"
-            class="setup-feedback"
-            role="status"
-            aria-live="polite"
-            hidden
-          ></p>
-          <button id="start-button" class="start-action" type="submit">
-            <span id="start-label">开始对局</span>
-          </button>
+          <footer class="setup-actions">
+            <button id="start-button" class="start-action" type="submit">
+              <span id="start-label">开始对局</span>
+            </button>
+          </footer>
         </form>
       </section>
 
