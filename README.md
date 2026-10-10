@@ -1,76 +1,179 @@
 # Playweft Games
 
-Ten lightweight multiplayer games and two standalone games for the sibling
-[`playweft`](../playweft) platform. They share one Vite build and expose
-independent, versioned Playweft game packages.
+A collection of 12 browser games for local play and multiplayer rooms on
+[Playweft](https://github.com/playweft/playweft). Play against an AI, share one
+device with friends, or join a room through the platform.
 
-Each package is described by `/<game>/playweft.json`. Its Manifest contains
-the `start_url`, localized catalogue metadata, supported modes, room player
-limits, and authoritative Lua entry. Playweft bridge v1 fetches and validates
-the Manifest before opening the game iframe.
+The games share one Vite build and deploy as static files. Each game has its
+own versioned `playweft.json` package manifest; Playweft provides the lobby,
+networking, and authoritative room rules.
 
-| Game | Players | Local entry | Production build |
+[Quick start](#quick-start) · [Games](#games) · [Multiplayer](#multiplayer-with-playweft) · [Contributing](CONTRIBUTING.md) · [License](#license)
+
+## Games
+
+Local entries below become available after starting the development server.
+“Same device” means two people taking turns in one browser. Room player counts
+refer to seated human players; spectators do not occupy a seat.
+
+| Game | Local play | Room players | Local entry |
 | --- | --- | --- | --- |
-| 斗地主 | 3 | `http://localhost:5174/dou-dizhu/` | `dist/dou-dizhu/index.html` |
-| 麻将 | 1 + 3 AI | `http://localhost:5174/mahjong/` | `dist/mahjong/index.html` |
-| 国际象棋 | 2 | `http://localhost:9139/chess/` | `dist/chess/index.html` |
-| 中国象棋 | 2 | `http://localhost:5174/xiangqi/` | `dist/xiangqi/index.html` |
-| UNO | 2–4 | `http://localhost:5174/uno/` | `dist/uno/index.html` |
-| Werewolf dealer | 6-12 | `http://localhost:5174/werewolf-dealer/` | `dist/werewolf-dealer/index.html` |
-| 五子棋 | 1–2 | `http://localhost:9139/gomoku/` | `dist/gomoku/index.html` |
-| Sudoku | 1 | `http://localhost:5174/sudoku/` | `dist/sudoku/index.html` |
-| Texas Hold'em | 2–6 | `http://localhost:5174/texas-holdem/` | `dist/texas-holdem/index.html` |
-| 围棋 | 1–2 | `http://localhost:5174/go/` | `dist/go/index.html` |
-| Connect Four | 2 | `http://localhost:5174/connect-four/` | `dist/connect-four/index.html` |
-| Pig Dice | 2 | `http://localhost:5174/pig-dice/` | `dist/pig-dice/index.html` |
+| Dou Dizhu / 斗地主 | One human + two AI opponents | 3 | [/dou-dizhu/](http://localhost:9139/dou-dizhu/) |
+| Mahjong / 麻将 | One human + three AI opponents | 2–4 | [/mahjong/](http://localhost:9139/mahjong/) |
+| Chess / 国际象棋 | Two players, same device | 2 | [/chess/](http://localhost:9139/chess/) |
+| Xiangqi / 中国象棋 | Two players, same device | 2 | [/xiangqi/](http://localhost:9139/xiangqi/) |
+| UNO | — | 2–4 | [/uno/](http://localhost:9139/uno/) |
+| Werewolf Dealer / 狼人杀发牌器 | Pass one device to deal roles for 6–15 people | 6–15 | [/werewolf-dealer/](http://localhost:9139/werewolf-dealer/) |
+| Gomoku / 五子棋 | Human vs. AI or two players, same device | 2 | [/gomoku/](http://localhost:9139/gomoku/) |
+| Sudoku / 数独 | Single-player puzzle | — | [/sudoku/](http://localhost:9139/sudoku/) |
+| Texas Hold'em / 德州扑克 | — | 2–6 | [/texas-holdem/](http://localhost:9139/texas-holdem/) |
+| Go / 围棋 | Two players, same device | 2 | [/go/](http://localhost:9139/go/) |
+| Connect Four / 四子棋 | — | 2 | [/connect-four/](http://localhost:9139/connect-four/) |
+| Pig Dice / 贪心骰子 | — | 2 | [/pig-dice/](http://localhost:9139/pig-dice/) |
 
-Gomoku non-room play offers human versus a local JavaScript AI or two humans
-taking turns on the same device. In AI games, the human can
-choose either color or random colors; rematches swap colors. Its two-ply
-search runs in a module Worker, considers up to eight moves and six replies,
-and checks a 25 ms deadline between branches, with at most 48 evaluated replies. Immediate wins and
-mandatory blocks scan the whole board before the bounded search. Simulated
-black moves use the same forbidden-move checks as local play. Worker failures
-use a short local fallback; search requests are cancelled when the game closes
-or changes rounds. No model download, Wasm, GPU or background pondering is used.
+Each running game includes a rules page at `/<game>/help.html`. Games without
+local play need a Playweft room for an interactive match.
 
-## Run locally
+## Quick start
 
-Install dependencies once:
+Use **Node.js 22.12 or newer** and npm. Vite also supports Node.js 20.19.x;
+see the installed Vite package's engine requirement when choosing another version.
 
 ```sh
-npm install
-```
-
-Start the Playweft Worker and web app from `../playweft`, then start the shared
-game development server from this repository:
-
-```sh
+git clone https://github.com/playweft/playweft-games.git
+cd playweft-games
+npm ci
 npm run dev
 ```
 
-Open `http://localhost:5174/` to browse the game list. Sudoku, Xiangqi and the
-local-AI Dou Dizhu mode open directly as solo games; paste a game's directory URL or
-its explicit `playweft.json` URL into Playweft. The multiplayer games
-use the platform-owned lobby; Texas Hold'em supports two to six seated players,
-斗地主 supports one local player with two computer opponents or exactly three
-room players, the Werewolf dealer supports six to twelve, and
-UNO supports two to four.
-围棋和中国象棋同时支持双人房间与单终端双方轮流行棋的 Solo 模式。麻将在浏览器内运行与房间协议一致的 Lua 规则，提供三名本地 AI，并支持东风场/半庄、连庄、立直、振听、役番符、宝牌、杠与抢杠、多家荣和、途中流局、包牌、延长赛和完整点数支付。麻将牌桌使用 PixiJS/WebGL 渲染，规则状态通过独立适配层驱动画面与交互。
+Open [http://localhost:9139/](http://localhost:9139/) to browse the games, or
+open a local entry from the table above. Local play works without running
+Playweft's web app or Worker.
 
-## Verify and build
+The configured development port is **9139**. If it is occupied, Vite may choose
+the next available port; use the address printed in the terminal. To require
+that exact port:
 
 ```sh
-npm run check
-npm run build
+npm run dev -- --strictPort
 ```
 
-The generated `dist` directory is one static deployment with twelve game
-packages. Each room package contains its `playweft.json`, client, help page and
-`game.lua`; Sudoku contains the same package metadata without a server entry.
+## Multiplayer with Playweft
 
-`public/_headers` enables CORS only for the featured list and game Manifests,
-which the top-level Playweft page fetches in the browser. Lua entries are
-fetched server-side by the Playweft Worker and do not need CORS.
+Room play requires the separate
+[Playweft platform](https://github.com/playweft/playweft). Its web app manages
+rooms and invitations; its Worker executes the room's Lua rules.
 
-国际象棋支持同设备双人轮流行棋和双人房间，提供合法走法提示、翻转棋盘、吃子及行棋记录、王车易位、吃过路兵、四种兵升变、将死、逼和、常见子力不足、重复局面及五十/七十五回合和棋、协议和棋与认输。联机与本地模式共用同一份 Lua 规则，Wasm 随静态包构建。
+1. Keep this repository's game server running with `npm run dev`.
+2. Clone and install the platform, following its
+   [setup instructions](https://github.com/playweft/playweft#run-locally).
+3. In separate terminals, from the platform repository, run:
+
+   ```sh
+   npm run dev:worker -- --var AUTH_SECRET:local-session-secret
+   ```
+
+   ```sh
+   npm run dev:web
+   ```
+
+4. Open the platform at [http://localhost:9133/](http://localhost:9133/) and
+   add a game using its directory URL or explicit manifest URL, for example:
+
+   ```text
+   http://localhost:9139/gomoku/
+   http://localhost:9139/gomoku/playweft.json
+   ```
+
+5. Create a room and share its invitation link with the other players.
+
+The platform Worker defaults to port `8787`; the web app proxies API requests
+to it. The development secret above is only for local use. For another device,
+use addresses reachable by both the players and the Worker rather than
+`localhost`.
+
+For the package contract and bridge protocol, see the
+[game integration guide](https://github.com/playweft/playweft/blob/main/docs/game-integration/README.md).
+
+## Development
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the shared Vite development server on port 9139. |
+| `npm test` | Run the Node.js test suite without rebuilding. |
+| `npm run check` | Build all packages, then run the test suite. |
+| `npm run build` | Generate the static deployment in `dist/`. |
+
+Use `npm run check` before submitting a change. It already includes the build,
+so a second `npm run build` is unnecessary unless you change files afterward.
+
+```text
+games/<game>/       Game UI, manifest, rules, and help page
+src/                Shared bridge, local runtime, UI components, and caching
+build/vite/plugins/ Package emission, URL handling, and build configuration
+tests/              Rule, local-mode, protocol, and UI-controller tests
+public/             Icons, catalogue, service worker, and hosting headers
+docs/               Development notes
+vite.config.js      Game entries and development server configuration
+```
+
+The client uses JavaScript, HTML, and CSS. Room rules run in Lua; some local
+modes reuse Lua through Wasmoon/WebAssembly, while others use JavaScript.
+Mahjong's table uses Three.js/WebGL, and Gomoku's local AI runs in a Web Worker.
+See [development notes](docs/development.md) for architecture and AI details.
+
+### Optional Mahjong asset configuration
+
+No environment variables are required for the default games.
+`MAHJONG_DEFAULT_ASSET_CONFIG_URL` optionally points to a raw JSON configuration
+for Mahjong backgrounds, portraits, tile backs, and music. Export it in the
+process environment before starting Vite or building; see [.env.example](.env.example)
+for the supported asset categories and
+[the configuration normalizer](games/mahjong/theme/default-assets.js) for its shape.
+An omitted or unusable configuration falls back to the bundled defaults.
+
+## Build and deploy
+
+```sh
+npm run build
+npm exec vite -- preview --host 127.0.0.1 --port 9140 --strictPort
+```
+
+Open [http://127.0.0.1:9140/](http://127.0.0.1:9140/) to inspect the production
+build locally. This explicit preview port is separate from the development
+server's default port.
+
+Deploy the **entire `dist/` directory** to a static host at the site's root.
+It contains the catalogue, shared assets, and each game's directory with
+`index.html`, `help.html`, and `playweft.json`. Room packages also contain the
+Lua entry named in their manifest; Mahjong's room entry is `game-online.lua`.
+Sudoku has no room server entry.
+
+For production room play, serve the package over HTTPS and keep its Lua entry
+on the same origin as the manifest. Allow the Playweft page to fetch
+`/featured-games.json` and `/<game>/playweft.json` through CORS.
+[public/_headers](public/_headers) supplies these rules for hosts that support
+that file; configure equivalent headers on other hosts. The Worker fetches
+room Lua entries server-side, so those requests do not require CORS.
+
+## Contributing
+
+Bug reports and pull requests are welcome. Include the game, mode, browser,
+and steps to reproduce a problem in an
+[issue](https://github.com/playweft/playweft-games/issues).
+For code changes, see [CONTRIBUTING.md](CONTRIBUTING.md), keep changes focused,
+and run `npm run check` before opening a
+[pull request](https://github.com/playweft/playweft-games/pulls).
+
+## License
+
+Project code is licensed under the [MIT License](LICENSE).
+Third-party assets retain their own licenses:
+
+- Chess piece SVGs by Cburnett use CC BY-SA 3.0. Attribution, source URLs, and
+  asset terms are recorded in [the chess asset README](games/chess/assets/README.md).
+- Mahjong's Bakudai font subset uses SIL Open Font License 1.1; see
+  [the font notice](games/mahjong/assets/fonts/BAKUDAI-FONT-NOTICE.txt) and
+  [license text](games/mahjong/assets/fonts/BAKUDAI-OFL.txt).
+
+Dependency licenses are included with their respective packages.
