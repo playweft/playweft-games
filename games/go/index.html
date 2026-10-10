@@ -28,89 +28,105 @@
   <main class="go-layout">
     <dialog id="setup-panel" class="overlay-dialog setup-panel" aria-labelledby="setup-title">
       <form id="setup-form" class="overlay-dialog__surface setup-form" tabindex="-1">
-        <div class="setup-heading">
+        <header class="setup-heading">
           <h2 id="setup-title">对局设置</h2>
-          <p id="setup-note">房主确认设置后开始</p>
+        </header>
+
+        <div class="setup-content">
+          <ul class="settings-list" role="list" aria-label="对局来源选项">
+            <li class="setting-field">
+              <span id="source-setting-label" class="setting-title">对局来源</span>
+              <span class="setting-value" aria-hidden="true"></span>
+              <i class="setting-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+              <select id="source-setting" name="setupSource" aria-labelledby="source-setting-label">
+                <option value="new">新对局</option>
+                <option id="resume-source" value="resume">继续本地棋谱</option>
+              </select>
+            </li>
+          </ul>
+
+          <section id="resume-setup" class="resume-setup" aria-label="选择续下棋谱" hidden>
+            <ul class="settings-list" role="list" aria-label="续棋选项">
+              <li class="setting-field">
+                <span id="resume-setting-label" class="setting-title">本地棋谱</span>
+                <span class="setting-value" aria-hidden="true"></span>
+                <i class="setting-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+                <select id="resume-setting" name="resumeRecord" aria-labelledby="resume-setting-label"></select>
+              </li>
+            </ul>
+            <dl id="resume-summary" class="resume-summary"></dl>
+          </section>
+
+          <ul id="new-game-settings" class="settings-list new-game-settings" role="list" aria-label="对局选项">
+            <li class="setting-field">
+              <span id="size-setting-label" class="setting-title">棋盘大小</span>
+              <span class="setting-value" aria-hidden="true"></span>
+              <i class="setting-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+              <select id="size-setting" name="size" aria-labelledby="size-setting-label">
+                <option value="9">9 × 9 · 快棋</option>
+                <option value="13">13 × 13 · 中盘</option>
+                <option value="19" selected>19 × 19 · 标准</option>
+              </select>
+            </li>
+            <li class="settings-divider" role="presentation"><hr /></li>
+            <li class="setting-field">
+              <span id="rules-setting-label" class="setting-title">计分规则</span>
+              <span class="setting-value" aria-hidden="true"></span>
+              <i class="setting-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+              <select id="rules-setting" name="rules" aria-labelledby="rules-setting-label">
+                <option value="chinese" data-display="中国规则">中国规则 · 子与地</option>
+                <option value="japanese" data-display="日本规则">日本规则 · 地与提子</option>
+              </select>
+            </li>
+            <li class="settings-divider" role="presentation"><hr /></li>
+            <li class="setting-field">
+              <label for="komi-setting" class="setting-title">贴目</label>
+              <span class="number-input">
+                <input id="komi-setting" name="komi" type="number" min="0" max="20" step="0.5" value="6.5" />
+                <span>目</span>
+              </span>
+            </li>
+            <li class="settings-divider" role="presentation"><hr /></li>
+            <li class="setting-field">
+              <span id="black-setting-label" class="setting-title">执黑方式</span>
+              <span class="setting-value" aria-hidden="true"></span>
+              <i class="setting-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+              <select id="black-setting" name="blackMode" aria-labelledby="black-setting-label">
+                <option value="random">随机执黑</option>
+                <option value="player1">玩家 1 执黑</option>
+                <option value="player2">玩家 2 执黑</option>
+              </select>
+            </li>
+            <li class="settings-divider" role="presentation"><hr /></li>
+            <li class="setting-field">
+              <span id="handicap-setting-label" class="setting-title">让子</span>
+              <span class="setting-value" aria-hidden="true"></span>
+              <i class="setting-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+              <select id="handicap-setting" name="handicap" aria-labelledby="handicap-setting-label">
+                <option value="0">不让子</option>
+                <option value="2">让 2 子</option>
+                <option value="3">让 3 子</option>
+                <option value="4">让 4 子</option>
+                <option value="5">让 5 子</option>
+                <option value="6">让 6 子</option>
+                <option value="7">让 7 子</option>
+                <option value="8">让 8 子</option>
+                <option value="9">让 9 子</option>
+              </select>
+            </li>
+          </ul>
+          <p id="setup-note" class="setup-note">房主确认设置后开始</p>
+          <p id="handicap-note" class="handicap-note">
+            让子时受让方固定执黑，摆好让子后由白方先行。
+          </p>
+          <p id="setup-feedback" class="setup-feedback" role="status" aria-live="polite" hidden></p>
         </div>
 
-        <fieldset id="setup-source" class="setup-source">
-          <legend>对局来源</legend>
-          <div class="setup-source-options">
-            <label>
-              <input type="radio" name="setupSource" value="new" checked />
-              <span>新对局</span>
-            </label>
-            <label>
-              <input id="resume-source" type="radio" name="setupSource" value="resume" />
-              <span>继续本地棋谱</span>
-            </label>
-          </div>
-        </fieldset>
-
-        <section id="resume-setup" class="resume-setup" aria-label="选择续下棋谱" hidden>
-          <label class="setting-field">
-            <span>本地棋谱</span>
-            <select id="resume-setting" name="resumeRecord"></select>
-          </label>
-          <dl id="resume-summary" class="resume-summary"></dl>
-        </section>
-
-        <label class="setting-field">
-          <span>棋盘大小</span>
-          <select id="size-setting" name="size">
-            <option value="9">9 × 9 · 快棋</option>
-            <option value="13">13 × 13 · 中盘</option>
-            <option value="19" selected>19 × 19 · 标准</option>
-          </select>
-        </label>
-
-        <label class="setting-field">
-          <span>计分规则</span>
-          <select id="rules-setting" name="rules">
-            <option value="chinese">中国规则 · 子与地</option>
-            <option value="japanese">日本规则 · 地与提子</option>
-          </select>
-        </label>
-
-        <label class="setting-field">
-          <span>贴目</span>
-          <span class="number-input">
-            <input id="komi-setting" name="komi" type="number" min="0" max="20" step="0.5" value="6.5" />
-            <b>目</b>
-          </span>
-        </label>
-
-        <label class="setting-field">
-          <span>执黑方式</span>
-          <select id="black-setting" name="blackMode">
-            <option value="random">随机执黑</option>
-            <option value="player1">玩家 1 执黑</option>
-            <option value="player2">玩家 2 执黑</option>
-          </select>
-        </label>
-
-        <label class="setting-field">
-          <span>让子</span>
-          <select id="handicap-setting" name="handicap">
-            <option value="0">不让子</option>
-            <option value="2">让 2 子</option>
-            <option value="3">让 3 子</option>
-            <option value="4">让 4 子</option>
-            <option value="5">让 5 子</option>
-            <option value="6">让 6 子</option>
-            <option value="7">让 7 子</option>
-            <option value="8">让 8 子</option>
-            <option value="9">让 9 子</option>
-          </select>
-        </label>
-
-        <p id="handicap-note" class="handicap-note">
-          让子时受让方固定执黑，摆好让子后由白方先行。
-        </p>
-        <p id="setup-feedback" class="setup-feedback" role="status" aria-live="polite" hidden></p>
-        <button id="start-button" class="start-action" type="submit">
-          <span id="start-label">开始对局</span>
-        </button>
+        <footer class="setup-actions">
+          <button id="start-button" class="start-action" type="submit">
+            <span id="start-label">开始对局</span>
+          </button>
+        </footer>
       </form>
     </dialog>
 

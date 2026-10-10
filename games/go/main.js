@@ -49,7 +49,8 @@ const elements = {
   setupPanel: document.querySelector("#setup-panel"),
   setupForm: document.querySelector("#setup-form"),
   setupNote: document.querySelector("#setup-note"),
-  setupSources: [...document.querySelectorAll('[name="setupSource"]')],
+  sourceSetting: document.querySelector("#source-setting"),
+  newGameSettings: document.querySelector("#new-game-settings"),
   resumeSource: document.querySelector("#resume-source"),
   resumeSetup: document.querySelector("#resume-setup"),
   resumeSetting: document.querySelector("#resume-setting"),
@@ -59,6 +60,7 @@ const elements = {
   komiSetting: document.querySelector("#komi-setting"),
   blackSetting: document.querySelector("#black-setting"),
   handicapSetting: document.querySelector("#handicap-setting"),
+  handicapNote: document.querySelector("#handicap-note"),
   setupFeedback: document.querySelector("#setup-feedback"),
   historyPanel: document.querySelector("#history-panel"),
   historyDialog: document.querySelector("#history-dialog"),
@@ -235,8 +237,7 @@ const setupDialog = createOverlayDialog({
   root: elements.setupPanel,
   surface: elements.setupForm,
   dismissible: false,
-  initialFocus: () =>
-    elements.sizeSetting.disabled ? elements.setupForm : elements.sizeSetting,
+  initialFocus: elements.setupForm,
 });
 const historyDialog = createOverlayDialog({
   root: elements.historyPanel,
@@ -450,7 +451,29 @@ elements.setupForm.addEventListener("input", (event) => {
   }
   if (!isSettingControl(event.target)) return;
   updateHandicapControls();
+  renderSettingValues();
   syncSetupSettings();
+});
+
+for (const select of elements.setupForm.querySelectorAll("select")) {
+  select.closest(".setting-field").addEventListener("click", (event) => {
+    if (event.target === select || select.disabled) return;
+    select.focus({ preventScroll: true });
+    if (typeof select.showPicker === "function") {
+      try {
+        select.showPicker();
+        return;
+      } catch {
+        // Cross-origin game frames may only allow direct select activation.
+      }
+    }
+    select.click();
+  });
+}
+elements.komiSetting.closest(".setting-field").addEventListener("click", () => {
+  if (!elements.komiSetting.disabled) {
+    elements.komiSetting.focus({ preventScroll: true });
+  }
 });
 elements.pass.addEventListener("click", () => sendAction({ type: "pass" }));
 elements.undo.addEventListener("click", () =>
@@ -1242,16 +1265,11 @@ function renderSetup(nextState, ownIndex) {
   if (setupSource === "resume" && resumeRecords.length === 0) {
     setupSource = "new";
   }
-  elements.setupForm.classList.toggle("is-resuming", setupSource === "resume");
-  for (const source of elements.setupSources) {
-    source.checked = source.value === setupSource;
-    source.disabled =
-      !canConfigure ||
-      (source.value === "resume" && resumeRecords.length === 0);
-  }
-  elements.resumeSource.closest("label").dataset.empty = String(
-    resumeRecords.length === 0,
-  );
+  elements.newGameSettings.hidden = setupSource === "resume";
+  elements.handicapNote.hidden = setupSource === "resume";
+  elements.sourceSetting.value = setupSource;
+  elements.sourceSetting.disabled = !canConfigure;
+  elements.resumeSource.disabled = resumeRecords.length === 0;
   renderSetupResumePicker(resumeRecords, canConfigure);
   const selectedRecord = resumeRecords.find(
     (record) => record.id === selectedResumeRecordId,
@@ -1288,6 +1306,15 @@ function renderSetup(nextState, ownIndex) {
       ? "继续对局"
       : "开始对局";
   updateHandicapControls();
+  renderSettingValues();
+}
+
+function renderSettingValues() {
+  for (const select of elements.setupForm.querySelectorAll("select")) {
+    const option = select.selectedOptions[0];
+    const value = select.closest(".setting-field").querySelector(".setting-value");
+    value.textContent = option?.dataset.display ?? option?.textContent ?? "";
+  }
 }
 
 function availableSetupResumeRecords() {
