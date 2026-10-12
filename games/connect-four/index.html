@@ -1,54 +1,48 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f4f5f1" />
-    <title>四子棋 | Playweft</title>
-    <script type="module" src="./main.js"></script>
-  </head>
-  <body>
-    <header class="game-header">
-      <div class="game-brand">
-        <img src="/connect-four.svg" alt="" />
-        <div>
-          <h1>四子棋</h1>
-          <p>横、竖或斜线连成四子</p>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f4f5f1" />
+  <title>四子棋 | Playweft</title>
+  <script type="module" src="./main.js"></script>
+</head>
+
+<body>
+  <header class="game-header">
+    <h1>四子棋</h1>
+  </header>
+
+  <main class="connect-layout">
+    <section class="match-status" aria-live="polite">
+      <p id="turn-kicker">等待房主开始</p>
+      <h2 id="turn-heading">棋盘已就绪</h2>
+      <div class="player-strip" aria-label="对局玩家">
+        <div id="player-one" class="player-chip is-current">
+          <span class="piece-swatch piece-one"></span>
+          <span data-player-name>玩家 1</span>
+        </div>
+        <span class="versus">VS</span>
+        <div id="player-two" class="player-chip">
+          <span class="piece-swatch piece-two"></span>
+          <span data-player-name>玩家 2</span>
         </div>
       </div>
-      <div id="connection" class="connection-status" data-mode="waiting">
-        <span>连接平台中</span>
-      </div>
-    </header>
+    </section>
 
-    <main class="connect-layout">
-      <section class="match-status" aria-live="polite">
-        <p id="turn-kicker">等待房主开始</p>
-        <h2 id="turn-heading">棋盘已就绪</h2>
-        <div class="player-strip" aria-label="对局玩家">
-          <div id="player-one" class="player-chip is-current">
-            <span class="piece-swatch piece-one"></span>
-            <span data-player-name>玩家 1</span>
-          </div>
-          <span class="versus">VS</span>
-          <div id="player-two" class="player-chip">
-            <span class="piece-swatch piece-two"></span>
-            <span data-player-name>玩家 2</span>
-          </div>
-        </div>
-      </section>
+    <section class="board-wrap" aria-label="四子棋棋盘">
+      <div id="column-guides" class="column-guides" aria-hidden="true"></div>
+      <div id="board" class="connect-board" role="grid"></div>
+    </section>
 
-      <section class="board-wrap" aria-label="四子棋棋盘">
-        <div id="column-guides" class="column-guides" aria-hidden="true"></div>
-        <div id="board" class="connect-board" role="grid"></div>
-      </section>
+    <div class="board-footer">
+      <p id="board-message" class="board-message">进入 Playweft 房间后开始对局</p>
+      <button id="rematch-button" class="rematch-action" type="button" hidden>
+        <span class="icon-button-content"><i data-lucide="rotate-ccw"></i>再来一局</span>
+      </button>
+    </div>
+  </main>
+</body>
 
-      <div class="board-footer">
-        <p id="board-message" class="board-message">进入 Playweft 房间后开始对局</p>
-        <button id="rematch-button" class="rematch-action" type="button" hidden>
-          <span class="icon-button-content"><i data-lucide="rotate-ccw"></i>再来一局</span>
-        </button>
-      </div>
-    </main>
-  </body>
 </html>

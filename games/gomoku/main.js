@@ -5,18 +5,13 @@ import {
   Settings2,
   createIcons,
 } from "lucide";
-import {
-  applySoloGomokuAction,
-  createSoloGomokuState,
-} from "./solo.js";
+import { applySoloGomokuAction, createSoloGomokuState } from "./solo.js";
 import { createPlayweftClient } from "../../src/playweft-client.js";
 import { createGomokuAiController } from "./ai-controller.js";
-import "../../src/base.css";
 import "../../src/components/board-stones.css";
 import "./styles.css";
 
 const elements = {
-  connection: document.querySelector("#connection"),
   board: document.querySelector("#board"),
   boardShell: document.querySelector(".board-shell"),
   table: document.querySelector("#table-layout"),
@@ -67,7 +62,7 @@ createIcons({ icons: { ChevronRight, CircleHelp, RotateCcw, Settings2 } });
 let clockTimer = window.setInterval(renderClocks, 1000);
 const ai = createGomokuAiController({
   onMove: (action) => sendAction(action, true, 2),
-  onError: (message) => setConnection("error", message),
+  onError: showActionError,
 });
 
 const preview = {
@@ -122,7 +117,6 @@ function handleReady(message) {
     return;
   }
   playerId = message.playerId;
-  setConnection("waiting", "房间已连接");
 }
 
 function handleState(message) {
@@ -143,14 +137,6 @@ function handleState(message) {
     queuedSettings = undefined;
     draftSettings = undefined;
   }
-  setConnection(
-    "live",
-    state.ended
-      ? "对局已结束"
-      : playMode === "solo"
-        ? isAiGame() ? "本地人机对弈" : "本地双人对弈"
-        : "实时对局",
-  );
   render(state);
   if (isAiGame()) ai.update(state, `${localMatchId}:${localVersion}`, true);
   else ai.dispose();
@@ -190,9 +176,8 @@ function handleError(error, code, requestId) {
     pendingActionType = undefined;
   }
   const message = translateError(error, code);
-  setConnection("error", message);
   render(state ?? preview);
-  if (state?.phase === "setup") showSetupFeedback(message, "error");
+  showActionError(message);
 }
 
 window.addEventListener("pagehide", (event) => {
@@ -221,7 +206,11 @@ elements.setupForm.addEventListener("submit", (event) => {
 
 elements.setupForm.addEventListener("input", (event) => {
   if (
-    ![elements.opponentSetting, elements.forbiddenSetting, elements.blackSetting].includes(event.target)
+    ![
+      elements.opponentSetting,
+      elements.forbiddenSetting,
+      elements.blackSetting,
+    ].includes(event.target)
   ) {
     return;
   }
@@ -229,7 +218,11 @@ elements.setupForm.addEventListener("input", (event) => {
   syncSetupSettings();
 });
 
-for (const select of [elements.opponentSetting, elements.blackSetting, elements.forbiddenSetting]) {
+for (const select of [
+  elements.opponentSetting,
+  elements.blackSetting,
+  elements.forbiddenSetting,
+]) {
   select.closest(".setting-field").addEventListener("click", (event) => {
     if (event.target === select || select.disabled) return;
     select.focus({ preventScroll: true });
@@ -301,10 +294,15 @@ function isLocalTwoPlayerGame() {
 function sendAction(action, renderPendingState = true, actorIndex) {
   if (pendingActionId || !state) return false;
   actorIndex ??= isLocalTwoPlayerGame() ? state.current : 1;
-  if (playMode === "solo" && action.type === "play" && state.current !== actorIndex) return false;
+  if (
+    playMode === "solo" &&
+    action.type === "play" &&
+    state.current !== actorIndex
+  )
+    return false;
   const requestId = dispatchAction(action, actorIndex);
   if (!requestId) {
-    setConnection("error", "尚未连接 Playweft 平台");
+    showActionError("尚未连接 Playweft 平台");
     return false;
   }
   pendingActionId = requestId;
@@ -319,7 +317,10 @@ function dispatchAction(action, actorIndex = 1) {
   const matchId = localMatchId;
   window.queueMicrotask(() => {
     if (playMode !== "solo" || localMatchId !== matchId) return;
-    const result = applySoloGomokuAction(state, action, { now: Date.now(), actorIndex });
+    const result = applySoloGomokuAction(state, action, {
+      now: Date.now(),
+      actorIndex,
+    });
     if (!result.accepted) {
       handleError(
         result.error?.message ?? "Action rejected",
@@ -377,8 +378,7 @@ function render(nextState) {
     currentIndex === blackIndex ? "black" : "white";
   elements.round.textContent = String(nextState.round ?? 1);
   elements.moveCount.textContent = `已落 ${nextState.moves ?? 0} 子`;
-  elements.settingsSummary.textContent =
-    `15 × 15 · ${nextState.settings?.forbiddenMoves ? "黑方禁手" : "无禁手"}`;
+  elements.settingsSummary.textContent = `15 × 15 · ${nextState.settings?.forbiddenMoves ? "黑方禁手" : "无禁手"}`;
   elements.rematch.hidden = !state || !ended || ownIndex < 0;
   elements.rematch.disabled = Boolean(pendingActionId);
   elements.settings.hidden = !state || !ended || ownIndex < 0;
@@ -391,11 +391,10 @@ function render(nextState) {
   colorPlayers.forEach(({ playerIndex, label }, panelIndex) => {
     const panel = elements.players[panelIndex];
     const own = playerIndex === ownIndex;
-    panel.querySelector("[data-player-name]").textContent =
-      isAiGame()
-        ? `${label} · ${own ? "你" : "电脑"}`
-        : isLocalTwoPlayerGame()
-          ? `${label} · 玩家 ${playerIndex + 1}`
+    panel.querySelector("[data-player-name]").textContent = isAiGame()
+      ? `${label} · ${own ? "你" : "电脑"}`
+      : isLocalTwoPlayerGame()
+        ? `${label} · 玩家 ${playerIndex + 1}`
         : own
           ? `${label} · 你`
           : `${label} · 玩家 ${playerIndex + 1}`;
@@ -476,8 +475,7 @@ function renderSettingValues() {
 function renderSetupBoard(nextState, size) {
   elements.round.textContent = String(nextState.round ?? 1);
   elements.moveCount.textContent = "已落 0 子";
-  elements.settingsSummary.textContent =
-    `15 × 15 · ${nextState.settings?.forbiddenMoves ? "黑方禁手" : "无禁手"}`;
+  elements.settingsSummary.textContent = `15 × 15 · ${nextState.settings?.forbiddenMoves ? "黑方禁手" : "无禁手"}`;
   elements.statusTitle.textContent = "配置本局规则";
   elements.statusDetail.textContent = "黑方先行，率先连成五子获胜";
   elements.rematch.hidden = true;
@@ -511,7 +509,11 @@ function renderStatus(nextState, ownIndex, currentIndex) {
     }
     const won = Number(nextState.winnerIndex) - 1 === ownIndex;
     elements.statusTitle.textContent =
-      ownIndex < 0 ? `玩家 ${nextState.winnerIndex} 获胜` : won ? "你赢了" : "对手获胜";
+      ownIndex < 0
+        ? `玩家 ${nextState.winnerIndex} 获胜`
+        : won
+          ? "你赢了"
+          : "对手获胜";
     elements.statusDetail.textContent =
       nextState.lastEvent?.kind === "player_left"
         ? "另一方已离开对局"
@@ -519,7 +521,10 @@ function renderStatus(nextState, ownIndex, currentIndex) {
     return;
   }
   if (isLocalTwoPlayerGame()) {
-    const color = Number(nextState.current) === Number(nextState.blackIndex) ? "黑方" : "白方";
+    const color =
+      Number(nextState.current) === Number(nextState.blackIndex)
+        ? "黑方"
+        : "白方";
     elements.statusTitle.textContent = `轮到${color}落子`;
     elements.statusDetail.textContent = `玩家 ${currentIndex + 1}，选择一个空交叉点`;
     return;
@@ -568,7 +573,9 @@ function setSetupOpen(open) {
 
 function readSetupSettings() {
   return {
-    ...(playMode === "solo" ? { opponent: elements.opponentSetting.value } : {}),
+    ...(playMode === "solo"
+      ? { opponent: elements.opponentSetting.value }
+      : {}),
     blackMode: elements.blackSetting.value,
     forbiddenMoves: elements.forbiddenSetting.value === "renju",
   };
@@ -603,7 +610,8 @@ function sendSettingsUpdate(settings) {
 function sameSettings(left = {}, right = {}) {
   return (
     left.blackMode === right.blackMode &&
-    (playMode !== "solo" || (left.opponent ?? "ai") === (right.opponent ?? "ai")) &&
+    (playMode !== "solo" ||
+      (left.opponent ?? "ai") === (right.opponent ?? "ai")) &&
     Boolean(left.forbiddenMoves) === Boolean(right.forbiddenMoves)
   );
 }
@@ -683,7 +691,7 @@ function translateError(error, code) {
   return messages[code] ?? error ?? "操作未完成";
 }
 
-function setConnection(mode, label) {
-  elements.connection.dataset.mode = mode;
-  elements.connection.querySelector("span").textContent = label;
+function showActionError(message) {
+  if (state?.phase === "setup") showSetupFeedback(message, "error");
+  else elements.statusDetail.textContent = message;
 }

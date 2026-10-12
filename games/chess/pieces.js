@@ -12,8 +12,17 @@ import bN from "./assets/Chess ndt45.svg?url";
 import bP from "./assets/Chess pdt45.svg?url";
 
 const PIECES = { wK, wQ, wR, wB, wN, wP, bK, bQ, bR, bB, bN, bP };
-export const PIECE_NAMES = { K: "王", Q: "后", R: "车", B: "象", N: "马", P: "兵" };
+export const PIECE_NAMES = {
+  K: "王",
+  Q: "后",
+  R: "车",
+  B: "象",
+  N: "马",
+  P: "兵",
+};
 export function pieceSvg(piece) {
   const src = PIECES[piece];
-  return src ? `<img class="piece" src="${src}" alt="" aria-hidden="true" draggable="false" />` : "";
+  return src
+    ? `<img class="piece" src="${src}" alt="" aria-hidden="true" draggable="false" />`
+    : "";
 }

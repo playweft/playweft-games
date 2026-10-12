@@ -1,9 +1,75 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>国际象棋玩法</title><link rel="stylesheet" href="../../src/help.css" /></head>
-<body><main class="help-page"><header class="help-heading"><img src="/chess.svg" alt="" /><div><h1>国际象棋玩法</h1><p>执掌黑白，运子攻防</p></div></header>
-<section class="help-section"><h2>开始对弈</h2><p>白方先行，双方轮流移动一枚棋子。点击棋子，再点击提示格落子；不能让己方王处于被攻击的位置。直接打开游戏时，同一设备控制双方；通过 Playweft 创建双人房间时，各执一方，也支持观战。没有计时限制。</p></section>
-<section class="help-section"><h2>棋子走法</h2><ul><li><strong>王：</strong>向任意方向走一格，不能走到被攻击的格子。</li><li><strong>后：</strong>横、竖、斜线任意格。</li><li><strong>车：</strong>横线或竖线任意格。</li><li><strong>象：</strong>沿斜线任意格。</li><li><strong>马：</strong>走“日”字，可以跳过其他棋子。</li><li><strong>兵：</strong>向前一格，从初始位置可走两格；斜向前一格吃子，不能后退。</li></ul><p>除马外，棋子不能越过其他棋子。王不会被直接吃掉；受到攻击且没有合法应将时判为将死。</p></section>
-<section class="help-section"><h2>特殊走法</h2><ul><li><strong>王车易位：</strong>点击王，再点击相应提示格。王和该侧车都未移动过，两者之间为空，且王当前、途经和到达的格子均不受攻击。王向车移动两格，车移到王的另一侧。</li><li><strong>吃过路兵：</strong>对方兵刚从起始位置前进两格，停在己方兵旁边时，己方兵可在紧接着的一步斜进，吃掉这枚兵。过后机会失效。</li><li><strong>兵升变：</strong>兵到达对面底线时，必须选择升变为后、车、象或马；可以选择已被吃掉或仍在棋盘上的棋子种类。</li></ul></section>
-<section class="help-section"><h2>胜负与和棋</h2><ul><li><strong>将死：</strong>王受到攻击且无法解除，攻击方获胜。认输或玩家离开房间也判负。</li><li><strong>逼和：</strong>轮到行棋时没有合法走法，但王未被将军，自动和棋。</li><li><strong>子力不足：</strong>仅剩双王、王对王加单象或单马、或者除王外仅剩同色格象，自动和棋。</li><li><strong>重复局面：</strong>同一方行棋、棋子位置相同、易位和合法吃过路兵权利相同，才算同一局面。当前局面第三次出现可点击“申请和棋”；第五次出现自动和棋。</li><li><strong>五十回合：</strong>双方连续五十回合未动兵且未吃子时可申请和棋；七十五回合自动和棋，将死优先。</li><li><strong>协议和棋：</strong>一方点击“提议和棋”，另一方可接受或继续对弈。在本地模式中，请由另一位玩家回应。</li></ul><p>本游戏支持对已经出现的重复局面或已经达到的五十回合申请和棋，不提供预先声明下一步的裁判流程。仅自动识别上述常见子力不足局面，其他特殊死局可由双方协议和棋。</p><p>行棋记录保留最近 150 步，使用起止坐标（例如 e2–e4、e4×d5）；O-O / O-O-O 表示短 / 长易位，+ 表示将军，# 表示将死。再来一局时交换执白、执黑。</p><div class="rule-strip"><div class="rule-item"><strong>8 × 8</strong><span>六十四格棋盘</span></div><div class="rule-item"><strong>白先</strong><span>轮流行棋</span></div><div class="rule-item"><strong>将死</strong><span>无合法应将即败</span></div></div><p>走法参考 <a href="https://handbook.fide.com/chapter/E012023" target="_blank" rel="noopener">FIDE 国际象棋规则</a>。</p></section>
-<section class="help-section"><h2>棋子素材</h2><p>黑白棋子采用 <a href="https://commons.wikimedia.org/wiki/Category:SVG_chess_pieces/Standard_transparent" target="_blank" rel="noopener">Wikimedia Commons 的标准透明 SVG 棋子</a>，作者 <a href="https://commons.wikimedia.org/wiki/User:Cburnett" target="_blank" rel="noopener">Cburnett</a>，采用 <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener">CC BY-SA 3.0</a> 许可。原始 SVG 文件未经修改，逐文件来源与作者信息保存在项目的 assets/sources.json。</p></section>
-</main></body></html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>国际象棋玩法</title>
+  <link rel="stylesheet" href="../../src/help.css" />
+</head>
+
+<body>
+  <main class="help-page">
+    <header class="help-heading"><img src="/chess.svg" alt="" />
+      <div>
+        <h1>国际象棋玩法</h1>
+        <p>执掌黑白，运子攻防</p>
+      </div>
+    </header>
+    <section class="help-section">
+      <h2>开始对弈</h2>
+      <p>白方先行，双方轮流移动一枚棋子。点击棋子，再点击提示格落子；不能让己方王处于被攻击的位置。直接打开游戏时，同一设备控制双方；通过 Playweft 创建双人房间时，各执一方，也支持观战。没有计时限制。</p>
+    </section>
+    <section class="help-section">
+      <h2>棋子走法</h2>
+      <ul>
+        <li><strong>王：</strong>向任意方向走一格，不能走到被攻击的格子。</li>
+        <li><strong>后：</strong>横、竖、斜线任意格。</li>
+        <li><strong>车：</strong>横线或竖线任意格。</li>
+        <li><strong>象：</strong>沿斜线任意格。</li>
+        <li><strong>马：</strong>走“日”字，可以跳过其他棋子。</li>
+        <li><strong>兵：</strong>向前一格，从初始位置可走两格；斜向前一格吃子，不能后退。</li>
+      </ul>
+      <p>除马外，棋子不能越过其他棋子。王不会被直接吃掉；受到攻击且没有合法应将时判为将死。</p>
+    </section>
+    <section class="help-section">
+      <h2>特殊走法</h2>
+      <ul>
+        <li><strong>王车易位：</strong>点击王，再点击相应提示格。王和该侧车都未移动过，两者之间为空，且王当前、途经和到达的格子均不受攻击。王向车移动两格，车移到王的另一侧。</li>
+        <li><strong>吃过路兵：</strong>对方兵刚从起始位置前进两格，停在己方兵旁边时，己方兵可在紧接着的一步斜进，吃掉这枚兵。过后机会失效。</li>
+        <li><strong>兵升变：</strong>兵到达对面底线时，必须选择升变为后、车、象或马；可以选择已被吃掉或仍在棋盘上的棋子种类。</li>
+      </ul>
+    </section>
+    <section class="help-section">
+      <h2>胜负与和棋</h2>
+      <ul>
+        <li><strong>将死：</strong>王受到攻击且无法解除，攻击方获胜。认输或玩家离开房间也判负。</li>
+        <li><strong>逼和：</strong>轮到行棋时没有合法走法，但王未被将军，自动和棋。</li>
+        <li><strong>子力不足：</strong>仅剩双王、王对王加单象或单马、或者除王外仅剩同色格象，自动和棋。</li>
+        <li><strong>重复局面：</strong>同一方行棋、棋子位置相同、易位和合法吃过路兵权利相同，才算同一局面。当前局面第三次出现可点击“申请和棋”；第五次出现自动和棋。</li>
+        <li><strong>五十回合：</strong>双方连续五十回合未动兵且未吃子时可申请和棋；七十五回合自动和棋，将死优先。</li>
+        <li><strong>协议和棋：</strong>一方点击“提议和棋”，另一方可接受或继续对弈。在本地模式中，请由另一位玩家回应。</li>
+      </ul>
+      <p>本游戏支持对已经出现的重复局面或已经达到的五十回合申请和棋，不提供预先声明下一步的裁判流程。仅自动识别上述常见子力不足局面，其他特殊死局可由双方协议和棋。</p>
+      <p>行棋记录保留最近 150 步，使用起止坐标（例如 e2–e4、e4×d5）；O-O / O-O-O 表示短 / 长易位，+ 表示将军，# 表示将死。再来一局时交换执白、执黑。</p>
+      <div class="rule-strip">
+        <div class="rule-item"><strong>8 × 8</strong><span>六十四格棋盘</span></div>
+        <div class="rule-item"><strong>白先</strong><span>轮流行棋</span></div>
+        <div class="rule-item"><strong>将死</strong><span>无合法应将即败</span></div>
+      </div>
+      <p>走法参考 <a href="https://handbook.fide.com/chapter/E012023" target="_blank" rel="noopener">FIDE 国际象棋规则</a>。
+      </p>
+    </section>
+    <section class="help-section">
+      <h2>棋子素材</h2>
+      <p>黑白棋子采用 <a href="https://commons.wikimedia.org/wiki/Category:SVG_chess_pieces/Standard_transparent"
+          target="_blank" rel="noopener">Wikimedia Commons 的标准透明 SVG 棋子</a>，作者 <a
+          href="https://commons.wikimedia.org/wiki/User:Cburnett" target="_blank" rel="noopener">Cburnett</a>，采用 <a
+          href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener">CC BY-SA 3.0</a> 许可。原始
+        SVG 文件未经修改，逐文件来源与作者信息保存在项目的
+        assets/sources.json。</p>
+    </section>
+  </main>
+</body>
+
+</html>

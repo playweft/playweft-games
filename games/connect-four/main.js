@@ -6,11 +6,9 @@ import {
 } from "./solo.js";
 import { createConnectFourAiController } from "./ai-controller.js";
 import { ROWS, COLUMNS } from "./rules.js";
-import "../../src/base.css";
 import "./styles.css";
 
 const elements = {
-  connection: document.querySelector("#connection"),
   heading: document.querySelector("#turn-heading"),
   kicker: document.querySelector("#turn-kicker"),
   message: document.querySelector("#board-message"),
@@ -50,7 +48,6 @@ const ai = createConnectFourAiController({
     if (playMode === "solo" && state?.current === 2) sendAction(action, 2);
   },
   onError: (error) => {
-    setConnection("error", "电脑暂时无法落子");
     elements.message.textContent = error;
   },
 });
@@ -67,7 +64,6 @@ const client =
           }
           ai.dispose();
           playerId = message.playerId;
-          setConnection("waiting", "房间已连接");
           elements.kicker.textContent = "等待房主开始";
           elements.heading.textContent = "两位玩家就位后开局";
         },
@@ -75,7 +71,6 @@ const client =
           if (playMode === "solo") return;
           playerId = message.playerId;
           state = message.state;
-          setConnection("live", "实时对局");
           render(state);
         },
         onActionResult(result) {
@@ -85,9 +80,8 @@ const client =
         },
         onError(error, _code, requestId) {
           if (requestId === pendingActionId) pendingActionId = undefined;
-          setConnection("error", "连接异常");
-          elements.message.textContent = error;
           render(state ?? preview);
+          elements.message.textContent = error;
         },
       });
 
@@ -112,7 +106,6 @@ function startLocal() {
   pendingActionId = undefined;
   state = createSoloConnectFourState();
   playerId = state.players[0];
-  setConnection("live", "本地人机对弈");
   render(state);
 }
 
@@ -281,9 +274,4 @@ function render(nextState) {
       playMode === "solo" ? "电脑正在思考" : "等待对手落子";
     elements.message.textContent = `已落 ${nextState.moves} 子`;
   }
-}
-
-function setConnection(mode, label) {
-  elements.connection.dataset.mode = mode;
-  elements.connection.querySelector("span").textContent = label;
 }

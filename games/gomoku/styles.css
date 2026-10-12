@@ -1,3 +1,6 @@
+@import "../../src/base.css";
+@import "../../src/components/game-header.css";
+
 body {
   background:
     radial-gradient(
@@ -14,7 +17,7 @@ body.has-setup-modal {
 
 .gomoku-layout {
   width: min(1120px, calc(100% - 40px));
-  min-height: calc(100vh - 68px);
+  min-height: calc(100vh - 60px);
   margin: 0 auto;
   padding: 18px 0 24px;
 }
@@ -385,7 +388,11 @@ body.has-setup-modal {
 }
 
 .gomoku-point.is-star {
-  background: radial-gradient(circle at center, #4b321c 0 3px, transparent 3.5px);
+  background: radial-gradient(
+    circle at center,
+    #4b321c 0 3px,
+    transparent 3.5px
+  );
 }
 
 .gomoku-point::before {
@@ -466,7 +473,9 @@ body.has-setup-modal {
 }
 
 .gomoku-point.is-winning::before {
-  box-shadow: var(--stone-shadow), 0 0 12px rgba(216, 91, 67, 0.6);
+  box-shadow:
+    var(--stone-shadow),
+    0 0 12px rgba(216, 91, 67, 0.6);
 }
 
 .gomoku-point:not(:disabled)[data-piece="0"]:focus-visible::before {
@@ -573,6 +582,12 @@ body.has-setup-modal {
 .rules-link svg {
   width: 15px;
   height: 15px;
+}
+
+@media (min-width: 901px) {
+  .gomoku-layout {
+    min-height: 100vh;
+  }
 }
 
 @media (max-width: 900px) {

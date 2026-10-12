@@ -1,3 +1,6 @@
+@import "../../src/base.css";
+@import "../../src/components/game-header.css";
+
 body {
   background: #f4f5f1;
 }
@@ -5,12 +8,18 @@ body {
 .connect-layout {
   display: flex;
   width: min(880px, calc(100% - 40px));
-  min-height: calc(100vh - 68px);
+  min-height: calc(100vh - 60px);
   margin: 0 auto;
   align-items: center;
   flex-direction: column;
   justify-content: center;
   padding: 28px 0 36px;
+}
+
+@media (min-width: 901px) {
+  .connect-layout {
+    min-height: 100vh;
+  }
 }
 
 .match-status {

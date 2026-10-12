@@ -4,7 +4,9 @@ import source from "./game.lua?raw";
 
 // Run exactly the room rules locally; bundle the Wasm asset for offline play.
 export async function createSoloChessGame() {
-  const lua = await new LuaFactory(wasmUrl).createEngine({ enableProxy: false });
+  const lua = await new LuaFactory(wasmUrl).createEngine({
+    enableProxy: false,
+  });
   try {
     await lua.doString(source);
     const setup = lua.global.get("setup");
@@ -13,7 +15,9 @@ export async function createSoloChessGame() {
     return {
       state: () => structuredClone(state),
       action(nextAction, actorIndex = state.current) {
-        const result = action(structuredClone(state), nextAction, { actor: { id: state.players[actorIndex - 1] } });
+        const result = action(structuredClone(state), nextAction, {
+          actor: { id: state.players[actorIndex - 1] },
+        });
         if (result.accepted) state = result.state;
         return result;
       },

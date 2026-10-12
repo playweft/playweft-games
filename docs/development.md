@@ -37,6 +37,31 @@ Mahjong uses Three.js/WebGL for its table and a worker-based local Lua runtime.
 Its rendering, rule adapters, and match controllers are separated under
 `games/mahjong/`.
 
+## Shared button styles
+
+Games can use `src/components/round-icon-button.css` for circular icon buttons.
+Import it at the top of the game's own stylesheet:
+
+```css
+@import "../../src/components/round-icon-button.css";
+```
+
+Add `round-icon-button` alongside the button's game-specific class. The shared
+rules provide a transparent, borderless 44 px circle, a centered 20 px SVG,
+and hover/active backgrounds on devices with a fine pointer and hover support.
+Keyboard focus uses the existing `src/base.css` styles; reduced-motion settings
+disable the background transition. Disabled buttons do not receive hover or
+active backgrounds.
+
+Keep positioning and foreground colors in the game's class. Override
+`--round-button-size`, `--round-button-icon-size`,
+`--round-button-hover-background`, `--round-button-active-background`, or
+`--round-button-transition-duration` there when needed.
+
+Use the CSS `@import` rather than a JavaScript import for this component: Vite
+inlines it into each consuming game's stylesheet, keeping the source shared
+without adding a shared button stylesheet dependency to the built games.
+
 ## Gomoku AI
 
 The local AI uses JavaScript without a model download, Wasm, or GPU. Its search

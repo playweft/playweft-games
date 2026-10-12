@@ -33,7 +33,6 @@ import {
   createSoloGoState,
 } from "./solo.js";
 import { createPlayweftClient } from "../../src/playweft-client.js";
-import "../../src/base.css";
 import "../../src/components/board-stones.css";
 import "./styles.css";
 import tableTextureUrl from "./assets/table-texture-plywood.webp?url";
@@ -41,7 +40,7 @@ import tableTextureUrl from "./assets/table-texture-plywood.webp?url";
 scheduleTableTexture();
 
 const elements = {
-  connection: document.querySelector("#connection"),
+  actionFeedback: document.querySelector("#action-feedback"),
   board: document.querySelector("#board"),
   boardShell: document.querySelector(".board-shell"),
   confirmMove: document.querySelector("#confirm-move"),
@@ -276,11 +275,11 @@ function handleReady(message) {
     return;
   }
   playerId = message.playerId;
-  setConnection("waiting", "房间已连接");
 }
 
 function handleState(message) {
   clearPendingMove();
+  elements.actionFeedback.hidden = true;
   playerId = playMode === "solo" ? "solo-player-1" : message.playerId;
   state = message.state;
   recordReplayFrame(message);
@@ -311,7 +310,6 @@ function handleState(message) {
   ) {
     scoreRequestRound = undefined;
   }
-  setConnection("live", playMode === "solo" ? "本机轮流对弈" : "实时对局");
   render(state);
   submitScoreIfNeeded();
 }
@@ -361,11 +359,8 @@ function handleError(error, code, requestId) {
     }
   }
   const message = translateError(error, code);
-  setConnection("error", message);
   render(state ?? preview);
-  if (state?.phase === "setup") {
-    showSetupFeedback(message, "error");
-  }
+  showActionError(message);
 }
 
 window.addEventListener("pagehide", () => {
@@ -655,7 +650,7 @@ function sendAction(action, renderPendingState = true) {
   clearPendingMove();
   const requestId = dispatchAction(action);
   if (!requestId) {
-    setConnection("error", "尚未连接 Playweft 平台");
+    showActionError("尚未连接 Playweft 平台");
     return false;
   }
   pendingAction = { requestId, type: action.type };
@@ -1130,29 +1125,6 @@ function render(nextState) {
     }
   }
 
-  if (!state) return;
-  if (isScoring) {
-    const submitted = Boolean(nextState.scoreSubmitted?.[ownIndex]);
-    setConnection(
-      "live",
-      submitted ? "已提交，等待对方确认" : "双方确认计分中",
-    );
-    return;
-  }
-  if (ended) {
-    const left = nextState.lastEvent?.kind === "player_left";
-    const resigned = nextState.lastEvent?.kind === "resigned";
-    if (resigned) {
-      const resigner =
-        Number(nextState.lastEvent.playerIndex) - 1 === blackIndex
-          ? "黑方"
-          : "白方";
-      setConnection("live", `${resigner}认输，对局结束`);
-    } else {
-      setConnection("live", left ? "对局提前结束" : "对局已结束");
-    }
-    return;
-  }
 }
 
 function renderPlayerCards(
@@ -1691,7 +1663,6 @@ function submitScoreIfNeeded() {
     scoreRequestRound = undefined;
     return;
   }
-  setConnection("live", "正在提交计分确认");
 }
 
 function renderClocks() {
@@ -1824,7 +1795,11 @@ function translateError(error, code) {
   return messages[code] ?? messages[error] ?? error;
 }
 
-function setConnection(mode, label) {
-  elements.connection.dataset.mode = mode;
-  elements.connection.querySelector("span").textContent = label;
+function showActionError(message) {
+  if (state?.phase === "setup") {
+    showSetupFeedback(message, "error");
+    return;
+  }
+  elements.actionFeedback.textContent = message;
+  elements.actionFeedback.hidden = false;
 }

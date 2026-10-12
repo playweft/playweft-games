@@ -1,3 +1,7 @@
+@import "../../src/base.css";
+@import "../../src/components/round-icon-button.css";
+@import "../../src/components/game-header.css";
+
 body {
   background-color: #f1f1ed;
   background-image: var(--table-texture-image, none);
@@ -7,30 +11,23 @@ body {
   background-size: cover;
 }
 
-.game-header {
-  position: relative;
-}
-
-.move-number {
-  position: absolute;
-  left: 50%;
-  color: #62655f;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
-  transform: translateX(-50%);
-}
-
-.move-number[hidden] {
-  display: none;
-}
-
 .sidebar-move-number {
   display: none;
 }
 
+.action-feedback {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 7px;
+  background: #f9e6e2;
+  color: #a43b31;
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
 .go-layout {
   width: min(1120px, calc(100% - 40px));
-  min-height: calc(100vh - 68px);
+  min-height: calc(100vh - 60px);
   margin: 0 auto;
   padding: 18px 0 24px;
 }
@@ -1003,22 +1000,11 @@ body {
 }
 
 .more-action {
-  display: grid;
-  width: 44px;
-  height: 44px;
+  --round-button-icon-size: 21px;
+  --round-button-hover-background: rgba(89, 92, 86, 0.1);
+  --round-button-active-background: rgba(89, 92, 86, 0.18);
   min-height: 44px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
   color: #666961;
-  cursor: pointer;
-  place-items: center;
-}
-
-.more-action svg {
-  width: 21px;
-  height: 21px;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1043,12 +1029,7 @@ body {
   }
 
   .more-action:hover {
-    background: rgba(89, 92, 86, 0.1);
     color: #363936;
-  }
-
-  .more-action:active {
-    background: rgba(89, 92, 86, 0.18);
   }
 }
 
@@ -1568,10 +1549,6 @@ body {
 }
 
 @media (min-width: 901px) {
-  .game-header {
-    display: none;
-  }
-
   .go-layout {
     --go-board-size: clamp(360px, calc(100dvh - 48px), 820px);
     display: grid;
@@ -1732,13 +1709,6 @@ body {
 }
 
 @media (max-width: 900px) {
-  .game-header {
-    display: flex;
-    height: 60px;
-    min-height: 60px;
-    padding: 9px 16px;
-  }
-
   .go-layout {
     display: flex;
     width: min(660px, calc(100% - 32px));

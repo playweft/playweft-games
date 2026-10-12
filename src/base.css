@@ -52,13 +52,11 @@ a:focus-visible {
 
 .game-header {
   display: flex;
-  min-height: 68px;
+  height: 60px;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
   padding: 12px 24px;
-  border-bottom: 1px solid #dfe1da;
-  background: rgba(255, 255, 255, 0.86);
 }
 
 .game-brand {
@@ -129,21 +127,4 @@ a:focus-visible {
   width: 19px;
   height: 19px;
   stroke-width: 2.4;
-}
-
-@media (max-width: 560px) {
-  .game-header {
-    min-height: 60px;
-    padding: 10px 16px;
-  }
-
-  .game-brand img {
-    width: 38px;
-    height: 38px;
-  }
-
-  .game-brand p,
-  .connection-status span {
-    display: none;
-  }
 }

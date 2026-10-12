@@ -12,17 +12,7 @@
 
 <body>
   <header class="game-header">
-    <div class="game-brand">
-      <img src="/go.svg" alt="" />
-      <div>
-        <h1>围棋</h1>
-        <p>围地提子，双人对弈</p>
-      </div>
-    </div>
-    <div id="move-number" class="move-number" data-move-number hidden>开局</div>
-    <div id="connection" class="connection-status" data-mode="waiting">
-      <span>连接平台中</span>
-    </div>
+    <h1>围棋</h1>
   </header>
 
   <main class="go-layout">
@@ -195,6 +185,7 @@
 
     <aside class="action-panel">
       <div class="sidebar-move-number" data-move-number hidden>开局</div>
+      <p id="action-feedback" class="action-feedback" role="status" hidden></p>
       <p id="scoring-summary" class="scoring-summary" hidden></p>
       <section class="move-log" aria-labelledby="move-log-title">
         <header class="move-log-heading">
@@ -248,7 +239,7 @@
         <button id="pass-button" class="pass-action" type="button" disabled>
           <span class="icon-button-content"><i data-lucide="flag"></i>停一手</span>
         </button>
-        <button id="more-button" class="more-action" type="button" aria-label="更多操作" aria-haspopup="menu"
+        <button id="more-button" class="round-icon-button more-action" type="button" aria-label="更多操作" aria-haspopup="menu"
           aria-expanded="false" aria-controls="more-menu">
           <i data-lucide="ellipsis"></i>
         </button>
