@@ -207,6 +207,9 @@ body {
 .game-card-go .game-card-meta {
   color: #9a6122;
 }
+.game-card-reversi .game-card-meta {
+  color: #247154;
+}
 .game-card-gomoku .game-card-meta {
   color: #a54432;
 }

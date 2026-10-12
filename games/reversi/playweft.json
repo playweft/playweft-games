@@ -1,0 +1,21 @@
+{
+  "$schema": "https://play.longern.com/schemas/game-manifest-v1.json",
+  "manifest_version": 1,
+  "id": "/reversi/",
+  "version": "1.0.0",
+  "protocol": { "min": 1, "max": 1 },
+  "start_url": "./",
+  "name": "Reversi",
+  "name_localized": { "zh-CN": "黑白棋" },
+  "description": "Outflank and flip opposing discs. Finish with the most discs to win.",
+  "description_localized": { "zh-CN": "夹住对方棋子并翻转，终局时棋子更多的一方获胜。" },
+  "categories": ["Strategy"],
+  "icons": [{ "src": "../reversi.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }],
+  "background_color": "#302e2b",
+  "theme_color": "#302e2b",
+  "help_url": "./help.html",
+  "modes": {
+    "solo": {},
+    "room": { "players": { "min": 2, "max": 2 }, "server": { "runtime": "lua", "entry": "./game.lua", "persistence": "durable" } }
+  }
+}

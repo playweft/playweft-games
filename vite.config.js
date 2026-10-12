@@ -14,6 +14,7 @@ const games = [
   "uno",
   "sudoku",
   "go",
+  "reversi",
   "gomoku",
   "xiangqi",
   "chess",

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#302e2b" />
+  <meta name="description" content="Playweft 黑白棋：夹住对方棋子并翻转，终局时棋子更多的一方获胜。" />
+  <title>黑白棋 | Playweft</title>
+  <script type="module" src="./main.js"></script>
+</head>
+<body>
+  <header class="game-header">
+    <h1>黑白棋</h1>
+    <a id="help-button" class="round-icon-button reversi-help-button" href="./help.html" target="_blank" rel="noopener"
+      aria-label="帮助（在新窗口打开）" title="帮助" hidden><i data-lucide="circle-help" aria-hidden="true"></i></a>
+  </header>
+  <main class="reversi-layout">
+    <section class="scoreboard" aria-label="棋子数量">
+      <div id="black-player" class="player-card">
+        <span class="reversi-swatch" data-piece="1" aria-hidden="true"></span>
+        <div><strong>黑方</strong><span id="black-name" class="player-name">玩家 1</span></div>
+        <output id="black-count" aria-label="黑棋数量">2</output>
+      </div>
+      <div id="white-player" class="player-card">
+        <span class="reversi-swatch" data-piece="2" aria-hidden="true"></span>
+        <div><strong>白方</strong><span id="white-name" class="player-name">玩家 2</span></div>
+        <output id="white-count" aria-label="白棋数量">2</output>
+      </div>
+    </section>
+    <section class="board-stage" aria-label="对弈区">
+      <div id="board-view" class="reversi-board">
+        <canvas id="board-static" aria-hidden="true"></canvas>
+        <canvas id="board-animation" aria-hidden="true"></canvas>
+        <div id="board" class="board-input" role="grid" aria-label="8 × 8 黑白棋棋盘"></div>
+      </div>
+    </section>
+    <nav id="game-actions" class="game-actions" aria-label="对局操作" hidden>
+      <button id="rematch-button" type="button" hidden><i data-lucide="rotate-ccw" aria-hidden="true"></i>再来一局</button>
+    </nav>
+  </main>
+</body>
+</html>

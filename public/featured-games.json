@@ -30,6 +30,9 @@
     "manifestUrl": "./go/playweft.json"
   },
   {
+    "manifestUrl": "./reversi/playweft.json"
+  },
+  {
     "manifestUrl": "./connect-four/playweft.json"
   },
   {
