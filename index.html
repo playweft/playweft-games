@@ -1,153 +1,153 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f4f5f1" />
-    <meta
-      name="description"
-      content="Playweft 多人游戏合集，选择一款游戏后在 Playweft 创建房间。"
-    />
-    <title>Playweft Games</title>
-    <script type="module" src="/src/home.js"></script>
-  </head>
-  <body>
-    <header class="home-header">
-      <a class="home-brand" href="./" aria-label="Playweft Games 首页">
-        <span class="brand-mark" aria-hidden="true"><i data-lucide="gamepad-2"></i></span>
-        <span>Playweft Games</span>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f4f5f1" />
+  <meta name="description" content="Playweft 多人游戏合集，选择一款游戏后在 Playweft 创建房间。" />
+  <title>Playweft Games</title>
+  <script type="module" src="/src/home.js"></script>
+</head>
+
+<body>
+  <header class="home-header">
+    <a class="home-brand" href="./" aria-label="Playweft Games 首页">
+      <span class="brand-mark" aria-hidden="true"><i data-lucide="gamepad-2"></i></span>
+      <span>Playweft Games</span>
+    </a>
+    <span class="game-total">12 款游戏</span>
+  </header>
+
+  <main class="home-main">
+    <section class="game-intro" aria-labelledby="page-title">
+      <p>轻量游戏合集</p>
+      <h1 id="page-title">选一款，开一局</h1>
+      <span>和朋友开房间，或自己安静地解一题。</span>
+    </section>
+
+    <section class="game-list" aria-label="游戏列表">
+      <a class="game-card game-card-landlord" href="./dou-dizhu/">
+        <img src="/dou-dizhu.svg" alt="" />
+        <div class="game-card-content">
+          <span class="game-card-meta">3 人 · 约 15 分钟</span>
+          <h2>斗地主</h2>
+          <p>叫分抢地主，配合队友或以一敌二，谁先出完谁赢。</p>
+        </div>
+        <span class="game-card-action" aria-label="进入斗地主"><i data-lucide="arrow-up-right"></i></span>
       </a>
-      <span class="game-total">12 款游戏</span>
-    </header>
 
-    <main class="home-main">
-      <section class="game-intro" aria-labelledby="page-title">
-        <p>轻量游戏合集</p>
-        <h1 id="page-title">选一款，开一局</h1>
-        <span>和朋友开房间，或自己安静地解一题。</span>
-      </section>
+      <a class="game-card game-card-mahjong" href="./mahjong/">
+        <img src="/mahjong.svg" alt="" />
+        <div class="game-card-content">
+          <span class="game-card-meta">单人 · 约 15 分钟</span>
+          <h2>麻将</h2>
+          <p>摸牌、鸣牌、立直和牌，来一场紧张刺激的日式麻将。</p>
+        </div>
+        <span class="game-card-action" aria-label="进入麻将"><i data-lucide="arrow-up-right"></i></span>
+      </a>
 
-      <section class="game-list" aria-label="游戏列表">
-        <a class="game-card game-card-landlord" href="./dou-dizhu/">
-          <img src="/dou-dizhu.svg" alt="" />
-          <div class="game-card-content">
-            <span class="game-card-meta">3 人 · 约 15 分钟</span>
-            <h2>斗地主</h2>
-            <p>叫分抢地主，配合队友或以一敌二，谁先出完谁赢。</p>
-          </div>
-          <span class="game-card-action" aria-label="进入斗地主"><i data-lucide="arrow-up-right"></i></span>
-        </a>
+      <a class="game-card game-card-xiangqi" href="./xiangqi/">
+        <img src="/xiangqi.svg" alt="" />
+        <div class="game-card-content">
+          <span class="game-card-meta">2 人 · 约 30 分钟</span>
+          <h2>中国象棋</h2>
+          <p>调兵遣将，车马炮连环进攻，一步步将死对方。</p>
+        </div>
+        <span class="game-card-action" aria-label="进入中国象棋"><i data-lucide="arrow-up-right"></i></span>
+      </a>
 
-        <a class="game-card game-card-mahjong" href="./mahjong/">
-          <img src="/mahjong.svg" alt="" />
-          <div class="game-card-content">
-            <span class="game-card-meta">单人 · 约 15 分钟</span>
-            <h2>麻将</h2>
-            <p>摸牌、鸣牌、立直和牌，来一场紧张刺激的日式麻将。</p>
-          </div>
-          <span class="game-card-action" aria-label="进入麻将"><i data-lucide="arrow-up-right"></i></span>
-        </a>
+      <a class="game-card game-card-chess" href="./chess/">
+        <img src="/chess.svg" alt="" />
+        <div class="game-card-content">
+          <span class="game-card-meta">2 人 · 约 30 分钟</span>
+          <h2>国际象棋</h2>
+          <p>执掌黑白棋子，运子攻防，在六十四格间将死对手。</p>
+        </div>
+        <span class="game-card-action" aria-label="进入国际象棋"><i data-lucide="arrow-up-right"></i></span>
+      </a>
 
-        <a class="game-card game-card-xiangqi" href="./xiangqi/">
-          <img src="/xiangqi.svg" alt="" />
-          <div class="game-card-content">
-            <span class="game-card-meta">2 人 · 约 30 分钟</span>
-            <h2>中国象棋</h2>
-            <p>调兵遣将，车马炮连环进攻，一步步将死对方。</p>
-          </div>
-          <span class="game-card-action" aria-label="进入中国象棋"><i data-lucide="arrow-up-right"></i></span>
-        </a>
+      <a class="game-card game-card-uno" href="./uno/">
+        <img src="/uno.svg" alt="" />
+        <div class="game-card-content">
+          <span class="game-card-meta">2 至 4 人 · 约 15 分钟</span>
+          <h2>UNO</h2>
+          <p>颜色或数字对上就能出牌，功能牌随时让局势反转。</p>
+        </div>
+        <span class="game-card-action" aria-label="进入 UNO"><i data-lucide="arrow-up-right"></i></span>
+      </a>
 
-        <a class="game-card game-card-chess" href="./chess/">
-          <img src="/chess.svg" alt="" />
-          <div class="game-card-content">
-            <span class="game-card-meta">2 人 · 约 30 分钟</span>
-            <h2>国际象棋</h2>
-            <p>执掌黑白棋子，运子攻防，在六十四格间将死对手。</p>
-          </div>
-          <span class="game-card-action" aria-label="进入国际象棋"><i data-lucide="arrow-up-right"></i></span>
-        </a>
+      <a class="game-card game-card-werewolf" href="./werewolf-dealer/">
+        <img src="/werewolf-dealer.png" alt="" />
+        <div class="game-card-content">
+          <span class="game-card-meta">6 至 12 人 · 约 30 分钟</span>
+          <h2>狼人杀发牌器</h2>
+          <p>抽取隐藏身份，轮流发言投票，找出潜伏的狼人。</p>
+        </div>
+        <span class="game-card-action" aria-label="进入狼人杀发牌器"><i data-lucide="arrow-up-right"></i></span>
+      </a>
 
-        <a class="game-card game-card-uno" href="./uno/">
-          <img src="/uno.svg" alt="" />
-          <div class="game-card-content">
-            <span class="game-card-meta">2 至 4 人 · 约 15 分钟</span>
-            <h2>UNO</h2>
-            <p>颜色或数字对上就能出牌，功能牌随时让局势反转。</p>
-          </div>
-          <span class="game-card-action" aria-label="进入 UNO"><i data-lucide="arrow-up-right"></i></span>
-        </a>
+      <a class="game-card game-card-gomoku" href="./gomoku/">
+        <img src="/gomoku.svg" alt="" />
+        <div class="game-card-content">
+          <span class="game-card-meta">1 至 2 人 · 约 10 分钟</span>
+          <h2>五子棋</h2>
+          <p>黑白交锋，横、竖或斜线抢先连成五子。</p>
+        </div>
+        <span class="game-card-action" aria-label="进入五子棋"><i data-lucide="arrow-up-right"></i></span>
+      </a>
 
-        <a class="game-card game-card-werewolf" href="./werewolf-dealer/">
-          <img src="/werewolf-dealer.png" alt="" />
-          <div class="game-card-content">
-            <span class="game-card-meta">6 至 12 人 · 约 30 分钟</span>
-            <h2>狼人杀发牌器</h2>
-            <p>抽取隐藏身份，轮流发言投票，找出潜伏的狼人。</p>
-          </div>
-          <span class="game-card-action" aria-label="进入狼人杀发牌器"><i data-lucide="arrow-up-right"></i></span>
-        </a>
+      <a class="game-card game-card-sudoku" href="./sudoku/">
+        <img src="/sudoku.svg" alt="" />
+        <div class="game-card-content">
+          <span class="game-card-meta">单人 · 非常难</span>
+          <h2>数独</h2>
+          <p>从简单到极难，填满每一行、每一列和每个九宫格。</p>
+        </div>
+        <span class="game-card-action" aria-label="进入数独"><i data-lucide="arrow-up-right"></i></span>
+      </a>
 
-        <a class="game-card game-card-gomoku" href="./gomoku/">
-          <img src="/gomoku.svg" alt="" />
-          <div class="game-card-content">
-            <span class="game-card-meta">1 至 2 人 · 约 10 分钟</span>
-            <h2>五子棋</h2>
-            <p>黑白交锋，横、竖或斜线抢先连成五子。</p>
-          </div>
-          <span class="game-card-action" aria-label="进入五子棋"><i data-lucide="arrow-up-right"></i></span>
-        </a>
+      <a class="game-card game-card-holdem" href="./texas-holdem/">
+        <img src="/texas-holdem.svg" alt="" />
+        <div class="game-card-content">
+          <span class="game-card-meta">2 至 6 人 · 约 20 分钟</span>
+          <h2>德州扑克</h2>
+          <p>看牌下注，大胆加注或巧妙诈唬，赢下桌上底池。</p>
+        </div>
+        <span class="game-card-action" aria-label="进入德州扑克"><i data-lucide="arrow-up-right"></i></span>
+      </a>
 
-        <a class="game-card game-card-sudoku" href="./sudoku/">
-          <img src="/sudoku.svg" alt="" />
-          <div class="game-card-content">
-            <span class="game-card-meta">单人 · 非常难</span>
-            <h2>数独</h2>
-            <p>从简单到极难，填满每一行、每一列和每个九宫格。</p>
-          </div>
-          <span class="game-card-action" aria-label="进入数独"><i data-lucide="arrow-up-right"></i></span>
-        </a>
+      <a class="game-card game-card-go" href="./go/">
+        <img src="/go.svg" alt="" />
+        <div class="game-card-content">
+          <span class="game-card-meta">2 人 · 约 20 分钟</span>
+          <h2>围棋</h2>
+          <p>黑白落子，围地提子，在方寸棋盘上步步较量。</p>
+        </div>
+        <span class="game-card-action" aria-label="进入围棋"><i data-lucide="arrow-up-right"></i></span>
+      </a>
 
-        <a class="game-card game-card-holdem" href="./texas-holdem/">
-          <img src="/texas-holdem.svg" alt="" />
-          <div class="game-card-content">
-            <span class="game-card-meta">2 至 6 人 · 约 20 分钟</span>
-            <h2>德州扑克</h2>
-            <p>看牌下注，大胆加注或巧妙诈唬，赢下桌上底池。</p>
-          </div>
-          <span class="game-card-action" aria-label="进入德州扑克"><i data-lucide="arrow-up-right"></i></span>
-        </a>
+      <a class="game-card game-card-connect" href="./connect-four/">
+        <img src="/connect-four.svg" alt="" />
+        <div class="game-card-content">
+          <span class="game-card-meta">1 至 2 人 · 约 10 分钟</span>
+          <h2>四子棋</h2>
+          <p>轮流落下棋子，横、竖或斜线抢先连成四子。</p>
+        </div>
+        <span class="game-card-action" aria-label="进入四子棋"><i data-lucide="arrow-up-right"></i></span>
+      </a>
 
-        <a class="game-card game-card-go" href="./go/">
-          <img src="/go.svg" alt="" />
-          <div class="game-card-content">
-            <span class="game-card-meta">2 人 · 约 20 分钟</span>
-            <h2>围棋</h2>
-            <p>黑白落子，围地提子，在方寸棋盘上步步较量。</p>
-          </div>
-          <span class="game-card-action" aria-label="进入围棋"><i data-lucide="arrow-up-right"></i></span>
-        </a>
+      <a class="game-card game-card-pig" href="./pig-dice/">
+        <img src="/pig-dice.svg" alt="" />
+        <div class="game-card-content">
+          <span class="game-card-meta">2 人 · 约 5 分钟</span>
+          <h2>贪心骰子</h2>
+          <p>掷骰冲分，见好就收，小心一掷清零。</p>
+        </div>
+        <span class="game-card-action" aria-label="进入贪心骰子"><i data-lucide="arrow-up-right"></i></span>
+      </a>
+    </section>
+  </main>
+</body>
 
-        <a class="game-card game-card-connect" href="./connect-four/">
-          <img src="/connect-four.svg" alt="" />
-          <div class="game-card-content">
-            <span class="game-card-meta">2 人 · 约 10 分钟</span>
-            <h2>四子棋</h2>
-            <p>轮流落下棋子，横、竖或斜线抢先连成四子。</p>
-          </div>
-          <span class="game-card-action" aria-label="进入四子棋"><i data-lucide="arrow-up-right"></i></span>
-        </a>
-
-        <a class="game-card game-card-pig" href="./pig-dice/">
-          <img src="/pig-dice.svg" alt="" />
-          <div class="game-card-content">
-            <span class="game-card-meta">2 人 · 约 5 分钟</span>
-            <h2>贪心骰子</h2>
-            <p>掷骰冲分，见好就收，小心一掷清零。</p>
-          </div>
-          <span class="game-card-action" aria-label="进入贪心骰子"><i data-lucide="arrow-up-right"></i></span>
-        </a>
-      </section>
-    </main>
-  </body>
 </html>

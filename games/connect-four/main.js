@@ -1,10 +1,14 @@
 import { createIcons, ArrowDown, RotateCcw } from "lucide";
 import { createPlayweftClient } from "../../src/playweft-client.js";
+import {
+  createSoloConnectFourState,
+  applySoloConnectFourAction,
+} from "./solo.js";
+import { createConnectFourAiController } from "./ai-controller.js";
+import { ROWS, COLUMNS } from "./rules.js";
 import "../../src/base.css";
 import "./styles.css";
 
-const ROWS = 6;
-const COLUMNS = 7;
 const elements = {
   connection: document.querySelector("#connection"),
   heading: document.querySelector("#turn-heading"),
@@ -22,6 +26,7 @@ const elements = {
 let playerId;
 let state;
 let pendingActionId;
+let playMode = window.parent === window ? "solo" : "room";
 const columns = [];
 const cells = [];
 
@@ -40,35 +45,76 @@ const preview = {
   winningCells: [],
 };
 
-const client = createPlayweftClient({
-  onReady(message) {
-    playerId = message.playerId;
-    setConnection("waiting", "房间已连接");
-    elements.kicker.textContent = "等待房主开始";
-    elements.heading.textContent = "两位玩家就位后开局";
+const ai = createConnectFourAiController({
+  onMove: (action) => {
+    if (playMode === "solo" && state?.current === 2) sendAction(action, 2);
   },
-  onState(message) {
-    playerId = message.playerId;
-    state = message.state;
-    setConnection("live", "实时对局");
-    render(state);
-  },
-  onActionResult(result) {
-    if (result.requestId !== pendingActionId) return;
-    pendingActionId = undefined;
-    render(state ?? preview);
-  },
-  onError(error, _code, requestId) {
-    if (requestId === pendingActionId) pendingActionId = undefined;
-    setConnection("error", "连接异常");
+  onError: (error) => {
+    setConnection("error", "电脑暂时无法落子");
     elements.message.textContent = error;
-    render(state ?? preview);
   },
 });
 
-window.addEventListener("pagehide", () => client.destroy());
-elements.rematch.addEventListener("click", () => sendRematch());
-render(preview);
+const client =
+  window.parent === window
+    ? undefined
+    : createPlayweftClient({
+        onReady(message) {
+          playMode = message.mode ?? "room";
+          if (playMode === "solo") {
+            startLocal();
+            return;
+          }
+          ai.dispose();
+          playerId = message.playerId;
+          setConnection("waiting", "房间已连接");
+          elements.kicker.textContent = "等待房主开始";
+          elements.heading.textContent = "两位玩家就位后开局";
+        },
+        onState(message) {
+          if (playMode === "solo") return;
+          playerId = message.playerId;
+          state = message.state;
+          setConnection("live", "实时对局");
+          render(state);
+        },
+        onActionResult(result) {
+          if (result.requestId !== pendingActionId) return;
+          pendingActionId = undefined;
+          render(state ?? preview);
+        },
+        onError(error, _code, requestId) {
+          if (requestId === pendingActionId) pendingActionId = undefined;
+          setConnection("error", "连接异常");
+          elements.message.textContent = error;
+          render(state ?? preview);
+        },
+      });
+
+window.addEventListener("pagehide", () => {
+  ai.dispose();
+  client?.destroy();
+});
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted && state) render(state);
+});
+document.addEventListener("visibilitychange", () => {
+  if (state) render(state);
+});
+elements.rematch.addEventListener("click", () =>
+  sendAction({ type: "rematch" }),
+);
+if (playMode === "solo") startLocal();
+else render(preview);
+
+function startLocal() {
+  ai.dispose();
+  pendingActionId = undefined;
+  state = createSoloConnectFourState();
+  playerId = state.players[0];
+  setConnection("live", "本地人机对弈");
+  render(state);
+}
 
 function buildBoard() {
   for (let column = 1; column <= COLUMNS; column += 1) {
@@ -99,19 +145,26 @@ function buildBoard() {
 }
 
 function drop(column) {
-  if (pendingActionId || !state) return;
-  const requestId = client.sendAction({ type: "drop", column });
-  if (!requestId) {
-    elements.message.textContent = "尚未连接 Playweft 平台";
-  } else {
-    pendingActionId = requestId;
-  }
-  render(state);
+  if (
+    !state ||
+    state.winner ||
+    state.draw ||
+    state.players[state.current - 1] !== playerId
+  )
+    return;
+  sendAction({ type: "drop", column });
 }
 
-function sendRematch() {
+function sendAction(action, actorIndex = 1) {
   if (pendingActionId || !state) return;
-  const requestId = client.sendAction({ type: "rematch" });
+  if (playMode === "solo") {
+    const result = applySoloConnectFourAction(state, action, { actorIndex });
+    if (!result.accepted) return;
+    state = result.state;
+    render(state);
+    return;
+  }
+  const requestId = client?.sendAction(action);
   if (!requestId) {
     elements.message.textContent = "尚未连接 Playweft 平台";
   } else {
@@ -137,7 +190,13 @@ function render(nextState) {
   players.slice(0, 2).forEach((id, index) => {
     const panel = elements.players[index];
     panel.querySelector("[data-player-name]").textContent =
-      index === ownIndex ? `玩家 ${index + 1} · 你` : `玩家 ${index + 1}`;
+      playMode === "solo"
+        ? index === 0
+          ? "你 · 红方"
+          : "电脑 · 黄方"
+        : index === ownIndex
+          ? `玩家 ${index + 1} · 你`
+          : `玩家 ${index + 1}`;
     panel.classList.toggle("is-current", !ended && index === currentIndex);
     panel.classList.toggle(
       "is-winner",
@@ -179,6 +238,14 @@ function render(nextState) {
     }
   }
 
+  ai.update(
+    nextState,
+    `${nextState.round}:${nextState.moves}:${nextState.current}`,
+    Boolean(state) &&
+      playMode === "solo" &&
+      document.visibilityState !== "hidden",
+  );
+
   if (!state) return;
   if (nextState.draw) {
     elements.kicker.textContent = "棋盘已满";
@@ -189,8 +256,15 @@ function render(nextState) {
   if (nextState.winner) {
     const won = Number(nextState.winnerIndex) - 1 === ownIndex;
     elements.kicker.textContent = "四子连线";
-    elements.heading.textContent = won ? "你赢了" : "对手获胜";
-    elements.message.textContent = `玩家 ${nextState.winnerIndex} 完成了四连`;
+    elements.heading.textContent = won
+      ? "你赢了"
+      : playMode === "solo"
+        ? "电脑获胜"
+        : "对手获胜";
+    elements.message.textContent =
+      playMode === "solo"
+        ? `${won ? "你" : "电脑"}完成了四连，再来一局交换先后手`
+        : `玩家 ${nextState.winnerIndex} 完成了四连`;
     return;
   }
   if (ownIndex < 0) {
@@ -202,8 +276,9 @@ function render(nextState) {
     elements.heading.textContent = "选择一列落子";
     elements.message.textContent = `你是${ownIndex === 0 ? "红方" : "黄方"}`;
   } else {
-    elements.kicker.textContent = "对手回合";
-    elements.heading.textContent = "等待对手落子";
+    elements.kicker.textContent = playMode === "solo" ? "电脑回合" : "对手回合";
+    elements.heading.textContent =
+      playMode === "solo" ? "电脑正在思考" : "等待对手落子";
     elements.message.textContent = `已落 ${nextState.moves} 子`;
   }
 }

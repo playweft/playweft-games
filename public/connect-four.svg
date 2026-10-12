@@ -1,12 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Connect Four">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="四子棋：红黄棋子交错，红棋斜向四连">
   <rect width="64" height="64" fill="#2463eb"/>
-  <path d="M10 19h44v34H10z" fill="#1749b4"/>
-  <g stroke="#f5f6f2" stroke-width="7" stroke-linecap="round">
-    <path d="M19 29h.1M32 29h.1M45 29h.1M19 42h.1M32 42h.1M45 42h.1"/>
+  <g stroke="#171717" stroke-width="0.8">
+    <circle cx="11" cy="11" r="5" fill="#f4f5f1"/>
+    <circle cx="25" cy="11" r="5" fill="#f4f5f1"/>
+    <g fill="#f6c945">
+      <circle cx="39" cy="11" r="5"/>
+      <circle cx="25" cy="25" r="5"/>
+      <circle cx="53" cy="25" r="5"/>
+      <circle cx="11" cy="39" r="5"/>
+      <circle cx="53" cy="39" r="5"/>
+      <circle cx="25" cy="53" r="5"/>
+      <circle cx="39" cy="53" r="5"/>
+    </g>
+    <g fill="#ed4b45">
+      <circle cx="53" cy="11" r="5"/>
+      <circle cx="11" cy="25" r="5"/>
+      <circle cx="39" cy="25" r="5"/>
+      <circle cx="25" cy="39" r="5"/>
+      <circle cx="39" cy="39" r="5"/>
+      <circle cx="11" cy="53" r="5"/>
+      <circle cx="53" cy="53" r="5"/>
+    </g>
   </g>
-  <circle cx="19" cy="42" r="5" fill="#ed4b45"/>
-  <circle cx="32" cy="29" r="5" fill="#f6c945"/>
-  <circle cx="32" cy="42" r="5" fill="#ed4b45"/>
-  <circle cx="45" cy="29" r="5" fill="#f6c945"/>
-  <circle cx="45" cy="42" r="5" fill="#ed4b45"/>
+  <path d="M11 53L53 11" fill="none" stroke="#fff3d6" stroke-width="1.2" stroke-linecap="round"/>
 </svg>

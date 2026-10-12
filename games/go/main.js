@@ -34,6 +34,7 @@ import {
 } from "./solo.js";
 import { createPlayweftClient } from "../../src/playweft-client.js";
 import "../../src/base.css";
+import "../../src/components/board-stones.css";
 import "./styles.css";
 import tableTextureUrl from "./assets/table-texture-plywood.webp?url";
 
@@ -629,7 +630,7 @@ function buildBoard(size) {
       });
       point.addEventListener("click", (event) => {
         if (requiresMoveConfirmation(event)) {
-          selectPendingMove(row, column, point, event);
+          selectPendingMove(row, column, point);
           return;
         }
         clearPendingMove();
@@ -689,17 +690,14 @@ function dispatchAction(action) {
   return requestId;
 }
 
-function selectPendingMove(row, column, point, event) {
+function selectPendingMove(row, column, point) {
   if (pendingAction || point.disabled || point.dataset.piece !== "0") return;
   pendingMove?.point.classList.remove("is-pending-move");
   pendingMove?.point.removeAttribute("aria-pressed");
-  const pointRect = point.getBoundingClientRect();
   pendingMove = {
     row,
     column,
     point,
-    pointerOffsetX: event.clientX - (pointRect.left + pointRect.width / 2),
-    pointerOffsetY: event.clientY - (pointRect.top + pointRect.height / 2),
   };
   point.classList.add("is-pending-move");
   point.setAttribute("aria-pressed", "true");
@@ -739,10 +737,8 @@ function positionConfirmMove() {
   const viewportBottom = viewportTop + viewportHeight;
   const safeInset = 8;
   const touchClearance = Math.max(48, pointRect.width / 2 + 30);
-  const anchorX =
-    pointRect.left + pointRect.width / 2 + pendingMove.pointerOffsetX;
-  const anchorY =
-    pointRect.top + pointRect.height / 2 + pendingMove.pointerOffsetY;
+  const anchorX = pointRect.left + pointRect.width / 2;
+  const anchorY = pointRect.top + pointRect.height / 2;
   const horizontalPadding = button.offsetWidth / 2 + safeInset;
   const left = Math.min(
     viewportRight - horizontalPadding,

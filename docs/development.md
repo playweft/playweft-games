@@ -58,6 +58,31 @@ Regression tests cover tactical moves, forbidden moves, stale requests, and
 local two-player mode. Keep those cases working when changing candidate
 selection or the worker lifecycle.
 
+## Connect Four AI
+
+Local play pits the human's red pieces against the computer's yellow pieces;
+rematches alternate the starting player. The local JavaScript rules mirror
+room Lua gravity, win detection, draws, and rematch behavior.
+
+`games/connect-four/ai.js` checks immediate wins and mandatory blocks first,
+rejects moves that allow an immediate reply win when safe alternatives exist,
+and detects double winning threats. It then uses center-first negamax with
+alpha-beta pruning and iterative deepening. Typed arrays hold the board,
+column heights, and counts for the 69 possible four-cell lines; playing or
+undoing a move updates only the affected lines and evaluation.
+
+The default extra search budget is 1 ms and 768 nodes, with up to four ordinary
+plies. Forced blocks can extend a leaf, still subject to the node and time
+limits. Time is checked periodically; initialization, tactical checks, and
+Worker startup are outside a strict wall-clock bound. An incomplete iteration
+is discarded in favor of the last completed result or a safe tactical fallback.
+This is a shallow heuristic AI, not a perfect solver.
+
+A module Worker runs only on the computer's local turn and is reused while
+idle. Hiding or leaving the page cancels pending work; room mode never starts
+AI work. Worker failures use the tactical fallback without additional search.
+No model, Wasm, GPU, or background pondering is used.
+
 ## Documentation maintenance
 
 Use the manifests as the source for supported modes, seated player limits,

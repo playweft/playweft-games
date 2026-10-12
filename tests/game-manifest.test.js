@@ -122,7 +122,7 @@ test("Every game package has a strict Playweft Manifest v1 for bridge v1", async
         },
       },
     };
-    if (["go", "dou-dizhu", "gomoku", "xiangqi", "chess", "werewolf-dealer", "mahjong"].includes(game)) {
+    if (["go", "dou-dizhu", "gomoku", "xiangqi", "chess", "werewolf-dealer", "mahjong", "connect-four"].includes(game)) {
       expectedModes.solo = {};
     }
     assert.deepEqual(manifest.modes, expectedModes);

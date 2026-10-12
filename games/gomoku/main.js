@@ -12,6 +12,7 @@ import {
 import { createPlayweftClient } from "../../src/playweft-client.js";
 import { createGomokuAiController } from "./ai-controller.js";
 import "../../src/base.css";
+import "../../src/components/board-stones.css";
 import "./styles.css";
 
 const elements = {

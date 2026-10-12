@@ -712,52 +712,6 @@ body {
     inset 0 -1px 0 rgba(255, 255, 255, 0.3);
 }
 
-.go-stone,
-.go-point {
-  --stone-brightness: 1;
-  --stone-light-x: 30%;
-  --stone-light-y: 23%;
-  --stone-black-surface:
-    radial-gradient(
-      circle at var(--stone-light-x) var(--stone-light-y),
-      rgba(255, 255, 247, 0.58) 0 4%,
-      rgba(190, 194, 186, 0.2) 5%,
-      transparent 13%
-    ),
-    radial-gradient(
-      circle at 38% 34%,
-      #4b4d49,
-      #242522 36%,
-      #10110f 70%,
-      #020302 100%
-    );
-  --stone-black-shadow:
-    inset 1px 1px 2px rgba(255, 255, 255, 0.14),
-    inset -2px -3px 5px rgba(0, 0, 0, 0.58),
-    0 1px 1px rgba(48, 27, 11, 0.58),
-    0 3px 3px rgba(48, 27, 11, 0.36),
-    0 6px 8px rgba(48, 27, 11, 0.16);
-  --stone-white-surface:
-    radial-gradient(
-      circle at var(--stone-light-x) var(--stone-light-y),
-      #fff 0 5%,
-      rgba(255, 255, 255, 0.74) 6%,
-      transparent 15%
-    ),
-    radial-gradient(
-      circle at 38% 33%,
-      #fffefa,
-      #f2efe7 47%,
-      #d6d0c5 78%,
-      #aaa296 100%
-    );
-  --stone-white-shadow:
-    inset 1px 1px 2px rgba(255, 255, 255, 0.92),
-    inset -2px -3px 5px rgba(112, 100, 84, 0.2),
-    0 1px 1px rgba(51, 30, 12, 0.38),
-    0 3px 3px rgba(51, 30, 12, 0.24),
-    0 6px 8px rgba(51, 30, 12, 0.12);
-}
 
 .go-stone {
   display: block;
@@ -928,11 +882,11 @@ body {
 }
 
 .go-point.is-last-move.piece-black::after {
-  background: rgba(238, 240, 234, 0.78);
+  background: var(--stone-last-on-black);
 }
 
 .go-point.is-last-move.piece-white::after {
-  background: rgba(35, 37, 34, 0.68);
+  background: var(--stone-last-on-white);
 }
 
 .confirm-move {
