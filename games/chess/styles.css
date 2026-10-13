@@ -259,16 +259,19 @@ body.chess-game {
 }
 
 .board-frame {
+  display: grid;
+  grid-template-columns: clamp(16px, 3cqw, 24px) minmax(0, 1fr) clamp(16px, 3cqw, 24px);
+  grid-template-rows: clamp(16px, 3cqw, 24px) minmax(0, 1fr) clamp(16px, 3cqw, 24px);
   width: 100%;
   aspect-ratio: 1;
-  background: #315448;
+  background: #e8ac73;
   border-radius: 5px;
-  padding: 6px;
   box-shadow: 0 8px 18px -12px #25372c66;
 }
 
 .chess-board {
   display: grid;
+  grid-area: 2 / 2;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   grid-template-rows: repeat(8, minmax(0, 1fr));
   width: 100%;
@@ -284,14 +287,12 @@ body.chess-game {
   padding: 0;
   border: none;
   border-radius: 0;
-  background: #ecedda;
-  color: #647960;
+  background: #ffcd9e;
   touch-action: manipulation;
 }
 
 .square.dark {
-  background: #77947a;
-  color: #e8eddb;
+  background: #d08b47;
 }
 
 .square:disabled {
@@ -363,23 +364,25 @@ body.chess-game {
   z-index: 2;
 }
 
-.coord {
-  position: absolute;
-  z-index: 2;
-  font-size: clamp(7px, 1.8cqw, 10px);
-  font-weight: 800;
+.board-ranks, .board-files {
+  display: grid;
+  color: #6e4624;
+  font-size: clamp(10px, 2cqw, 12px);
+  font-weight: 700;
   pointer-events: none;
 }
 
-.coord-rank {
-  left: 3px;
-  top: 3px;
+.board-ranks {
+  grid-area: 2 / 1;
+  grid-template-rows: repeat(8, minmax(0, 1fr));
 }
 
-.coord-file {
-  bottom: 2px;
-  right: 3px;
+.board-files {
+  grid-area: 3 / 2;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
 }
+
+.board-ranks span, .board-files span { display: grid; place-items: center; }
 
 .board-toolbar {
   display: flex;

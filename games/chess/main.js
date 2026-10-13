@@ -17,6 +17,7 @@ import "./styles.css";
 
 const $ = (id) => document.getElementById(id);
 const squares = [];
+const ranks = [], files = [];
 let state, selected, promotionMove, localGame, playerId, pending, resignIndex;
 let mode = window.parent === window ? "solo" : "room";
 let flipped = false,
@@ -75,6 +76,11 @@ const targetMoves = (r, c) =>
       )
     : [];
 
+for (let i = 0; i < 8; i++) {
+  const rank = document.createElement("span"), file = document.createElement("span");
+  ranks.push(rank); files.push(file);
+  $("board-ranks").append(rank); $("board-files").append(file);
+}
 for (let r = 1; r <= 8; r++) {
   for (let c = 1; c <= 8; c++) {
     const button = document.createElement("button");
@@ -351,6 +357,10 @@ function render() {
   if (!state) return;
   const view = resolveChessView(perspective, state);
   flipped = view.flipped;
+  for (let i = 0; i < 8; i++) {
+    ranks[i].textContent = flipped ? i + 1 : 8 - i;
+    files[i].textContent = String.fromCharCode(flipped ? 104 - i : 97 + i);
+  }
   const active = canAct();
   $("move-count").textContent = `${state.moves} 步`;
   const order = flipped ? [...squares].reverse() : squares;
@@ -361,12 +371,7 @@ function render() {
       c = (index % 8) + 1;
     const piece = state.board[r - 1][c - 1],
       target = active && targetMoves(r, c).length > 0;
-    square.innerHTML =
-      (piece ? pieceSvg(piece) : "") +
-      (i % 8 === 0 ? `<span class="coord coord-rank">${9 - r}</span>` : "") +
-      (i >= 56
-        ? `<span class="coord coord-file">${String.fromCharCode(96 + c)}</span>`
-        : "");
+    square.innerHTML = piece ? pieceSvg(piece) : "";
     square.classList.toggle(
       "is-selected",
       selected?.row === r && selected?.column === c,
