@@ -1219,9 +1219,8 @@ function formatScore(score) {
 }
 
 function renderSetup(nextState, ownIndex) {
-  const ownPlayer = ownIndex >= 0 ? nextState.players?.[ownIndex] : undefined;
   const hostId = nextState.hostId ?? nextState.players?.[0];
-  const isHost = Boolean(state) && ownPlayer === hostId;
+  const isHost = Boolean(state) && (nextState.canConfigure ?? playerId === hostId);
   const canConfigure = isHost && !pendingAction;
   const resumeRecords = availableSetupResumeRecords();
   if (

@@ -1629,6 +1629,7 @@ local function score_hand(state, seat, winning_tile, method, hand_override, meld
 end
 
 local function is_furiten(state, player_id)
+	if not state.hands[player_id] then return false end
 	if state.tempFuriten[player_id] or state.riichiFuriten[player_id] then
 		return true
 	end

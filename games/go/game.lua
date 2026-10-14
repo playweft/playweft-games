@@ -450,10 +450,9 @@ function on_action(state, action, context)
   if type(action) ~= "table" then return rejected(state, "invalid_action") end
   local actor_id = context.actor.id
   local index = player_index(state, actor_id)
-  if not index then return rejected(state, "not_a_player") end
 
   if state.phase == "setup" then
-    if actor_id ~= state.hostId then return rejected(state, "only_host_can_setup") end
+    if not context.actor.isOwner then return rejected(state, "only_host_can_setup") end
     if action.type == "update_settings" then
       local settings, reason = normalized_settings(action)
       if not settings then return rejected(state, reason) end
@@ -489,6 +488,8 @@ function on_action(state, action, context)
       events = { { type = "started", player = actor_id } },
     }
   end
+
+  if not index then return rejected(state, "not_a_player") end
 
   if action.type == "rematch" then
     if not state.ended then return rejected(state, "game_not_over") end
@@ -785,6 +786,7 @@ function view(state, events, context)
       visible[key] = value
     end
   end
+  visible.canConfigure = context.viewer ~= nil and context.viewer.isOwner == true
   return { state = visible, events = events }
 end
 

@@ -69,7 +69,7 @@ function view(state,events,context)
 end
 function on_action(state,action,context)
  if type(action)~="table"then return rejected(state,"invalid_action")end
- local actor=context.actor.id if not player_index(state,actor)then return rejected(state,"not_a_player")end
+ local actor=context.actor.id
  if state.phase=="setup" then
   if not context.actor.isOwner then return rejected(state,"host_only")end
   if action.type=="clear_config"then state.config=nil state.lastEvent={kind="configuration_cleared",player=actor}return{accepted=true,state=state,events={{type="configuration_cleared",player=actor}}}end
@@ -78,6 +78,7 @@ function on_action(state,action,context)
   if action.type=="configure"then state.config=config state.lastEvent={kind="configured",player=actor}return{accepted=true,state=state,events={{type="configured",player=actor}}}end
   local next_state=deal_game(state,config,state.round or 1) return{accepted=true,state=next_state,events={{type="dealt",player=actor}}}
  end
+ if not player_index(state,actor)then return rejected(state,"not_a_player")end
  if action.type=="rematch"then local next_state=deal_game(state,state.config,(state.round or 1)+1)return{accepted=true,state=next_state,events={{type="redealt",player=actor}}}end
  if action.type~="vote"then return rejected(state,"unknown_action")end
  if state.status[actor]~="alive"then return rejected(state,"not_alive")end
