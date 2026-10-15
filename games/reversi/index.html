@@ -26,6 +26,7 @@
         <div><strong>白方</strong><span id="white-name" class="player-name">玩家 2</span></div>
         <output id="white-count" aria-label="白棋数量">2</output>
       </div>
+      <button id="settings-button" class="round-icon-button" type="button" aria-label="对局设置" aria-haspopup="dialog" aria-controls="setup-dialog" hidden><i data-lucide="settings" aria-hidden="true"></i></button>
     </section>
     <section class="board-stage" aria-label="对弈区">
       <div id="board-view" class="reversi-board">
@@ -38,5 +39,32 @@
       <button id="rematch-button" type="button" hidden><i data-lucide="rotate-ccw" aria-hidden="true"></i>再来一局</button>
     </nav>
   </main>
+  <p id="announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+  <dialog id="setup-dialog" class="overlay-dialog overlay-dialog--sheet-narrow" aria-labelledby="setup-title">
+    <form id="setup-form" class="overlay-dialog__surface setup-form" tabindex="-1">
+      <header class="overlay-dialog__header setup-heading">
+        <h2 id="setup-title">对局设置</h2>
+        <button id="setup-close" class="round-icon-button" type="button" aria-label="关闭设置"><i data-lucide="x" aria-hidden="true"></i></button>
+      </header>
+      <div class="setup-content">
+        <ul class="settings-list" aria-label="对局选项">
+          <li class="setting-field">
+            <span id="opponent-label" class="setting-title">对战方式</span>
+            <span id="opponent-value" class="setting-value" aria-hidden="true">人机对战</span>
+            <i class="setting-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+            <select id="opponent-setting" aria-labelledby="opponent-label"><option value="ai">人机对战</option><option value="local">本地双人</option></select>
+          </li>
+          <li id="side-divider" class="settings-divider" role="presentation"><hr /></li>
+          <li id="side-field" class="setting-field">
+            <span id="side-label" class="setting-title">你的执子</span>
+            <span id="side-value" class="setting-value" aria-hidden="true">执黑先行</span>
+            <i class="setting-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+            <select id="side-setting" aria-labelledby="side-label"><option value="1">执黑先行</option><option value="2">执白后行</option></select>
+          </li>
+        </ul>
+      </div>
+      <footer class="setup-actions"><button id="start-button" type="submit">开始对局</button></footer>
+    </form>
+  </dialog>
 </body>
 </html>

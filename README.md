@@ -28,7 +28,7 @@ refer to seated human players; spectators do not occupy a seat.
 | Sudoku / 数独 | Single-player puzzle | — | [/sudoku/](http://localhost:9139/sudoku/) |
 | Texas Hold'em / 德州扑克 | — | 2–6 | [/texas-holdem/](http://localhost:9139/texas-holdem/) |
 | Go / 围棋 | Two players, same device | 2 | [/go/](http://localhost:9139/go/) |
-| Reversi / 黑白棋 | Two players, same device | 2 | [/reversi/](http://localhost:9139/reversi/) |
+| Reversi / 黑白棋 | AI opponent or two players, same device | 2 | [/reversi/](http://localhost:9139/reversi/) |
 | Connect Four / 四子棋 | Human vs. AI | 2 | [/connect-four/](http://localhost:9139/connect-four/) |
 | Pig Dice / 贪心骰子 | — | 2 | [/pig-dice/](http://localhost:9139/pig-dice/) |
 
