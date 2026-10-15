@@ -1,7 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Texas Hold'em">
-  <rect width="64" height="64" fill="#1b7757"/>
-  <path d="M14 15h18v28H14zM32 21h18v28H32z" fill="#fffdf7" stroke="#0e4936" stroke-width="2"/>
-  <path d="M23 22c-4-6-9 1 0 9 9-8 4-15 0-9Zm18 8c-4-6-9 1 0 9 9-8 4-15 0-9Z" fill="#dc4642"/>
-  <path d="M11 47h42" stroke="#e6b851" stroke-width="5" stroke-linecap="round"/>
-  <circle cx="32" cy="47" r="6" fill="#f8d36d" stroke="#a56b19" stroke-width="2"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="德州扑克：黑桃 A 与红桃 A，搭配红色和金色筹码">
+  <rect width="128" height="128" fill="#1b7757"/>
+  <g transform="rotate(-12 45 55)">
+    <rect x="24" y="22" width="42" height="65" rx="3" fill="#fffdf7" stroke="#0e4936" stroke-width="2"/>
+    <path d="M31 43L36 29L41 43M33 38H39" fill="none" stroke="#242923" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M45 47C42 52 34 55 34 61C34 68 42 69 45 64C48 69 56 68 56 61C56 55 48 52 45 47ZM45 63L40 75H50Z" fill="#242923"/>
+  </g>
+  <g transform="rotate(10 81 51)">
+    <rect x="60" y="18" width="42" height="65" rx="3" fill="#fffdf7" stroke="#0e4936" stroke-width="2"/>
+    <path d="M67 39L72 25L77 39M69 34H75" fill="none" stroke="#dc4642" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M81 71C77 67 67 60 67 53C67 44 77 43 81 50C85 43 95 44 95 53C95 60 85 67 81 71Z" fill="#dc4642"/>
+  </g>
+  <g>
+    <circle cx="88" cy="102" r="17" fill="#b77c27"/>
+    <circle cx="88" cy="98" r="17" fill="#dba543"/>
+    <circle cx="88" cy="94" r="17" fill="#f4cc69"/>
+    <circle cx="88" cy="94" r="13.5" fill="none" stroke="#fff4d2" stroke-width="3" stroke-dasharray="5.3 5.3"/>
+    <circle cx="88" cy="94" r="8" fill="none" stroke="#b77c27" stroke-width="1.5"/>
+  </g>
+  <g>
+    <circle cx="47" cy="106" r="16" fill="#8f2e2a"/>
+    <circle cx="47" cy="101" r="16" fill="#b43934"/>
+    <circle cx="47" cy="96" r="16" fill="#dc4642"/>
+    <circle cx="47" cy="96" r="12.5" fill="none" stroke="#fff4e8" stroke-width="3" stroke-dasharray="4.9 4.9"/>
+    <circle cx="47" cy="96" r="7" fill="none" stroke="#fff4e8" stroke-width="1.5"/>
+  </g>
 </svg>
