@@ -13,6 +13,7 @@ import { createSoloChessGame } from "./solo.js";
 import { pieceSvg, PIECE_NAMES } from "./pieces.js";
 import { createOverlayDialog } from "../../src/components/overlay-dialog.js";
 import { CHESS_PERSPECTIVES, resolveChessView } from "./view.js";
+import { createChessMoveAnimator } from "./move-animation.js";
 import "./styles.css";
 
 const $ = (id) => document.getElementById(id);
@@ -123,6 +124,8 @@ createIcons({
     X,
   },
 });
+const moveAnimator = createChessMoveAnimator(squares);
+window.addEventListener("resize", moveAnimator.cancel);
 
 const perspectiveSelect = $("perspective-setting");
 const settingsDialog = createOverlayDialog({
@@ -139,6 +142,7 @@ function renderPerspectiveSetting() {
 renderPerspectiveSetting();
 $("settings-button").addEventListener("click", () => settingsDialog.setOpen(true));
 perspectiveSelect.addEventListener("change", () => {
+  moveAnimator.cancel();
   perspective = perspectiveSelect.value;
   try {
     localStorage.setItem(PERSPECTIVE_KEY, perspective);
@@ -232,6 +236,8 @@ async function startLocal() {
   }
 }
 function receiveState(nextState) {
+  const previous = state;
+  moveAnimator.cancel();
   state = nextState;
   pending = selected = promotionMove = undefined;
   $("promotion-dialog").close();
@@ -239,6 +245,7 @@ function receiveState(nextState) {
   if (ended()) $("details-dialog").close();
   notice("");
   render();
+  moveAnimator.play(previous, state);
 }
 function notice(text) {
   $("notice").textContent = text;
@@ -346,6 +353,7 @@ $("resign-confirm").addEventListener("click", () => {
   send({ type: "resign" }, resignIndex);
 });
 window.addEventListener("pagehide", (event) => {
+  moveAnimator.cancel();
   // Preserve the local engine when browser Back restores this page from BFCache.
   if (event.persisted) return;
   closed = true;
@@ -371,7 +379,10 @@ function render() {
       c = (index % 8) + 1;
     const piece = state.board[r - 1][c - 1],
       target = active && targetMoves(r, c).length > 0;
-    square.innerHTML = piece ? pieceSvg(piece) : "";
+    if (square.dataset.piece !== piece) {
+      square.innerHTML = piece ? pieceSvg(piece) : "";
+      square.dataset.piece = piece;
+    }
     square.classList.toggle(
       "is-selected",
       selected?.row === r && selected?.column === c,

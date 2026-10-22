@@ -332,6 +332,15 @@ body.chess-game {
   --piece-rotation: 180deg;
 }
 
+.square.is-moving {
+  z-index: 3;
+}
+
+.square.is-moving .piece {
+  will-change: transform;
+  transition: none;
+}
+
 @media (hover: hover) {
   .square:hover:not(:disabled) .piece {
     transform: translateY(-2px) rotate(var(--piece-rotation, 0deg));
