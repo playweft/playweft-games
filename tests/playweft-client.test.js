@@ -547,3 +547,34 @@ test("Solo client is inert when the game opens directly", async () => {
     globalThis.window = originalWindow;
   }
 });
+
+for (const [label, createClient] of [["room", createPlayweftClient], ["solo", createPlayweftSoloClient]]) {
+  test(`${label} storage reuses its existing bridge, waits for initialization and preserves backend errors`, async () => {
+    const harness = createEmbeddedHarness();
+    const originalWindow = globalThis.window;
+    globalThis.window = harness.fakeWindow;
+    const client = createClient();
+    try {
+      const pending = client.localStorage.getItem("progress");
+      await Promise.resolve();
+      assert.equal(harness.portMessages.length, 0);
+      harness.connect();
+      const initialize = harness.portMessages[0];
+      respond(harness.fakePort, initialize.id, { mode: "solo", capabilities: ["localStorage.getItem", "localStorage.setItem"] });
+      await new Promise(resolve => setImmediate(resolve));
+      const read = harness.portMessages[1];
+      assert.equal(read.method, "localStorage.getItem");
+      assert.deepEqual(read.params, { key: "progress" });
+      respond(harness.fakePort, read.id, "saved");
+      assert.equal(await pending, "saved");
+      assert.equal(harness.portMessages.filter(message => message.method === "game.initialize").length, 1);
+      await assert.rejects(client.localStorage.length(), error => error.code === "STORAGE_UNSUPPORTED");
+      const write = client.localStorage.setItem("progress", 256);
+      await new Promise(resolve => setImmediate(resolve));
+      const request = harness.portMessages.at(-1);
+      assert.deepEqual(request.params, { key: "progress", value: "256" });
+      harness.fakePort.onmessage({ data: { jsonrpc: "2.0", id: request.id, error: { code: -32000, message: "Disk full", data: { code: "STORAGE_QUOTA_EXCEEDED", retryable: false } } } });
+      await assert.rejects(write, error => error.code === "STORAGE_QUOTA_EXCEEDED" && error.message === "Disk full");
+    } finally { client.destroy(); globalThis.window = originalWindow; }
+  });
+}

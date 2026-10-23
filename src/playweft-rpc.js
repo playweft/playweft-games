@@ -78,7 +78,7 @@ export function createPlayweftRpcPeer({ onNotification } = {}) {
       return Boolean(port);
     },
 
-    call(method, params, id = crypto.randomUUID()) {
+    call(method, params, id = crypto.randomUUID(), { timeoutMs } = {}) {
       if (!port) {
         return Promise.reject(
           connectionError(
@@ -89,13 +89,40 @@ export function createPlayweftRpcPeer({ onNotification } = {}) {
         );
       }
       return new Promise((resolve, reject) => {
-        pending.set(id, { resolve, reject });
-        port.postMessage({
-          jsonrpc: JSON_RPC_VERSION,
-          id,
-          method,
-          ...(params === undefined ? {} : { params }),
+        const timer =
+          timeoutMs === undefined
+            ? undefined
+            : setTimeout(() => {
+                pending.delete(id);
+                reject(
+                  connectionError(
+                    "STORAGE_TIMEOUT",
+                    "Storage request timed out; its commit status is unknown",
+                    true,
+                  ),
+                );
+              }, timeoutMs);
+        pending.set(id, {
+          resolve(value) {
+            clearTimeout(timer);
+            resolve(value);
+          },
+          reject(error) {
+            clearTimeout(timer);
+            reject(error);
+          },
         });
+        try {
+          port.postMessage({
+            jsonrpc: JSON_RPC_VERSION,
+            id,
+            method,
+            ...(params === undefined ? {} : { params }),
+          });
+        } catch (error) {
+          pending.get(id)?.reject(error);
+          pending.delete(id);
+        }
       });
     },
 

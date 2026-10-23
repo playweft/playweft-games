@@ -1,3 +1,6 @@
+import "../../src/game-storage.css";
+import { initializeGameStorage } from "../../src/game-storage-ui.js";
+import { SUDOKU_PROGRESS_KEY, validateSudokuProgress } from "./storage.js";
 import {
   DIGITS,
   PUZZLE_DIFFICULTIES,
@@ -25,7 +28,7 @@ import { createPlayweftSoloClient } from "../../src/playweft-solo-client.js";
 import "../../src/base.css";
 import "./styles.css";
 
-const PROGRESS_KEY = "playweft:sudoku:progress:v1";
+const PROGRESS_KEY = SUDOKU_PROGRESS_KEY;
 const SAVE_INTERVAL_SECONDS = 5;
 const DEFAULT_DIFFICULTY = "very-hard";
 
@@ -74,40 +77,53 @@ let nextGenerationRequestId = 0;
 const cells = [];
 const pendingGenerations = new Map();
 const platform = createPlayweftSoloClient();
+let storage;
 
-createIcons({
-  icons: {
-    Eraser,
-    HelpCircle,
-    Lightbulb,
-    ListPlus,
-    ListX,
-    Pause,
-    Pencil,
-    Play,
-    RotateCcw,
-    Sparkles,
-    Undo2,
-  },
-});
-buildBoard();
-buildDigitPad();
-bindEvents();
-if (restoreProgress()) {
-  startTimer();
-  render();
-} else {
-  openDifficultyPicker();
+async function initialize() {
+  elements.pause.disabled = true;
+  elements.layout.inert = true;
+  storage = await initializeGameStorage(platform, {
+    gameId: "sudoku",
+    keys: [PROGRESS_KEY],
+    validate: validateSudokuProgress,
+  });
+  createIcons({
+    icons: {
+      Eraser,
+      HelpCircle,
+      Lightbulb,
+      ListPlus,
+      ListX,
+      Pause,
+      Pencil,
+      Play,
+      RotateCcw,
+      Sparkles,
+      Undo2,
+    },
+  });
+  buildBoard();
+  buildDigitPad();
+  bindEvents();
+  if (restoreProgress()) {
+    startTimer();
+    render();
+  } else {
+    openDifficultyPicker();
+  }
+  window.requestAnimationFrame(() => {
+    document.body.classList.remove("is-initializing");
+  });
 }
-window.requestAnimationFrame(() => {
-  document.body.classList.remove("is-initializing");
-});
+void initialize();
 window.setInterval(updateTimer, 1_000);
-window.addEventListener("pagehide", () => {
+window.addEventListener("pagehide", (event) => {
   stopTimer();
   saveProgress();
   generatorWorker?.terminate();
-  platform.destroy();
+  if (!event.persisted) {
+    void storage?.flush().catch(() => {}).finally(() => platform.destroy());
+  }
 });
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
@@ -663,7 +679,7 @@ function elapsedSeconds() {
 function saveProgress() {
   if (!values) return;
   try {
-    localStorage.setItem(
+    storage.setItem(
       PROGRESS_KEY,
       JSON.stringify({
         initial,
@@ -681,14 +697,14 @@ function saveProgress() {
       }),
     );
     lastSavedSecond = elapsedSeconds();
-  } catch {
-    // Local progress is an enhancement; the game remains playable without it.
+  } catch (error) {
+    console.error("Sudoku snapshot could not be queued", error);
   }
 }
 
 function restoreProgress() {
   try {
-    const saved = JSON.parse(localStorage.getItem(PROGRESS_KEY) ?? "null");
+    const saved = JSON.parse(storage.getItem(PROGRESS_KEY) ?? "null");
     if (
       !saved ||
       !isGrid(saved.initial) ||

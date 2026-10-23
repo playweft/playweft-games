@@ -1,3 +1,4 @@
+import { getGameStorage } from "../../../src/game-storage-cache.js";
 export const MAHJONG_SOLO_SAVE_KEY = "playweft.mahjong.solo-save.v1";
 export const MAHJONG_SOLO_SAVE_VERSION = 4;
 export const MAHJONG_SOLO_SEAT_MODEL = "opening-winds";
@@ -5,7 +6,7 @@ export const MAHJONG_SOLO_CHECKPOINT_VERSION = 1;
 // Increment only when a game.lua state change cannot read an older raw state.
 export const MAHJONG_SOLO_ENGINE_CHECKPOINT_VERSION = 2;
 
-export function readMahjongSoloSave(storage = safeLocalStorage()) {
+export function readMahjongSoloSave(storage = getGameStorage("mahjong")) {
   if (!storage) return null;
   try {
     return normalizeSave(JSON.parse(storage.getItem(MAHJONG_SOLO_SAVE_KEY)));
@@ -14,7 +15,7 @@ export function readMahjongSoloSave(storage = safeLocalStorage()) {
   }
 }
 
-export function writeMahjongSoloSave(save, storage = safeLocalStorage()) {
+export function writeMahjongSoloSave(save, storage = getGameStorage("mahjong")) {
   const normalized = normalizeSave(save);
   if (!storage || !normalized) return false;
   try {
@@ -31,7 +32,7 @@ export function writeMahjongSoloSave(save, storage = safeLocalStorage()) {
   }
 }
 
-export function clearMahjongSoloSave(storage = safeLocalStorage()) {
+export function clearMahjongSoloSave(storage = getGameStorage("mahjong")) {
   if (!storage) return;
   try {
     storage.removeItem(MAHJONG_SOLO_SAVE_KEY);
@@ -242,12 +243,4 @@ function isSavedAction(value) {
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function safeLocalStorage() {
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
 }

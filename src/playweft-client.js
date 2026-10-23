@@ -1,3 +1,4 @@
+import { createPlayweftStorageBridge } from "./playweft-storage.js";
 import {
   PLAYWEFT_BRIDGE_VERSION,
   PlayweftRpcError,
@@ -84,6 +85,8 @@ export function createPlayweftClient({
     },
   });
 
+  const storageBridge = createPlayweftStorageBridge(rpc);
+
   const announceReady = () => {
     if (!destroyed) {
       window.parent.postMessage(
@@ -114,6 +117,7 @@ export function createPlayweftClient({
       .call("game.initialize")
       .then((context) => {
         if (destroyed) return;
+        storageBridge.initialize(context);
         onContext?.(context);
         playerId = context?.playerId;
         onReady?.({
@@ -127,13 +131,18 @@ export function createPlayweftClient({
           phase: context?.phase,
         });
       })
-      .catch((error) => reportRpcError(error));
+      .catch((error) => {
+        storageBridge.fail(error);
+        reportRpcError(error);
+      });
   }
 
   window.addEventListener("message", receiveBridge);
   announceReady();
 
   return {
+    ready: storageBridge.ready,
+    localStorage: storageBridge.localStorage,
     sendAction(action) {
       if (!rpc.isConnected()) return undefined;
       const requestId = crypto.randomUUID();
@@ -191,6 +200,7 @@ export function createPlayweftClient({
       destroyed = true;
       window.clearInterval(probe);
       window.removeEventListener("message", receiveBridge);
+      storageBridge.destroy();
       rpc.destroy();
     },
   };

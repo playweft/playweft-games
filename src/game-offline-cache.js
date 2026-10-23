@@ -1,3 +1,4 @@
+import { getGameStorage } from "./game-storage-cache.js";
 const DEFAULT_MODE = "none";
 const DEFAULT_POLICY = "network-first";
 const HOME_GAME_ID = "home";
@@ -50,9 +51,17 @@ export function gameOfflineSettingsKeys(gameId = MAHJONG_GAME_ID) {
   };
 }
 
+function defaultSettingsStorage(gameId) {
+  const storage = getGameStorage(gameId);
+  // Migrated entries hydrate before startup and must never fall back to the
+  // iframe partition. Other games keep their existing storage behavior.
+  if (storage || gameId === "mahjong" || gameId === "sudoku") return storage;
+  return globalThis.localStorage;
+}
+
 export function readGameOfflineSettings(
   gameId = MAHJONG_GAME_ID,
-  storage = globalThis.localStorage,
+  storage = defaultSettingsStorage(gameId),
 ) {
   const keys = gameOfflineSettingsKeys(gameId);
   let mode = DEFAULT_MODE;
@@ -73,7 +82,7 @@ export function readGameOfflineSettings(
 export function writeGameOfflineSettings(
   gameId,
   { mode, policy, version } = {},
-  storage = globalThis.localStorage,
+  storage = defaultSettingsStorage(gameId),
 ) {
   const keys = gameOfflineSettingsKeys(gameId);
   const next = {

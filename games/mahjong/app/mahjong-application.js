@@ -1,4 +1,5 @@
 // Application composition lives here; main.js is the package entry only.
+import { initializeMahjongStorage } from "../storage.js";
 import {
   BookOpen,
   ChevronLeft,
@@ -89,7 +90,7 @@ import {
 import { createMahjongCompletedPaipuSaver } from "../replay/completed-paipu.js";
 import { createMahjongPaipuPanel } from "../replay/paipu-panel.js";
 
-export function createMahjongApplication({
+export async function createMahjongApplication({
   document = globalThis.document,
   window = globalThis.window,
 } = {}) {
@@ -141,6 +142,29 @@ export function createMahjongApplication({
   let replayController;
   let soloController;
   let releaseUiBindings;
+  let initialContext;
+  let initialState;
+  playweftClient = isStandalone
+    ? undefined
+    : createPlayweftClient({
+        onReady: (context) => {
+          roomEntry?.setContext(context);
+          if (roomController) roomController.handleReady(context);
+          else initialContext = context;
+        },
+        onState: (message) => {
+          if (roomController) roomController.handleState(message);
+          else initialState = message;
+        },
+        onActionResult: (...args) =>
+          roomController?.handleActionResult(...args),
+        onError: (...args) => roomController?.handleError(...args),
+        onLatency: (rttMs) => connectionStatus?.setLatency(rttMs),
+        onPlayerProfileChanged: (change) =>
+          roomController?.handlePlayerProfileChanged(change),
+      });
+  const storage = await initializeMahjongStorage(playweftClient);
+
   // Static icons are mounted once; dynamic controllers scope later renders.
   connectionStatus = createMahjongConnectionStatus({
     element: document.querySelector("#connection-status"),
@@ -236,6 +260,7 @@ export function createMahjongApplication({
   roomEntry = createMahjongRoomEntry({
     button: document.querySelector("#create-room-button"),
     getClient: () => playweftClient,
+    beforeCreate: () => storage.flush(),
     showError: (message) => transientNotice.show(message),
   });
   const helpIframePortal = createMahjongHelpIframePortal({
@@ -607,21 +632,6 @@ export function createMahjongApplication({
     initializeSoloMatch: initialize,
     pageLifecycle,
   });
-  playweftClient = isStandalone
-    ? undefined
-    : createPlayweftClient({
-        onReady: (context) => {
-          roomEntry.setContext(context);
-          roomController?.handleReady(context);
-        },
-        onState: (message) => roomController?.handleState(message),
-        onActionResult: (...args) =>
-          roomController?.handleActionResult(...args),
-        onError: (...args) => roomController?.handleError(...args),
-        onLatency: (rttMs) => connectionStatus?.setLatency(rttMs),
-        onPlayerProfileChanged: (change) =>
-          roomController?.handlePlayerProfileChanged(change),
-      });
   session = createMahjongSessionController({
     humanId: HUMAN_ID,
     getMode: matchCoordinator.getMode,
@@ -778,6 +788,11 @@ export function createMahjongApplication({
     showSetupRecoveryError: setupScreen.showRecoveryError,
   });
 
+  if (initialContext) {
+    roomEntry.setContext(initialContext);
+    roomController.handleReady(initialContext);
+  }
+  if (initialState) roomController.handleState(initialState);
   if (isStandalone) startMahjongEntry();
   pageLifecycle.revealAppAfterStyles();
 
@@ -930,7 +945,10 @@ export function createMahjongApplication({
     resultHandRenderer.destroy();
     matchCoordinator.getGame()?.close();
     roomController?.destroy();
-    playweftClient?.destroy();
+    // Keep the transferred port alive until pending snapshots are acknowledged.
+    void storage.flush()
+      .catch(() => {})
+      .finally(() => playweftClient?.destroy());
   }
 
   return { destroy };

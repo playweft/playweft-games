@@ -1,3 +1,4 @@
+import { createPlayweftStorageBridge } from "./playweft-storage.js";
 import {
   PLAYWEFT_BRIDGE_VERSION,
   createPlayweftRpcPeer,
@@ -7,11 +8,7 @@ import {
  * Initializes a Manifest-backed solo client when hosted by Playweft.
  * A top-level game page stays entirely local.
  */
-export function createPlayweftSoloClient({
-  onReady,
-  onContext,
-  onError,
-} = {}) {
+export function createPlayweftSoloClient({ onReady, onContext, onError } = {}) {
   let destroyed = false;
 
   if (window.parent === window) {
@@ -47,6 +44,8 @@ export function createPlayweftSoloClient({
     },
   });
 
+  const storageBridge = createPlayweftStorageBridge(rpc);
+
   const announceReady = () => {
     if (!destroyed) {
       window.parent.postMessage(
@@ -77,11 +76,13 @@ export function createPlayweftSoloClient({
       .call("game.initialize")
       .then((context) => {
         if (destroyed) return;
+        storageBridge.initialize(context);
         onContext?.(context);
         onReady?.(context);
       })
       .catch((error) => {
         if (destroyed) return;
+        storageBridge.fail(error);
         onError?.(
           error?.message ?? "Platform initialization failed",
           error?.code ?? "RPC_ERROR",
@@ -93,6 +94,8 @@ export function createPlayweftSoloClient({
   announceReady();
 
   return {
+    ready: storageBridge.ready,
+    localStorage: storageBridge.localStorage,
     readClipboardText() {
       return rpc.call("navigator.clipboard.readText");
     },
@@ -106,6 +109,7 @@ export function createPlayweftSoloClient({
       destroyed = true;
       window.clearInterval(probe);
       window.removeEventListener("message", receiveBridge);
+      storageBridge.destroy();
       rpc.destroy();
     },
   };

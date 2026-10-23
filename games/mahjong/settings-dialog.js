@@ -1,3 +1,4 @@
+import { getGameStorage } from "../../src/game-storage-cache.js";
 const DOUBLE_CLICK_TSUMOGIRI_KEY = "playweft.mahjong.double-click-tsumogiri";
 const DOUBLE_CLICK_PASS_KEY = "playweft.mahjong.double-click-pass";
 const GAME_HINTS_KEY = "playweft.mahjong.game-hints";
@@ -304,7 +305,7 @@ export function createMahjongSettingsDialog({
       offlinePolicy.value === "local-first" ? "local-first" : "network-first";
     offlinePolicy.value = value;
     try {
-      window.localStorage.setItem(
+      getGameStorage("mahjong").setItem(
         "playweft.mahjong.offline-cache-policy",
         value,
       );
@@ -463,7 +464,7 @@ export function normalizeAvatarSourcePreference(value) {
 function readAvatarSourcePreference() {
   try {
     return normalizeAvatarSourcePreference(
-      window.localStorage.getItem(AVATAR_SOURCE_PREFERENCE_KEY),
+      getGameStorage("mahjong").getItem(AVATAR_SOURCE_PREFERENCE_KEY),
     );
   } catch {
     return DEFAULT_AVATAR_SOURCE_PREFERENCE;
@@ -472,7 +473,7 @@ function readAvatarSourcePreference() {
 
 function readOfflinePolicy() {
   try {
-    return window.localStorage.getItem(
+    return getGameStorage("mahjong").getItem(
       "playweft.mahjong.offline-cache-policy",
     ) === "local-first"
       ? "local-first"
@@ -484,7 +485,7 @@ function readOfflinePolicy() {
 
 function writeAvatarSourcePreference(value) {
   try {
-    window.localStorage.setItem(AVATAR_SOURCE_PREFERENCE_KEY, value);
+    getGameStorage("mahjong").setItem(AVATAR_SOURCE_PREFERENCE_KEY, value);
   } catch {
     // Storage can be unavailable; the current select value remains active.
   }
@@ -509,7 +510,7 @@ function normalizeVolume(value, fallback = DEFAULT_DISCARD_VOLUME) {
 
 function readBooleanSetting(key, fallback) {
   try {
-    const value = window.localStorage.getItem(key);
+    const value = getGameStorage("mahjong").getItem(key);
     return value === null ? fallback : value === "true";
   } catch {
     return fallback;
@@ -518,7 +519,7 @@ function readBooleanSetting(key, fallback) {
 
 function writeBooleanSetting(key, value) {
   try {
-    window.localStorage.setItem(key, String(value));
+    getGameStorage("mahjong").setItem(key, String(value));
   } catch {
     // Storage can be unavailable in sandboxed game hosts; the session value remains active.
   }
@@ -526,7 +527,7 @@ function writeBooleanSetting(key, value) {
 
 function readVolumeSetting(key, fallback) {
   try {
-    const value = window.localStorage.getItem(key);
+    const value = getGameStorage("mahjong").getItem(key);
     return value === null ? fallback : normalizeDiscardVolume(value, fallback);
   } catch {
     return fallback;
@@ -535,7 +536,7 @@ function readVolumeSetting(key, fallback) {
 
 function writeVolumeSetting(key, value) {
   try {
-    window.localStorage.setItem(key, String(value));
+    getGameStorage("mahjong").setItem(key, String(value));
   } catch {
     // Storage can be unavailable in sandboxed game hosts; the session value remains active.
   }

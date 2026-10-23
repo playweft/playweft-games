@@ -52,6 +52,7 @@ test("Every game package has a strict Playweft Manifest v1 for bridge v1", async
         "help_url",
         "id",
         "icons",
+        ...(Object.hasOwn(manifest, "launch_mode") ? ["launch_mode"] : []),
         "manifest_version",
         "modes",
         "name",
@@ -71,6 +72,12 @@ test("Every game package has a strict Playweft Manifest v1 for bridge v1", async
     assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
     assert.deepEqual(manifest.protocol, { min: 1, max: 1 });
     assert.equal(manifest.start_url, "./");
+    if (manifest.launch_mode !== undefined) {
+      assert.ok(["auto", "solo"].includes(manifest.launch_mode));
+      if (manifest.launch_mode === "solo") {
+        assert.ok(manifest.modes.solo, `${game} solo entry requires solo mode`);
+      }
+    }
     assert.equal(typeof manifest.name, "string");
     assert.equal(typeof manifest.name_localized["zh-CN"], "string");
     assert.equal(typeof manifest.description, "string");

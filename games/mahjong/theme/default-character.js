@@ -1,3 +1,4 @@
+import { getGameStorage } from "../../../src/game-storage-cache.js";
 import { MAHJONG_BUILTIN_CHARACTER_IDS } from "./builtin-characters.js";
 
 export const MAHJONG_DEFAULT_CHARACTER_STORAGE_KEY =
@@ -31,7 +32,7 @@ export function getOrCreateMahjongDefaultCharacter({
   let storageApi = storage;
   if (storageApi === undefined) {
     try {
-      storageApi = globalThis.localStorage;
+      storageApi = getGameStorage("mahjong");
     } catch {
       storageApi = undefined;
     }

@@ -114,3 +114,28 @@ Use the manifests as the source for supported modes, seated player limits,
 and room Lua entry names. Use `vite.config.js` and `package.json` as the source
 for ports and commands. Cross-repository links should use complete URLs under
 `https://github.com/playweft/`; relative links are for files in this repository.
+
+## Persistent game progress
+
+Mahjong's local match and browser preferences, and Sudoku's current puzzle,
+use the asynchronous `localStorage.*` capabilities on the existing Playweft
+bridge. The platform stores strings in its top-level IndexedDB, isolated by
+validated game origin. Standalone pages use their own first-party IndexedDB.
+These are local browser saves, not account or cloud synchronization.
+
+`src/game-storage.js` chooses the backend and imports each game's explicitly
+listed legacy localStorage keys once. Existing destination values win; source
+keys are removed only after all imports and the migration marker commit.
+Migration can resume after a failed write. An unreadable legacy store or a
+failed destination read is an error, never evidence of a new game.
+
+`src/game-storage-cache.js` hydrates the complete game snapshot before the UI
+starts. Existing synchronous settings read that snapshot; writes are serialized
+and coalesced per key. Only acknowledged commits leave the pending queue.
+Read failures and invalid saves block startup with a diagnostic retry dialog.
+Write failures retain the newest in-memory snapshot for explicit retry. They
+never fall back to iframe localStorage. Add new keys to the game's allowlist
+before using them.
+
+Mahjong's separate replay archive and imported asset-pack databases are outside
+this localStorage migration. Other games retain their existing storage paths.

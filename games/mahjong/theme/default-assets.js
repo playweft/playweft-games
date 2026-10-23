@@ -1,3 +1,4 @@
+import { getGameStorage } from "../../../src/game-storage-cache.js";
 import {
   normalizeMahjongPortraitPool,
   resolveMahjongPortraitDefaults,
@@ -152,7 +153,7 @@ export function configureMahjongDefaultAssetAppearance(nextAppearance) {
     },
   };
   try {
-    localStorage.setItem(DEFAULT_APPEARANCE_KEY, JSON.stringify(appearance));
+    getGameStorage("mahjong").setItem(DEFAULT_APPEARANCE_KEY, JSON.stringify(appearance));
   } catch {
     // The current tab still uses the returned in-memory configuration.
   }
@@ -162,7 +163,7 @@ export function configureMahjongDefaultAssetAppearance(nextAppearance) {
 function readAppearance(config) {
   let stored;
   try {
-    stored = JSON.parse(localStorage.getItem(DEFAULT_APPEARANCE_KEY) || "null");
+    stored = JSON.parse(getGameStorage("mahjong").getItem(DEFAULT_APPEARANCE_KEY) || "null");
   } catch {
     stored = null;
   }
