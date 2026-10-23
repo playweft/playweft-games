@@ -4,7 +4,7 @@ import {
   mahjongOpeningDealerSeat,
   mahjongPlayersByOpeningWind,
 } from "../rules/seat-order.js";
-import { createMahjongSoloSave, readMahjongSoloSave, writeMahjongSoloSave } from "../replay/solo-save.js";
+import { createMahjongSoloSave, writeMahjongSoloSave } from "../replay/solo-save.js";
 import { replayMahjongSoloSave } from "../replay/solo-replay.js";
 
 export function createMahjongSoloMatchController({
@@ -31,6 +31,7 @@ export function createMahjongSoloMatchController({
   showLoadingError,
   showSetup,
   showSetupRecoveryError,
+  createGame = createLocalLuaGame,
 }) {
   function canonicalSoloPlayers(randomSeed, playerNames) {
     const viewerOrder = PLAYERS.map((player, index) => ({
@@ -70,6 +71,11 @@ export function createMahjongSoloMatchController({
 
   async function initialize(matchType = "east") {
     if (getGame() || getGameInitializing()) return;
+    const save = getSoloSave();
+    if (save) {
+      if (save.matchType === matchType) return resumeSavedMatch();
+      return;
+    }
     setGameInitializing(true);
     tableController.syncMatchMusic();
     const rules = selectedMatchRules();
@@ -101,7 +107,7 @@ export function createMahjongSoloMatchController({
           canonicalPlayers,
           HUMAN_ID,
         ) || {};
-      const gamePreparation = createLocalLuaGame(
+      const gamePreparation = createGame(
         soloGameOptions({
           randomSeed,
           matchId,
@@ -158,7 +164,7 @@ export function createMahjongSoloMatchController({
     elements.loadingMessage.hidden = true;
     elements.loading.hidden = false;
     void elements.loadingSpinner.offsetWidth;
-    elements.setup.hidden = true;
+    const setupExit = beginSetupExit();
     let restored;
     try {
       const playerNames = PLAYERS.map((player, index) =>
@@ -168,7 +174,7 @@ export function createMahjongSoloMatchController({
             player.name,
       );
       const canonicalPlayers = canonicalSoloPlayers(save.randomSeed, playerNames);
-      restored = await createLocalLuaGame(
+      restored = await createGame(
         soloGameOptions({
           randomSeed: save.randomSeed,
           matchId: save.matchId,
@@ -183,7 +189,7 @@ export function createMahjongSoloMatchController({
         save,
         playerId: HUMAN_ID,
       });
-      await visualRendererReady;
+      await Promise.all([visualRendererReady, setupExit]);
       setGame(restored);
       await themeController.applyMatchPortraits(
         save.opponentPortraits,
@@ -215,6 +221,7 @@ export function createMahjongSoloMatchController({
       scheduleAi();
     } catch (error) {
       console.error(error);
+      await setupExit;
       restored?.close();
       if (getGame() === restored) setGame(undefined);
       tableController.reset();
@@ -231,5 +238,5 @@ export function createMahjongSoloMatchController({
     }
   }
 
-  return { initialize, resumeSavedMatch };
+  return { initialize };
 }

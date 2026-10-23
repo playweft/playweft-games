@@ -175,6 +175,9 @@ export function createPlayweftClient({
     readClipboardText() {
       return rpc.call("navigator.clipboard.readText");
     },
+    createRoom() {
+      return rpc.call("room.create");
+    },
     getRoomPlayerProfile({ playerId, fields }) {
       return rpc.call("room.players.getProfile", { playerId, fields });
     },

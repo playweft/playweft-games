@@ -1,5 +1,6 @@
 // Application composition lives here; main.js is the package entry only.
 import {
+  BookOpen,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
@@ -16,6 +17,7 @@ import {
   SkipBack,
   SkipForward,
   Trash2,
+  UsersRound,
   X,
   createIcons,
 } from "lucide";
@@ -54,23 +56,19 @@ import { createMahjongConnectionStatus } from "./connection-status.js";
 import { createMahjongSoloSaveController } from "./solo-save-controller.js";
 import { createMahjongAutoActionController } from "./auto-action-controller.js";
 import { createMahjongSetupScreenController } from "./setup-screen-controller.js";
+import { createMahjongRoomEntry } from "./room-entry.js";
 import { createMahjongMatchCoordinator } from "./match-coordinator.js";
 import { bindMahjongUi } from "./ui-bindings.js";
 import { createMahjongSettingsDialog } from "../settings-dialog.js";
 import { createMahjongHelpIframePortal } from "./help-iframe-portal.js";
 import { createMahjongOfflineResourceController } from "./offline-resource-controller.js";
 import { MahjongMatchMusic } from "../theme/match-music.js";
-import {
-  deferMahjongDecorativeAssets,
-  deferMahjongImageAssets,
-} from "../theme/deferred-visual-assets.js";
+import { deferMahjongDecorativeAssets } from "../theme/deferred-visual-assets.js";
 import discardSoundSource from "../assets/audio/discard-sound.js";
 import defaultTableBackgroundUrl from "../assets/moonlit-table-v3.jpg?url";
 import defaultPortraitsUrl from "../assets/player-portraits-v1.jpg?url";
 import defaultResultTableclothUrl from "../assets/felt-skin-moonwave-v1.jpg?url";
 import defaultLobbyBackgroundUrl from "../assets/waiting-evening-v1.jpg?url";
-import defaultLobbySignpostUrl from "../assets/waiting-signpost-v3.webp?url";
-import defaultPaipuNotebookUrl from "../assets/paipu-notebook-v1.jpg?url";
 import defaultTileFacesUrl from "../assets/tiles/riichi-faces.webp?url";
 import { DEFAULT_MATCH_MUSIC_VOLUME } from "../theme/media-config.js";
 import {
@@ -90,13 +88,13 @@ import {
 } from "../replay/paipu-store.js";
 import { createMahjongCompletedPaipuSaver } from "../replay/completed-paipu.js";
 import { createMahjongPaipuPanel } from "../replay/paipu-panel.js";
-import { mahjongInitialEntry } from "./entry-flow.js";
 
 export function createMahjongApplication({
   document = globalThis.document,
   window = globalThis.window,
 } = {}) {
   const lucideIcons = {
+    BookOpen,
     ChevronLeft,
     ChevronRight,
     ChevronsUpDown,
@@ -113,6 +111,7 @@ export function createMahjongApplication({
     SkipBack,
     SkipForward,
     Trash2,
+    UsersRound,
     X,
   };
   createIcons({ icons: lucideIcons, root: document });
@@ -128,20 +127,13 @@ export function createMahjongApplication({
       "--mahjong-tile-face-image": defaultTileFacesUrl,
     },
   });
-  deferMahjongImageAssets({
-    document,
-    window,
-    urls: {
-      signpost: defaultLobbySignpostUrl,
-      "paipu-notebook": defaultPaipuNotebookUrl,
-    },
-  });
 
   const effectRunner = createMahjongEffectRunner();
   const isStandalone = window.parent === window;
   let roomPlayerProfiles;
   let roomPlayerPresentations;
   let roomController;
+  let roomEntry;
   let session;
   let tableController;
   let playweftClient;
@@ -241,6 +233,11 @@ export function createMahjongApplication({
     element: elements.transientNotice,
     window,
   });
+  roomEntry = createMahjongRoomEntry({
+    button: document.querySelector("#create-room-button"),
+    getClient: () => playweftClient,
+    showError: (message) => transientNotice.show(message),
+  });
   const helpIframePortal = createMahjongHelpIframePortal({
     template: elements.settingsHelpFrameTemplate,
     slot: elements.settingsHelpFrameSlot,
@@ -253,6 +250,7 @@ export function createMahjongApplication({
     elements,
     closePaipuPanel,
     transientNotice,
+    getSoloSave: soloSaveController.get,
   });
   const offlineResourceController = createMahjongOfflineResourceController({
     button: document.querySelector("#mahjong-offline-action-button"),
@@ -612,7 +610,10 @@ export function createMahjongApplication({
   playweftClient = isStandalone
     ? undefined
     : createPlayweftClient({
-        onReady: (context) => roomController?.handleReady(context),
+        onReady: (context) => {
+          roomEntry.setContext(context);
+          roomController?.handleReady(context);
+        },
         onState: (message) => roomController?.handleState(message),
         onActionResult: (...args) =>
           roomController?.handleActionResult(...args),
@@ -814,10 +815,6 @@ export function createMahjongApplication({
     );
   }
 
-  async function resumeSavedMatch() {
-    return soloController?.resumeSavedMatch();
-  }
-
   function applyReplayPlayerPresentations(record) {
     return applyMahjongReplayPlayerPresentations({
       record,
@@ -853,15 +850,6 @@ export function createMahjongApplication({
       matchCoordinator.isGameInitializing()
     )
       return;
-    if (
-      mahjongInitialEntry(
-        matchCoordinator.getMode(),
-        Boolean(soloSaveController.get()),
-      ) === "resume"
-    ) {
-      void resumeSavedMatch();
-      return;
-    }
     setupScreen.show();
   }
 
@@ -896,10 +884,10 @@ export function createMahjongApplication({
     tableController.reset();
     elements.result.hidden = true;
     elements.loading.hidden = true;
+    soloSaveController.clear();
     setupScreen.show();
     settingsDialog.setSoloMatchActive(false);
     settingsDialog.setEndMatchLabel("结束本局");
-    soloSaveController.clear();
     await themeController.clearMatchPortraits();
   }
 
@@ -930,6 +918,7 @@ export function createMahjongApplication({
   function destroy() {
     if (!matchCoordinator.destroy()) return;
     releaseUiBindings?.();
+    roomEntry.destroy();
     session?.cancelScheduledActions();
     tableController?.destroy();
     pageLifecycle.destroy();

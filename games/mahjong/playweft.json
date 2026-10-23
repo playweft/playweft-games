@@ -8,6 +8,7 @@
     "max": 1
   },
   "start_url": "./",
+  "launch_mode": "solo",
   "name": "Mahjong",
   "name_localized": {
     "zh-CN": "麻将"

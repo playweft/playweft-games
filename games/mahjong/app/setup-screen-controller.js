@@ -6,23 +6,34 @@ export function createMahjongSetupScreenController({
   elements,
   closePaipuPanel,
   transientNotice,
+  getSoloSave,
   exitDuration = DEFAULT_EXIT_DURATION_MS,
 }) {
   const matchTypeButtons = () =>
     elements.setup.querySelectorAll("[data-match-type]");
 
-  function show() {
+  function show({ room = false } = {}) {
+    elements.setup.inert = false;
     closePaipuPanel({ animate: false, restoreFocus: false });
     elements.setup.classList.remove(
       "is-leaving",
       "is-prepared-for-result-exit",
     );
-    for (const button of matchTypeButtons()) button.disabled = false;
+    const savedMatchType = room ? null : getSoloSave()?.matchType;
+    for (const button of matchTypeButtons()) {
+      button.disabled = Boolean(
+        savedMatchType && button.dataset.matchType !== savedMatchType,
+      );
+    }
+    const heading = elements.setup.querySelector(".setup-menu-heading");
+    if (heading) heading.textContent = "单人对局";
     elements.setup.hidden = false;
   }
 
   function showRoom() {
-    show();
+    show({ room: true });
+    const heading = elements.setup.querySelector(".setup-menu-heading");
+    if (heading) heading.textContent = "联机对局";
     elements.loading.classList.remove("is-room-waiting");
     elements.loading.hidden = true;
   }
@@ -32,7 +43,8 @@ export function createMahjongSetupScreenController({
   }
 
   function beginExit() {
-    const signpost = elements.setup.querySelector(".setup-signpost");
+    const menu = elements.setup.querySelector(".setup-menu");
+    elements.setup.inert = true;
     elements.setup.classList.add("is-leaving");
     elements.loading.classList.add("is-active");
     for (const button of matchTypeButtons()) button.disabled = true;
@@ -41,16 +53,16 @@ export function createMahjongSetupScreenController({
       const finish = () => {
         if (settled) return;
         settled = true;
-        signpost.removeEventListener("transitionend", handleTransitionEnd);
+        menu.removeEventListener("transitionend", handleTransitionEnd);
         window.clearTimeout(fallbackTimer);
         resolve();
       };
       const handleTransitionEnd = (event) => {
-        if (event.target === signpost && event.propertyName === "opacity")
+        if (event.target === menu && event.propertyName === "opacity")
           finish();
       };
       const fallbackTimer = window.setTimeout(finish, exitDuration + 100);
-      signpost.addEventListener("transitionend", handleTransitionEnd);
+      menu.addEventListener("transitionend", handleTransitionEnd);
     });
   }
 
