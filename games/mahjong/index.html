@@ -229,7 +229,7 @@
             <div id="settings-offline-panel" class="settings-tab-panel settings-operation-panel" role="tabpanel"
               aria-labelledby="settings-offline-tab" data-settings-panel="offline" hidden>
               <h2 class="settings-general-heading">资源管理</h2>
-              <ul class="settings-list-card settings-general-list" aria-label="离线资源设置">
+              <ul class="settings-list-card settings-general-list settings-offline-list" aria-label="离线资源设置">
                 <li class="settings-general-list-item">
                   <button id="mahjong-offline-action-button" class="settings-list-item-button settings-offline-action"
                     type="button" aria-label="下载离线资源" title="下载离线资源">
@@ -240,17 +240,20 @@
                     </span>
                   </button>
                 </li>
-                <li class="settings-general-list-item">
-                  <label class="settings-list-item-button" for="mahjong-offline-policy-setting">
-                    <span class="settings-general-list-label">资源策略</span>
-                    <span class="settings-list-trailing settings-general-select">
-                      <select id="mahjong-offline-policy-setting" aria-label="资源策略">
-                        <option value="network-first">网络优先</option>
-                        <option value="local-first">本地优先（手动更新）</option>
-                      </select>
-                      <i class="settings-general-select-icon" data-lucide="chevrons-up-down" aria-hidden="true"></i>
-                    </span>
-                  </label>
+                <li id="mahjong-offline-policy-row" class="settings-general-list-item settings-offline-policy" inert aria-hidden="true">
+                  <div class="settings-offline-policy-content">
+                    <hr />
+                    <label class="settings-list-item-button" for="mahjong-offline-policy-setting">
+                      <span class="settings-general-list-label">资源策略</span>
+                      <span class="settings-list-trailing settings-general-select">
+                        <select id="mahjong-offline-policy-setting" aria-label="资源策略" disabled>
+                          <option value="network-first">网络优先</option>
+                          <option value="local-first">本地优先（手动更新）</option>
+                        </select>
+                        <i class="settings-general-select-icon" data-lucide="chevrons-up-down" aria-hidden="true"></i>
+                      </span>
+                    </label>
+                  </div>
                 </li>
               </ul>
               <p id="mahjong-offline-feedback" class="settings-offline-feedback" role="status" aria-live="polite">
@@ -433,7 +436,6 @@
         <div class="setup-scene">
           <div id="setup-menu" class="setup-menu">
             <div class="setup-menu-paper">
-              <h2 class="setup-menu-heading">单人对局</h2>
               <div class="setup-match-options" aria-label="选择对局长度">
                 <button class="setup-route-sign setup-route-east" type="button" data-match-type="east"
                   aria-label="东风场，东一局至东四局">

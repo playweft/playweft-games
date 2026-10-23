@@ -318,6 +318,41 @@
   font-size: 0.875em;
 }
 
+.settings-offline-list > li {
+  border-bottom: 0;
+}
+
+.settings-offline-list > .settings-offline-policy {
+  display: grid;
+  grid-template-rows: 0fr;
+  justify-content: stretch;
+  align-items: stretch;
+  gap: 0;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.settings-offline-policy.is-animated {
+  transition: grid-template-rows 200ms ease, opacity 160ms ease, visibility 200ms;
+}
+
+.settings-offline-list > .settings-offline-policy.is-expanded {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+}
+
+.settings-offline-policy-content {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.settings-offline-policy-content > hr {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid rgba(231, 198, 116, 0.16);
+}
+
 .settings-list-item-button {
   display: flex;
   box-sizing: border-box;
@@ -837,7 +872,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .settings-dialog,
-  .settings-dialog-card {
+  .settings-dialog-card,
+  .settings-offline-policy.is-animated {
     transition-duration: 0.01ms;
   }
 }

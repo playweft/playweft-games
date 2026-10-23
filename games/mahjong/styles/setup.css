@@ -283,26 +283,6 @@
   content: "";
 }
 
-.setup-menu-heading {
-  display: flex;
-  flex: 0 0 28px;
-  gap: 14px;
-  align-items: center;
-  margin: 0;
-  font-family: "Songti SC", STSong, SimSun, serif;
-  font-size: 21px;
-  font-weight: 600;
-  letter-spacing: 0.15em;
-}
-
-.setup-menu-heading::before,
-.setup-menu-heading::after {
-  height: 1px;
-  flex: 1;
-  background: #8d6c4166;
-  content: "";
-}
-
 .setup-match-options {
   display: flex;
   flex-direction: column;
@@ -554,7 +534,10 @@
   width: 254px;
   height: 460px;
   object-fit: contain;
-  filter: drop-shadow(0 5px 16px #120e0b99);
+  filter:
+    drop-shadow(0 0 4px #090a08)
+    drop-shadow(0 0 7px #090a08e6)
+    drop-shadow(0 0 12px #090a08b3);
 }
 
 .setup-panel.is-leaving .setup-menu {

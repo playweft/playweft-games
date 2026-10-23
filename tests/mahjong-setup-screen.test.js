@@ -5,7 +5,6 @@ import { createMahjongSetupScreenController } from "../games/mahjong/app/setup-s
 function fixture(initialSave = null) {
   let save = initialSave;
   const menu = new EventTarget();
-  const heading = {};
   const buttons = ["east", "hanchan"].map((matchType) => ({
     disabled: true, dataset: { matchType },
   }));
@@ -16,7 +15,7 @@ function fixture(initialSave = null) {
   };
   const setup = {
     hidden: true, inert: true, classList,
-    querySelector: (selector) => selector === ".setup-menu" ? menu : heading,
+    querySelector: (selector) => selector === ".setup-menu" ? menu : null,
     querySelectorAll: () => buttons,
   };
   let fallback;
@@ -27,20 +26,18 @@ function fixture(initialSave = null) {
     closePaipuPanel() {}, transientNotice: { show() {} },
     getSoloSave: () => save,
   });
-  return { controller, setup, loading, heading, buttons, menu, fallback: () => fallback(),
+  return { controller, setup, loading, buttons, menu, fallback: () => fallback(),
     clearSave: () => { save = null; },
   };
 }
 
-test("Mahjong lobby restores controls and labels solo and room entry correctly", () => {
+test("Mahjong lobby restores controls for solo and room entry", () => {
   const f = fixture();
   f.controller.show();
   assert.equal(f.setup.inert, false);
   assert.equal(f.setup.hidden, false);
   assert.ok(f.buttons.every((button) => !button.disabled));
-  assert.equal(f.heading.textContent, "单人对局");
   f.controller.showRoom();
-  assert.equal(f.heading.textContent, "联机对局");
   assert.equal(f.loading.hidden, true);
 });
 

@@ -6,6 +6,7 @@ const GAME_ID_PATTERN = /^[a-z0-9-]+$/;
 const BUILD_VERSION_PATTERN = /^[a-f0-9]{16}$/;
 const DEVELOPMENT_BUILD_VERSION = "development";
 const BUILD_VERSION_META_NAME = "playweft-build-version";
+const OFFLINE_MANIFEST_URL = "/__playweft-offline-package__";
 
 export const MAHJONG_GAME_ID = "mahjong";
 // Kept as the fallback for pages produced before build-version metadata existed.
@@ -99,6 +100,32 @@ export function writeGameOfflineSettings(
   return next;
 }
 
+/** A complete package must still contain every resource recorded at download time. */
+export async function hasGameOfflineResources(
+  gameId = MAHJONG_GAME_ID,
+  {
+    settings = readGameOfflineSettings(gameId),
+    buildVersion = readBuildContentVersion(),
+  } = {},
+) {
+  if (settings.mode !== "download" || settings.version !== buildVersion)
+    return false;
+  try {
+    const cacheName = gameOfflineCacheName(gameId, buildVersion);
+    if (!await globalThis.caches?.has(cacheName)) return false;
+    const cache = await caches.open(cacheName);
+    const manifest = await cache.match(OFFLINE_MANIFEST_URL);
+    if (!manifest) return false;
+    const { urls } = await manifest.json();
+    if (!Array.isArray(urls) || !urls.length) return false;
+    const cachedUrls = new Set((await cache.keys()).map((request) => request.url));
+    return urls.every((url) => typeof url === "string" && cachedUrls.has(url));
+  } catch {
+    // Storage can be unavailable or evicted without the saved preference changing.
+    return false;
+  }
+}
+
 export async function fetchGameResource(
   url,
   {
@@ -113,7 +140,11 @@ export async function fetchGameResource(
   const settings = readGameOfflineSettings(gameId);
   const selectedMode = mode || settings.mode;
   const selectedPolicy = policy || settings.policy;
-  const cache = typeof caches !== "undefined"
+  const available = await hasGameOfflineResources(gameId, {
+    settings: { ...settings, mode: selectedMode, version: mode ? buildVersion : settings.version },
+    buildVersion,
+  });
+  const cache = available
     ? await caches.open(gameOfflineCacheName(gameId, buildVersion))
     : null;
   if (selectedPolicy === "local-first" && cache) {
@@ -142,6 +173,7 @@ export async function cacheGameOfflineResources(
   } = {},
 ) {
   const cache = await caches.open(gameOfflineCacheName(gameId, buildVersion));
+  await cache.delete(OFFLINE_MANIFEST_URL);
   const results = [];
   for (const url of [...new Set((urls || []).filter(Boolean))]) {
     if (signal?.aborted) {
@@ -162,6 +194,11 @@ export async function cacheGameOfflineResources(
         error: error instanceof Error ? error.message : String(error),
       });
     }
+  }
+  if (!signal?.aborted && results.length && results.every((result) => result.ok)) {
+    await cache.put(OFFLINE_MANIFEST_URL, new Response(JSON.stringify({
+      urls: results.map(({ url }) => new Request(url).url),
+    }), { headers: { "Content-Type": "application/json" } }));
   }
   return results;
 }
@@ -187,26 +224,25 @@ export async function registerGameOfflineServiceWorker() {
   }
 }
 
-export function notifyGameOfflineSettings(
+export async function notifyGameOfflineSettings(
   gameId = MAHJONG_GAME_ID,
   settings = readGameOfflineSettings(gameId),
 ) {
   const buildVersion = readBuildContentVersion();
+  const available = await hasGameOfflineResources(gameId, { settings, buildVersion });
   const message = {
     type: "game-offline-settings",
     gameId: normalizeGameId(gameId),
-    mode:
-      settings.mode === "download" && settings.version === buildVersion
-        ? "download"
-        : DEFAULT_MODE,
-    policy: settings.policy === "local-first" ? "local-first" : DEFAULT_POLICY,
+    mode: available ? "download" : DEFAULT_MODE,
+    policy: available && settings.policy === "local-first" ? "local-first" : DEFAULT_POLICY,
     buildVersion,
   };
-  const controller = navigator.serviceWorker?.controller;
+  const serviceWorker = globalThis.navigator?.serviceWorker;
+  const controller = serviceWorker?.controller;
   if (controller) controller.postMessage(message);
-  else void navigator.serviceWorker?.ready.then((registration) => {
+  else void serviceWorker?.ready.then((registration) => {
     registration.active?.postMessage(message);
-  });
+  }).catch(() => {});
 }
 
 export function gameOfflineResourceUrls(gameId = MAHJONG_GAME_ID, extra = []) {

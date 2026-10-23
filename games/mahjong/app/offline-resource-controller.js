@@ -2,6 +2,7 @@ import {
   cacheGameOfflineResources,
   clearGameOfflineCache,
   gameOfflineResourceUrls,
+  hasGameOfflineResources,
   notifyGameOfflineSettings,
   readBuildContentVersion,
   readGameOfflineSettings,
@@ -12,6 +13,7 @@ import { Download, LoaderCircle, Trash2, createIcons } from "lucide";
 export function createMahjongOfflineResourceController({
   button,
   feedback,
+  policyRow,
   icons = { Download, LoaderCircle, Trash2 },
   createIconsImpl = createIcons,
   confirm,
@@ -19,16 +21,12 @@ export function createMahjongOfflineResourceController({
   gameId = "mahjong",
 } = {}) {
   const buildVersion = readBuildContentVersion();
-  const storedSettings = readGameOfflineSettings(gameId);
-  let state =
-    storedSettings.mode === "download" &&
-    storedSettings.version === buildVersion
-      ? "complete"
-      : "idle";
+  let state = "idle";
+  let checking = true;
   let abortController = null;
   let operationId = 0;
 
-  function render() {
+  function render({ animate = true } = {}) {
     if (!button) return;
     const downloading = state === "downloading";
     const complete = state === "complete";
@@ -43,6 +41,16 @@ export function createMahjongOfflineResourceController({
       : complete
         ? "删除离线资源"
         : "下载离线资源";
+    if (policyRow) {
+      if (!complete && policyRow.contains(policyRow.ownerDocument.activeElement))
+        button.focus({ preventScroll: true });
+      policyRow.inert = !complete;
+      policyRow.setAttribute("aria-hidden", String(!complete));
+      policyRow.classList.toggle("is-animated", animate);
+      policyRow.classList.toggle("is-expanded", complete);
+      policyRow.querySelector("select").disabled = !complete;
+    }
+    button.disabled = checking;
     button.classList.toggle("is-downloading", downloading);
     button.setAttribute("aria-label", action);
     button.setAttribute("title", action);
@@ -51,6 +59,7 @@ export function createMahjongOfflineResourceController({
   }
 
   async function download() {
+    await ready;
     const currentOperation = ++operationId;
     abortController = new AbortController();
     state = "downloading";
@@ -77,7 +86,7 @@ export function createMahjongOfflineResourceController({
           mode: "download",
           version: buildVersion,
         });
-        notifyGameOfflineSettings(gameId, settings);
+        await notifyGameOfflineSettings(gameId, settings);
       }
     } catch (error) {
       if (currentOperation !== operationId) return;
@@ -97,6 +106,7 @@ export function createMahjongOfflineResourceController({
   }
 
   async function clear() {
+    await ready;
     ++operationId;
     abortController?.abort();
     abortController = null;
@@ -106,12 +116,13 @@ export function createMahjongOfflineResourceController({
       ...readGameOfflineSettings(gameId),
       mode: "none",
     });
-    notifyGameOfflineSettings(gameId, settings);
+    await notifyGameOfflineSettings(gameId, settings);
     if (feedback) feedback.textContent = "已删除麻将离线缓存。";
     render();
   }
 
   async function handleAction() {
+    await ready;
     if (state === "downloading") abortController?.abort();
     else if (state === "complete") {
       const confirmed = await confirm?.(
@@ -121,8 +132,26 @@ export function createMahjongOfflineResourceController({
     } else await download();
   }
 
-  render();
+  async function refresh() {
+    if (abortController) return;
+    const currentOperation = operationId;
+    const settings = readGameOfflineSettings(gameId);
+    const available = await hasGameOfflineResources(gameId, { settings, buildVersion });
+    if (currentOperation !== operationId) return;
+    state = available ? "complete" : "idle";
+    checking = false;
+    if (!available && settings.mode === "download") {
+      const next = writeGameOfflineSettings(gameId, { ...settings, mode: "none" });
+      await notifyGameOfflineSettings(gameId, next);
+    }
+    render({ animate: false });
+  }
+
+  render({ animate: false });
+  const ready = refresh();
   return {
+    ready,
+    refresh,
     get state() {
       return state;
     },

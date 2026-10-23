@@ -25,15 +25,11 @@ export function createMahjongSetupScreenController({
         savedMatchType && button.dataset.matchType !== savedMatchType,
       );
     }
-    const heading = elements.setup.querySelector(".setup-menu-heading");
-    if (heading) heading.textContent = "单人对局";
     elements.setup.hidden = false;
   }
 
   function showRoom() {
     show({ room: true });
-    const heading = elements.setup.querySelector(".setup-menu-heading");
-    if (heading) heading.textContent = "联机对局";
     elements.loading.classList.remove("is-room-waiting");
     elements.loading.hidden = true;
   }

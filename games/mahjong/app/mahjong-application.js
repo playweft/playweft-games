@@ -280,6 +280,7 @@ export async function createMahjongApplication({
   const offlineResourceController = createMahjongOfflineResourceController({
     button: document.querySelector("#mahjong-offline-action-button"),
     feedback: document.querySelector("#mahjong-offline-feedback"),
+    policyRow: document.querySelector("#mahjong-offline-policy-row"),
     createIconsImpl: createIcons,
     confirm: (message) =>
       isStandalone ? window.confirm(message) : playweftClient?.confirm(message),
@@ -349,7 +350,10 @@ export async function createMahjongApplication({
     getAdditionalFocusable: () => helpIframePortal.getFocusableElements(),
     onOpenChange: (open) =>
       helpIframePortal.setActive(open && elements.settingsHelpPanel?.hidden === false),
-    onTabChange: (name) => helpIframePortal.setActive(name === "help"),
+    onTabChange: (name) => {
+      helpIframePortal.setActive(name === "help");
+      if (name === "offline") void offlineResourceController.refresh();
+    },
   });
   const autoActionController = createMahjongAutoActionController({
     elements,

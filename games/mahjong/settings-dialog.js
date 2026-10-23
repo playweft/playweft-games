@@ -226,10 +226,10 @@ export function createMahjongSettingsDialog({
     if (event.key !== "Tab") return;
     const focusable = [
       ...surface.querySelectorAll(
-        'button:not([disabled]):not([tabindex="-1"]), input:not([disabled]), iframe',
+        'button:not([disabled]):not([tabindex="-1"]), input:not([disabled]), select:not([disabled]), iframe',
       ),
       ...getAdditionalFocusable(),
-    ].filter((element) => !element.closest("[hidden]"));
+    ].filter((element) => !element.closest("[hidden], [inert]"));
     if (!focusable.length) return;
     const first = focusable[0];
     const last = focusable.at(-1);
@@ -318,7 +318,7 @@ export function createMahjongSettingsDialog({
   }
 
   function onOfflinePolicyRowClick(event) {
-    if (!offlinePolicy || event.target === offlinePolicy) return;
+    if (!offlinePolicy || offlinePolicy.disabled || event.target === offlinePolicy) return;
     offlinePolicy.focus({ preventScroll: true });
     try {
       offlinePolicy.showPicker?.();
