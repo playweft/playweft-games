@@ -29,8 +29,5 @@
   ],
   "background_color": "#f5f5f0",
   "theme_color": "#1e6e59",
-  "help_url": "./help.html",
-  "modes": {
-    "solo": {}
-  }
+  "help_url": "./help.html"
 }

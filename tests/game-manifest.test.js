@@ -54,7 +54,7 @@ test("Every game package has a strict Playweft Manifest v1 for bridge v1", async
         "icons",
         ...(Object.hasOwn(manifest, "launch_mode") ? ["launch_mode"] : []),
         "manifest_version",
-        "modes",
+        ...(game === "sudoku" ? [] : ["modes"]),
         "name",
         "name_localized",
         ...(["dou-dizhu", "mahjong"].includes(game) ? ["orientation"] : []),
@@ -73,7 +73,7 @@ test("Every game package has a strict Playweft Manifest v1 for bridge v1", async
     assert.deepEqual(manifest.protocol, { min: 1, max: 1 });
     assert.equal(manifest.start_url, "./");
     if (manifest.launch_mode !== undefined) {
-      assert.ok(["auto", "solo"].includes(manifest.launch_mode));
+      assert.ok(["auto", "solo", "choose"].includes(manifest.launch_mode));
       if (manifest.launch_mode === "solo") {
         assert.ok(manifest.modes.solo, `${game} solo entry requires solo mode`);
       }
@@ -116,7 +116,7 @@ test("Every game package has a strict Playweft Manifest v1 for bridge v1", async
     assert.equal("permissions" in manifest, false);
 
     if (game === "sudoku") {
-      assert.deepEqual(manifest.modes, { solo: {} });
+      assert.equal(Object.hasOwn(manifest, "modes"), false);
       continue;
     }
 

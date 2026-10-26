@@ -8,6 +8,7 @@
     "max": 1
   },
   "start_url": "./",
+  "launch_mode": "choose",
   "name": "Go",
   "name_localized": {
     "zh-CN": "围棋"
