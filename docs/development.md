@@ -155,6 +155,15 @@ analysis counters together. Free practice keeps `playweft.mahjong.solo-save.v1`.
 Completed replay archives remain independent and may be evicted without losing
 career results. No account synchronization is implied by platform-owned storage.
 
+After the third placement match's final-hand result, the ordinary match summary
+is replaced by a paper-and-bamboo `定段結果` page. It shows the initial grade,
+all three matches' ranks, final scores and points, and their total; it does not
+display decision evaluation. “开始联赛” starts the first league match in the
+same slot, while “返回大厅” returns to the three career slots. The slot's
+`placementResultSeen` flag is acknowledged and flushed only on either action.
+An unacknowledged grade is shown when the slot is reopened after a reload.
+Older slots can show it once if league play has not already begun.
+
 Version 1 progression is deliberately game-specific, not the official league
 rulebook: three hanchan placement matches, then eight hanchan per period across
 E1, D3, D2, D1, C3, C2, C1, B2, B1, A2, A1. Match points are
@@ -165,12 +174,14 @@ retain the tier. E1 and A1 are boundaries. Progression constants and placement
 thresholds are in `games/mahjong/career/career.js`; opponents currently use the
 existing local AI policy at every tier.
 
-Initial placement uses mean match points (thresholds -30, -10, +10, +30), with
-at most a one-tier decision-quality adjustment after at least 30 reviewed manual
-discards. Mean quality >=90 with <10% major deviations raises placement one tier;
-mean quality <60 or >=20% major deviations lowers it one. If candidate review is
-unavailable but at least 30 exact comparisons exist, >=75% / <25% agreement gives
-the corresponding adjustment. Placement is bounded to E1–C2. These are provisional
+Initial placement grants C2 when three-match points total at least +120,
+regardless of decision metrics, or when the total is at least +90 and at least
+30 reviewed manual discards have mean quality strictly >80 and a major-deviation
+rate <=10%. Quality and mistakes are pooled across all reviewed decisions.
+Otherwise the three-match total determines the tier: >=+90 C3, >=+30 D1,
+>=-30 D2, >=-90 D3, below -90 E1. There is no subsequent one-tier adjustment,
+no exact-agreement fallback and no hidden point bonus. Saved, completed placements
+are not recalculated. Placement is bounded to E1–C2. These are provisional
 game-balance thresholds, not calibrated human-rank estimates.
 
 The match worker optionally reviews a manual career discard before applying it.
@@ -189,3 +200,22 @@ match ID. Starting the next match allocates a fresh seed and ID. Restoring a
 finished but unsettled checkpoint repairs its settlement; restoring an already
 settled result never counts the match twice. Settings offers “保存并返回” during
 career play. Invalid slot records block startup and preserve the original data.
+
+
+### Brush font coverage
+
+Mahjong uses the Bakudai subset for lobby mode signs, match/round/wind labels,
+action buttons/callouts, result continuation/waiting labels, traditional yaku
+names, draw reasons, and career result titles/buttons/grades. Ordinary settings text, career save summaries, player
+names, and score-sheet numbers use their existing UI/Kalam fonts.
+
+`node build/fonts/mahjong-brush-text.js --check` verifies the generated glyph list
+against the current lobby labels and known dynamic brush labels. Rebuild using
+`bash games/mahjong/assets/fonts/build-bakudai-subset.sh /path/to/Bakudai-Regular.woff2`.
+The script regenerates the text list, checks source coverage, builds WOFF2 and
+verifies its output cmap. Missing simplified 继/续/厅/联/赛/开 codepoints use
+the corresponding 繼/續/廳/聯/賽/開 glyphs while preserving UI/accessibility text.
+
+The home `友人戦` sign is the existing capability-gated `room.create` entry;
+progress is flushed before creation. Legacy API-created rooms return to the
+originating game after they end; the platform owns this navigation.

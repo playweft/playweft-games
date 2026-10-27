@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { Window } from "happy-dom";
 
 import { createMahjongEffectRunner } from "../games/mahjong/app/effect-runner.js";
 import { createMahjongTableController } from "../games/mahjong/app/table-controller.js";
@@ -13,6 +14,8 @@ function createController({
   activeGame = false,
   mode = "solo",
   humanId = "human",
+  elements = {},
+  onShowMatchSummary,
 } = {}) {
   const calls = [];
   const domOptions = [];
@@ -34,7 +37,7 @@ function createController({
         callback();
       },
     },
-    elements: {},
+    elements,
     domView: {
       visualUi(_playerName, selectedTileId) {
         return selectedTileId ? { selectedTileId } : {};
@@ -92,6 +95,7 @@ function createController({
     getThemeMatchMusicUrl: () => matchMusicUrl,
     getThemeRiichiMusicUrl: () => riichiMusicUrl,
     dispatch: onDispatch,
+    onShowMatchSummary,
   });
   return {
     controller,
@@ -102,6 +106,23 @@ function createController({
     music,
   };
 }
+
+test("finished-match summary can open a career grade reveal before rendering the ordinary ranking", async () => {
+  const window = new Window();
+  const document = window.document;
+  document.body.innerHTML = '<section id="result"><div id="track"></div><button id="continue"></button><section id="summary" hidden></section><button id="setup"></button></section>';
+  const elements = { result: document.querySelector("#result"), resultTrack: document.querySelector("#track"), rematch: document.querySelector("#continue"), matchSummary: document.querySelector("#summary"), matchSummarySetup: document.querySelector("#setup") };
+  const summaries = [];
+  const { controller } = createController({ elements, onShowMatchSummary: (state) => { summaries.push(state); return true; } });
+  try {
+    await controller.refresh({ state: { phase: "hand_ended", matchEnded: true, draw: true, moveCount: 5, ownHand: [], players: ["human", "a", "b", "c"], legalActions: {} }, events: [] });
+    assert.equal(summaries.length, 0);
+    await controller.continueResult();
+    assert.equal(summaries.length, 1);
+    assert.equal(summaries[0].matchEnded, true);
+    assert.equal(elements.matchSummary.hidden, true);
+  } finally { await window.happyDOM.close(); }
+});
 
 test("mahjong room spectator gets a fixed read-only table projection", async () => {
   const dispatched = [];

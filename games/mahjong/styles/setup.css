@@ -646,8 +646,9 @@
 }
 
 /* Keep the timber frame and scene fixed while menu contents fade between levels. */
-.setup-menu-paper { transition: opacity 160ms ease; }
-.setup-menu-paper.is-menu-fading { opacity: 0; pointer-events: none; }
+.setup-menu-paper > * { transition: opacity 160ms ease; }
+.setup-menu-paper.is-menu-fading > * { opacity: 0; pointer-events: none; }
+.setup-panel[data-lobby-view="home"] .setup-route-sign { min-height: 112px; }
 .setup-lobby-page[hidden] { display: none; }
 .setup-submenu-header { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
 .setup-submenu-header h2 { margin: 0; font-size: 26px; font-weight: 500; }
@@ -670,4 +671,4 @@
 .setup-panel[data-lobby-view="career"] .setup-secondary-actions,
 .setup-panel[data-lobby-view="career"] .setup-menu-divider { display: none; }
 .setup-panel[data-lobby-view="career"] .setup-menu-paper { overflow-y: auto; }
-@media (prefers-reduced-motion: reduce) { .setup-menu-paper { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .setup-menu-paper > * { transition: none; } }

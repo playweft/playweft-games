@@ -84,6 +84,7 @@ import {
 } from "../replay/paipu-store.js";
 import { createMahjongCompletedPaipuSaver } from "../replay/completed-paipu.js";
 import { createMahjongPaipuPanel } from "../replay/paipu-panel.js";
+import { createMahjongCareerResult } from "./career-result-controller.js";
 
 export function createMahjongMatchRuntime({
   document,
@@ -463,6 +464,29 @@ export function createMahjongMatchRuntime({
   // Create the stable local default before either solo play or room identity is
   // entered. A room later replaces HUMAN_ID with the authoritative player ID.
   themeController.setRoomPlayerIdentity?.(HUMAN_ID);
+  const careerResult = createMahjongCareerResult({
+    document, careerStore, flush: () => storage.flush(),
+    onStartLeague: async (slot) => {
+      await teardownCompletedSoloMatch();
+      careerResult.hide();
+      await startCareer(slot);
+    },
+    onReturnToLobby: () => teardownCompletedSoloMatch(),
+    showError: (message) => transientNotice.show(message),
+  });
+
+  function showCareerPlacementResult() {
+    if (matchCoordinator.getMode() !== "solo" || !careerStore?.activeSlot) return false;
+    if (!careerResult.show(careerStore.read(careerStore.activeSlot))) return false;
+    session?.cancelScheduledActions();
+    tableController?.syncMatchMusic({ enabled: false });
+    settingsDialog.setSoloMatchActive(false);
+    elements.setup.hidden = true;
+    elements.result.hidden = true;
+    elements.loading.hidden = true;
+    return true;
+  }
+
   tableController = createMahjongTableController({
     document,
     window,
@@ -529,6 +553,7 @@ export function createMahjongMatchRuntime({
     onReplayAdvance: (action) => advanceMahjongPaipuReplayFromResult(action),
     onReplayResultExitStart: () => replayController?.onResultExitStart(),
     onReturnToSetup: teardownCompletedSoloMatch,
+    onShowMatchSummary: showCareerPlacementResult,
     onRestartMatch: async () => {
       if (!careerStore?.activeSlot) return false;
       const slot = careerStore.activeSlot;
@@ -826,6 +851,7 @@ export function createMahjongMatchRuntime({
   async function startCareer(slot) {
     if (matchCoordinator.getMode() !== "solo" || matchCoordinator.getGame() || matchCoordinator.isGameInitializing()) return;
     const career = careerStore.activate(slot);
+    if (showCareerPlacementResult()) return;
     // An already settled checkpoint may have been left on the result screen.
     // It must never become the next match or be settled a second time.
     if (career.currentMatch && career.lastSettlement?.matchId === career.currentMatch.matchId) {
@@ -968,6 +994,7 @@ export function createMahjongMatchRuntime({
   function destroy() {
     if (!matchCoordinator.destroy()) return;
     releaseUiBindings?.();
+    careerResult.destroy();
     roomEntry.destroy();
     session?.cancelScheduledActions();
     tableController?.destroy();

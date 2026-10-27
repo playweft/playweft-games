@@ -5,6 +5,8 @@ import { readMahjongSoloSave } from "../replay/solo-save.js";
 export const CAREER_KEYS = [1, 2, 3].map((slot) => `playweft.mahjong.career.slot-${slot}.v1`);
 export const CAREER_TIERS = ["E1", "D3", "D2", "D1", "C3", "C2", "C1", "B2", "B1", "A2", "A1"];
 export const PLACEMENT_MATCHES = 3;
+export const PLACEMENT_C2_POINTS = 120;
+export const PLACEMENT_MIN_REVIEWS = 30;
 export const LEAGUE_MATCHES = 8;
 export const PROMOTION_POINTS = 80;
 export const RELEGATION_POINTS = -80;
@@ -18,6 +20,7 @@ export function createCareer({ id = crypto.randomUUID(), now = Date.now() } = {}
     phase: "placement", tier: null, highestTier: null,
     placement: [], period: { number: 1, results: [] },
     completedMatches: 0, history: [], lastSettlement: null,
+    placementResultSeen: false,
     analysis: { matchId: null, eligible: 0, agreed: 0, unavailable: 0, reviewed: 0, qualityTotal: 0, majorMistakes: 0, version: CAREER_AI_VERSION },
     currentMatch: null,
   };
@@ -49,6 +52,7 @@ export function parseCareer(raw) {
       !value.period.results.every(validResult) ||
       !Number.isSafeInteger(value.completedMatches) || value.completedMatches < 0 ||
       !Number.isSafeInteger(value.revision) || value.revision < 0 ||
+      (value.placementResultSeen !== undefined && typeof value.placementResultSeen !== "boolean") ||
       ![value.createdAt, value.updatedAt].every(Number.isFinite) ||
       !Array.isArray(value.history) || value.history.length > 32 ||
       !validAnalysis(value.analysis) ||
@@ -61,25 +65,23 @@ export function parseCareer(raw) {
 }
 
 export function placementTier(results) {
-  const average = results.reduce((total, result) => total + result.points, 0) / results.length;
-  const eligible = results.reduce((total, result) => total + result.analysis.eligible, 0);
-  const agreed = results.reduce((total, result) => total + result.analysis.agreed, 0);
-  // Results dominate. Agreement can adjust the initial placement by at most
-  // one tier, and only with a meaningful number of observed decisions.
-  let tier = average >= 30 ? 4 : average >= 10 ? 3 : average >= -10 ? 2 : average >= -30 ? 1 : 0;
+  const points = round(results.reduce((total, result) => total + result.points, 0));
+  if (points >= PLACEMENT_C2_POINTS) return "C2";
   const reviewed = results.reduce((total, result) => total + result.analysis.reviewed, 0);
   const quality = results.reduce((total, result) => total + result.analysis.qualityTotal, 0);
   const major = results.reduce((total, result) => total + result.analysis.majorMistakes, 0);
-  if (reviewed >= 30) {
-    // Score-gap review gives near-equivalent alternatives the same credit as
-    // the policy's preferred tile. It is a small initial-placement adjustment.
-    if (quality / reviewed >= 90 && major / reviewed < 0.1) tier += 1;
-    else if (quality / reviewed < 60 || major / reviewed >= 0.2) tier -= 1;
-  } else if (eligible >= 30) {
-    if (agreed / eligible >= 0.75) tier += 1;
-    else if (agreed / eligible < 0.25) tier -= 1;
-  }
-  return CAREER_TIERS[Math.max(0, Math.min(5, tier))];
+  // A second C2 route rewards reviewed choices, including near-equivalent
+  // alternatives. Exact agreement alone is not a quality estimate.
+  if (points >= 90 && reviewed >= PLACEMENT_MIN_REVIEWS &&
+      quality > 80 * reviewed && major * 10 <= reviewed) return "C2";
+  return points >= 90 ? "C3" : points >= 30 ? "D1" : points >= -30 ? "D2" : points >= -90 ? "D3" : "E1";
+}
+
+// Old saves can reveal their initial grade once, unless league play has already begun.
+export function hasPendingPlacementResult(career) {
+  return Boolean(career?.phase === "ranked" && !career.placementResultSeen &&
+    career.completedMatches === PLACEMENT_MATCHES && career.lastSettlement?.outcome === "placed" &&
+    (!career.currentMatch || career.currentMatch.matchId === career.lastSettlement.matchId));
 }
 
 export function settleCareer(career, state, humanId = HUMAN_ID, now = Date.now()) {
@@ -150,6 +152,11 @@ export function createCareerStore(storage = getGameStorage("mahjong")) {
       return career;
     },
     deactivate() { activeSlot = null; },
+    acknowledgePlacementResult() {
+      if (!activeSlot) throw new Error("No active career");
+      const career = read(activeSlot);
+      if (hasPendingPlacementResult(career)) write(activeSlot, { ...career, placementResultSeen: true });
+    },
     persistMatch(save, state, evaluation) {
       if (!activeSlot) throw new Error("No active career");
       let career = read(activeSlot);

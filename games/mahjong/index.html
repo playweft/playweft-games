@@ -432,6 +432,28 @@
         </section>
       </section>
 
+      <section id="career-result" class="career-result" aria-labelledby="career-result-title" hidden>
+        <div class="career-result-frame">
+          <div class="career-result-paper">
+            <div class="career-result-mode"><span data-career-brush>立志戦</span></div>
+            <h2 id="career-result-title" data-career-brush>定段結果</h2>
+            <div class="career-result-rank">
+              <strong id="career-result-grade" aria-label="初始等级"></strong>
+            </div>
+            <p class="career-result-caption">初始等级</p>
+            <table class="career-result-table" aria-label="三场定段赛成绩">
+              <thead><tr><th scope="col">场次</th><th scope="col">顺位</th><th scope="col">得点</th><th scope="col">成绩</th></tr></thead>
+              <tbody id="career-result-rows"></tbody>
+            </table>
+            <p class="career-result-sum">合计 <strong id="career-result-total"></strong></p>
+            <div class="career-result-actions">
+              <button id="career-result-back" type="button"><span data-career-brush>返回大厅</span></button>
+              <button id="career-result-start" class="career-result-primary" type="button"><span data-career-brush>开始联赛</span><span aria-hidden="true">›</span></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="setup-panel" class="setup-panel" data-lobby-view="home" aria-label="麻将大厅">
         <div class="setup-scene">
           <div id="setup-menu" class="setup-menu">
@@ -443,6 +465,9 @@
                   </button>
                   <button class="setup-route-sign" type="button" data-lobby-target="training">
                     <span class="setup-route-name">修練戦</span><i data-lucide="chevron-right" aria-hidden="true"></i>
+                  </button>
+                  <button id="create-room-button" class="setup-route-sign setup-room-entry" type="button" hidden>
+                    <span class="setup-route-name" data-room-entry-label>友人戦</span><i data-lucide="chevron-right" aria-hidden="true"></i>
                   </button>
                 </div>
               </div>
@@ -469,10 +494,6 @@
               </div>
               <div class="setup-menu-divider" aria-hidden="true"><span></span></div>
               <div class="setup-secondary-actions">
-                <button id="create-room-button" class="setup-secondary-entry setup-room-entry" type="button" hidden>
-                  <i data-lucide="users-round" aria-hidden="true"></i>
-                  <span data-room-entry-label>创建房间</span>
-                </button>
                 <button class="setup-secondary-entry setup-paipu-entry" type="button" aria-label="牌谱">
                   <i data-lucide="book-open" aria-hidden="true"></i>
                   <span>牌谱</span>

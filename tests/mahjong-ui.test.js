@@ -2575,7 +2575,7 @@ test("mahjong renders a compact fixed five-slot dora rack", () => {
   assert.match(interfaceFontNotice, /Bakudai Brush Font/);
   assert.match(interfaceFontNotice, /SIL Open Font License 1\.1/);
   assert.match(interfaceFontNotice, /one WOFF2 subset/);
-  for (const label of ["荒牌流局", "九種九牌", "四風連打"]) {
+  for (const label of ["立志戦", "修練戦", "友人戦", "定段結果", "开始联赛", "返回大厅", "ABCDE123", "创建中", "继续", "等待中", "荒牌流局", "九種九牌", "四風連打"]) {
     assert.ok(
       [...label].every((character) => mahjongBrushText.includes(character)),
       `${label} is included in the unified font subset`,

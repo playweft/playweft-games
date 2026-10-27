@@ -1,3 +1,5 @@
+export const ROOM_ENTRY_LABELS = Object.freeze({ idle: "友人戦", busy: "创建中" });
+
 /** The platform owns lobby navigation; the running solo match stays unchanged. */
 export function createMahjongRoomEntry({ button, getClient, beforeCreate = () => {}, showError }) {
   const label = button.querySelector?.("[data-room-entry-label]") ?? button;
@@ -8,7 +10,7 @@ export function createMahjongRoomEntry({ button, getClient, beforeCreate = () =>
   function render() {
     button.hidden = !available;
     button.disabled = busy;
-    label.textContent = busy ? "正在创建…" : "创建房间";
+    label.textContent = busy ? ROOM_ENTRY_LABELS.busy : ROOM_ENTRY_LABELS.idle;
     button.setAttribute("aria-busy", String(busy));
   }
 

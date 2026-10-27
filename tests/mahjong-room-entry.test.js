@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFile } from "node:fs/promises";
+import { Window } from "happy-dom";
 import { createMahjongRoomEntry } from "../games/mahjong/app/room-entry.js";
 import { createPlayweftClient } from "../src/playweft-client.js";
 
@@ -65,7 +66,7 @@ test("Mahjong flushes progress before creating once, and lets the platform navig
   await tick();
   assert.deepEqual(actions, ["save", "create"]);
   assert.equal(f.button.disabled, false);
-  assert.equal(f.button.textContent, "创建房间");
+  assert.equal(f.button.textContent, "友人戦");
   assert.deepEqual(f.errors, []);
   f.entry.destroy();
 });
@@ -154,12 +155,36 @@ test("Mahjong room entry updates its label without removing the icon", async () 
     beforeCreate: async () => {}, showError: assert.fail,
   });
   entry.setContext(context);
-  assert.equal(label.textContent, "创建房间");
+  assert.equal(label.textContent, "友人戦");
   button.dispatchEvent(new Event("click"));
-  assert.equal(label.textContent, "正在创建…");
+  assert.equal(label.textContent, "创建中");
   assert.equal(button.textContent, undefined);
   resolve({ roomId: "room-1" });
   await tick();
-  assert.equal(label.textContent, "创建房间");
+  assert.equal(label.textContent, "友人戦");
   entry.destroy();
+});
+
+
+test("the home friend-battle sign uses the room entry controller and keeps other menus separate", async () => {
+  const html = await readFile(new URL("../games/mahjong/index.html", import.meta.url), "utf8");
+  const window = new Window();
+  window.document.body.innerHTML = html.slice(html.indexOf("<body>") + 6, html.indexOf("</body>"));
+  const button = window.document.querySelector("#create-room-button");
+  assert.equal(button.closest("[data-lobby-page]").dataset.lobbyPage, "home");
+  assert.equal(window.document.querySelectorAll("#create-room-button").length, 1);
+  let requests = 0;
+  const entry = createMahjongRoomEntry({ button,
+    getClient: () => ({ createRoom: async () => { requests++; return { roomId: "test-room" }; } }),
+    beforeCreate: async () => {}, showError: assert.fail,
+  });
+  entry.setContext(context);
+  assert.equal(button.hidden, false);
+  assert.equal(button.querySelector("[data-room-entry-label]").textContent, "友人戦");
+  button.click(); await tick();
+  assert.equal(requests, 1);
+  entry.setContext({ mode: "room" });
+  assert.equal(button.hidden, true);
+  entry.destroy();
+  await window.happyDOM.close();
 });

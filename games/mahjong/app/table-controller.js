@@ -86,6 +86,7 @@ export function createMahjongTableController({
   onReplayResultExitStart,
   onReturnToSetup,
   onRestartMatch,
+  onShowMatchSummary,
 } = {}) {
   let state;
   let viewerSeat = 1;
@@ -731,6 +732,10 @@ export function createMahjongTableController({
 
   function showMatchSummary() {
     if (!state?.matchEnded) return;
+    if (onShowMatchSummary?.(state)) {
+      resultHandRenderer.hide();
+      return;
+    }
     matchSummaryVisible = true;
     elements.result.classList.add("is-match-summary");
     elements.matchSummarySetup.hidden = getMode?.() === "room";
