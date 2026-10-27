@@ -1,3 +1,5 @@
+import { usesMahjongOpfs } from "../storage/environment.js";
+import { openMahjongPaipuOpfs } from "../storage/paipu-opfs.js";
 import {
   hasCompleteRoomPaipuHandSequence,
   mergeRoomPaipuFragmentRecord,
@@ -9,11 +11,11 @@ export const MAHJONG_PAIPU_MAX_RECORDS = 500;
 export const MAHJONG_PAIPU_MAX_BYTES = 50 * 1024 * 1024;
 export const MAHJONG_PAIPU_MAX_RECORD_BYTES = 2 * 1024 * 1024;
 
-export async function saveMahjongPaipu(record, options = {}) {
+async function saveMahjongPaipuImpl(record, options = {}) {
   const maxRecords = options.maxRecords ?? MAHJONG_PAIPU_MAX_RECORDS;
   const maxBytes = options.maxBytes ?? MAHJONG_PAIPU_MAX_BYTES;
   const maxRecordBytes = options.maxRecordBytes ?? MAHJONG_PAIPU_MAX_RECORD_BYTES;
-  const db = await openMahjongPaipuDatabase(options.indexedDB);
+  const db = await openPaipuStorage(options);
   try {
     if (record?.roomFragment === true) {
       const previous = await readOne(db, "records", record.id);
@@ -89,8 +91,8 @@ async function saveCompletedRecord(
   return { saved: true, completed: true, evictedIds };
 }
 
-export async function listMahjongPaipuSummaries(options = {}) {
-  const db = await openMahjongPaipuDatabase(options.indexedDB);
+async function listMahjongPaipuSummariesImpl(options = {}) {
+  const db = await openPaipuStorage(options);
   try {
     const summaries = await readAll(db, "matches");
     return summaries.sort((left, right) => Number(right.endedAtMs) - Number(left.endedAtMs));
@@ -99,8 +101,8 @@ export async function listMahjongPaipuSummaries(options = {}) {
   }
 }
 
-export async function loadMahjongPaipu(id, options = {}) {
-  const db = await openMahjongPaipuDatabase(options.indexedDB);
+async function loadMahjongPaipuImpl(id, options = {}) {
+  const db = await openPaipuStorage(options);
   try {
     const record = await readOne(db, "records", id);
     return record ? validateMahjongPaipu(record) : null;
@@ -109,9 +111,10 @@ export async function loadMahjongPaipu(id, options = {}) {
   }
 }
 
-export async function setMahjongPaipuPinned(id, pinned, options = {}) {
-  const db = await openMahjongPaipuDatabase(options.indexedDB);
+async function setMahjongPaipuPinnedImpl(id, pinned, options = {}) {
+  const db = await openPaipuStorage(options);
   try {
+    if (db.opfs) return await db.setPinned(id, pinned);
     return await new Promise((resolve, reject) => {
       const transaction = db.transaction("matches", "readwrite");
       const store = transaction.objectStore("matches");
@@ -368,14 +371,17 @@ function openMahjongPaipuDatabase(indexedDB = globalThis.indexedDB) {
 }
 
 function readAll(db, storeName) {
+  if (db.opfs) return db.readAll(storeName);
   return requestResult(db.transaction(storeName, "readonly").objectStore(storeName).getAll());
 }
 
 function readOne(db, storeName, id) {
+  if (db.opfs) return db.readOne(storeName, id);
   return requestResult(db.transaction(storeName, "readonly").objectStore(storeName).get(id));
 }
 
 function writeProgressRecord(db, record) {
+  if (db.opfs) return db.writeProgress(record);
   return new Promise((resolve, reject) => {
     const transaction = db.transaction("records", "readwrite");
     transaction.oncomplete = () => resolve();
@@ -386,6 +392,7 @@ function writeProgressRecord(db, record) {
 }
 
 function writeRecords(db, record, summary, evictedIds) {
+  if (db.opfs) return db.writeRecords(record, summary, evictedIds);
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(["matches", "records"], "readwrite");
     transaction.oncomplete = () => resolve();
@@ -411,4 +418,49 @@ function requestResult(request) {
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+let opfsConnection;
+let opfsTail = Promise.resolve();
+function useOpfs(options) {
+  return Boolean(options.opfs) || (options.indexedDB === undefined && usesMahjongOpfs());
+}
+async function openPaipuStorage(options) {
+  if (!useOpfs(options)) return openMahjongPaipuDatabase(options.indexedDB);
+  if (options.opfs) return options.opfs;
+  if (!opfsConnection) {
+    opfsConnection = (async () => {
+      const storage = await openMahjongPaipuOpfs();
+      await storage.migrate(async () => {
+        const db = await openMahjongPaipuDatabase();
+        try {
+          return { records: await readAll(db, "records"), matches: await readAll(db, "matches") };
+        } finally { db.close(); }
+      });
+      return storage;
+    })();
+    void opfsConnection.catch(() => { opfsConnection = undefined; });
+  }
+  return opfsConnection;
+}
+function runPaipuOperation(action, options) {
+  if (!useOpfs(options)) return action();
+  // Serialize complete read/modify/write operations, including retention and
+  // fragment merging. Web Locks also coordinates multiple same-partition tabs.
+  const result = opfsTail.then(() => globalThis.navigator?.locks?.request
+    ? navigator.locks.request("mahjong-paipu-opfs", action) : action());
+  opfsTail = result.catch(() => {});
+  return result;
+}
+export function saveMahjongPaipu(record, options = {}) {
+  return runPaipuOperation(() => saveMahjongPaipuImpl(record, options), options);
+}
+export function listMahjongPaipuSummaries(options = {}) {
+  return runPaipuOperation(() => listMahjongPaipuSummariesImpl(options), options);
+}
+export function loadMahjongPaipu(id, options = {}) {
+  return runPaipuOperation(() => loadMahjongPaipuImpl(id, options), options);
+}
+export function setMahjongPaipuPinned(id, pinned, options = {}) {
+  return runPaipuOperation(() => setMahjongPaipuPinnedImpl(id, pinned, options), options);
 }
