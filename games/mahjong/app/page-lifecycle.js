@@ -8,11 +8,14 @@ export function createMahjongPageLifecycle({
   resumeMatchMusic,
 } = {}) {
   function revealAppAfterStyles() {
-    window.requestAnimationFrame(() => {
+    return new Promise((resolve) => {
       window.requestAnimationFrame(() => {
-        document.documentElement.classList.add("mahjong-app-ready");
-        const splash = document.querySelector("#mahjong-boot-splash");
-        window.setTimeout(() => splash?.remove(), 220);
+        window.requestAnimationFrame(() => {
+          document.documentElement.classList.add("mahjong-app-ready");
+          const splash = document.querySelector("#mahjong-boot-splash");
+          window.setTimeout(() => splash?.remove(), 220);
+          resolve();
+        });
       });
     });
   }
