@@ -10,6 +10,8 @@ import {
 /** Keeps local-match persistence separate from the action and UI lifecycles. */
 export function createMahjongSoloSaveController({
   initialSave,
+  writeSave = writeMahjongSoloSave,
+  clearSave = clearMahjongSoloSave,
   humanId,
   getThemeController,
   saveCompletedPaipu,
@@ -24,23 +26,25 @@ export function createMahjongSoloSaveController({
     save = next;
   }
 
-  function write(next = save) {
+  function write(next = save, state, evaluation) {
     save = next;
-    if (next) writeMahjongSoloSave(next);
+    if (next) return writeSave(next, state, evaluation);
   }
 
   function clear() {
-    clearMahjongSoloSave();
+    clearSave();
     save = null;
   }
 
-  async function persistAcceptedAction(action, actorId, projection, game) {
+  async function persistAcceptedAction(action, actorId, projection, game, evaluation) {
+    let checkpointState;
     if (!save) return;
     let next = appendMahjongSoloAction(save, action, actorId);
     if (!next) return;
     if (projection?.state?.phase === "hand_ended" && game) {
       try {
         const snapshot = await game.checkpoint();
+        checkpointState = snapshot.state;
         next =
           setMahjongSoloCheckpoint(next, {
             formatVersion: MAHJONG_SOLO_CHECKPOINT_VERSION,
@@ -57,7 +61,7 @@ export function createMahjongSoloSaveController({
         );
       }
     }
-    write(next);
+    await write(next, checkpointState, evaluation);
     if (!projection?.state?.matchEnded || !game?.exportPaipu) return;
     try {
       const paipu = {

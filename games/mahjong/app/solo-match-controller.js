@@ -32,6 +32,9 @@ export function createMahjongSoloMatchController({
   showSetup,
   showSetupRecoveryError,
   createGame = createLocalLuaGame,
+  persistSave = writeMahjongSoloSave,
+  getMatchRules,
+  onMatchReady,
 }) {
   function canonicalSoloPlayers(randomSeed, playerNames) {
     const viewerOrder = PLAYERS.map((player, index) => ({
@@ -78,7 +81,7 @@ export function createMahjongSoloMatchController({
     }
     setGameInitializing(true);
     tableController.syncMatchMusic();
-    const rules = selectedMatchRules();
+    const rules = getMatchRules?.() ?? selectedMatchRules();
     elements.loading.classList.remove("is-active", "is-error");
     elements.loadingMessage.hidden = true;
     elements.loading.hidden = false;
@@ -136,7 +139,7 @@ export function createMahjongSoloMatchController({
         playerPresentations,
       });
       setSoloSave(save);
-      writeMahjongSoloSave(save);
+      await persistSave(save);
       await tableController.refresh(createdGame.initialProjection, {
         animateDealIn: true,
       });
@@ -145,6 +148,7 @@ export function createMahjongSoloMatchController({
       elements.loading.hidden = true;
       settingsDialog.setSoloMatchActive(true);
       settingsDialog.setEndMatchLabel("结束本局");
+      await onMatchReady?.();
       scheduleAi({ afterDealIn: true });
     } catch (error) {
       console.error(error);
@@ -206,7 +210,7 @@ export function createMahjongSoloMatchController({
       if (JSON.stringify(save.playerPresentations || {}) !== JSON.stringify(playerPresentations)) {
         const updatedSave = { ...save, playerPresentations };
         setSoloSave?.(updatedSave);
-        writeMahjongSoloSave(updatedSave);
+        await persistSave(updatedSave);
       }
       if (save.playerName) setPlayerName(save.playerName);
       setAutoActions({ ...save.autoActions });
@@ -218,6 +222,7 @@ export function createMahjongSoloMatchController({
       elements.loading.hidden = true;
       settingsDialog.setSoloMatchActive(true);
       settingsDialog.setEndMatchLabel("结束本局");
+      await onMatchReady?.();
       scheduleAi();
     } catch (error) {
       console.error(error);

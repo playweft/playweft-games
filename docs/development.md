@@ -139,3 +139,53 @@ before using them.
 
 Mahjong's separate replay archive and imported asset-pack databases are outside
 this localStorage migration. Other games retain their existing storage paths.
+
+
+## Mahjong career progress
+
+The lobby has a `立志戦` submenu with three independent save slots and a
+`修練戦` submenu for the existing East and South free matches. Menu contents
+fade out/in while the scene and timber frame stay fixed. Empty slots display
+only their number and “新游戏”; format details live in a collapsed rules guide.
+
+Career slots use `playweft.mahjong.career.slot-{1,2,3}.v1` in the same acknowledged
+platform/standalone storage as local match saves. Each slot contains its current
+match, placement results, current league period, recent period summaries, and
+analysis counters together. Free practice keeps `playweft.mahjong.solo-save.v1`.
+Completed replay archives remain independent and may be evicted without losing
+career results. No account synchronization is implied by platform-owned storage.
+
+Version 1 progression is deliberately game-specific, not the official league
+rulebook: three hanchan placement matches, then eight hanchan per period across
+E1, D3, D2, D1, C3, C2, C1, B2, B1, A2, A1. Match points are
+`(final score - 25000) / 1000 + [30, 10, -10, -30][rank - 1]`; raw canonical
+opening-seat order breaks tied scores consistently with replay export. Period
+scores of at least +80 promote one tier, at most -80 relegate one, and otherwise
+retain the tier. E1 and A1 are boundaries. Progression constants and placement
+thresholds are in `games/mahjong/career/career.js`; opponents currently use the
+existing local AI policy at every tier.
+
+Initial placement uses mean match points (thresholds -30, -10, +10, +30), with
+at most a one-tier decision-quality adjustment after at least 30 reviewed manual
+discards. Mean quality >=90 with <10% major deviations raises placement one tier;
+mean quality <60 or >=20% major deviations lowers it one. If candidate review is
+unavailable but at least 30 exact comparisons exist, >=75% / <25% agreement gives
+the corresponding adjustment. Placement is bounded to E1–C2. These are provisional
+game-balance thresholds, not calibrated human-rank estimates.
+
+The match worker optionally reviews a manual career discard before applying it.
+Lua compares the same candidate set under one push/fold mode and returns score,
+shanten, acceptance, value and risk differences. JS uses
+`100 * (1 - clamp((scoreLoss - 14) / scale, 0, 1))`, rounded to an integer, with
+scales 300/400/1050 for push/mixed/fold; a normalized loss >=0.4 is a major deviation.
+The 14-point tolerance prevents near-equivalent choices from counting as errors.
+Agreement compares tile kind and red status, not interchangeable physical copies.
+Forced post-riichi discards, automatic actions and non-discard decisions are not
+rated. Missing analysis is recorded separately rather than as a failed decision.
+These scores are heuristic policy comparisons, not expected-point loss or Elo.
+
+Final settlement and the resumable match are written together, deduplicated by
+match ID. Starting the next match allocates a fresh seed and ID. Restoring a
+finished but unsettled checkpoint repairs its settlement; restoring an already
+settled result never counts the match twice. Settings offers “保存并返回” during
+career play. Invalid slot records block startup and preserve the original data.

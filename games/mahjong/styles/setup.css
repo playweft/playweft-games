@@ -644,3 +644,30 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Keep the timber frame and scene fixed while menu contents fade between levels. */
+.setup-menu-paper { transition: opacity 160ms ease; }
+.setup-menu-paper.is-menu-fading { opacity: 0; pointer-events: none; }
+.setup-lobby-page[hidden] { display: none; }
+.setup-submenu-header { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
+.setup-submenu-header h2 { margin: 0; font-size: 26px; font-weight: 500; }
+.setup-submenu-header button { border: 0; background: transparent; color: #63472d; padding: 8px 4px; font-size: 19px; }
+.setup-career-name { font-size: 68px; }
+.career-slots { display: grid; gap: 12px; }
+.career-slot { display: grid; grid-template-columns: 28px minmax(0, 1fr) 16px; align-items: center; gap: 14px; min-height: 112px; padding: 16px; border: 1px solid #a98a5a; border-radius: 7px; background: #fff6e440; color: #51351f; text-align: left; transition: background 160ms ease, border-color 160ms ease; }
+.career-slot.is-empty { border-color: #a98a5a88; background: transparent; }
+.career-slot-number { font-size: 23px; color: #8d7455; font-family: Georgia, serif; }
+.career-slot-info { display: flex; flex-direction: column; gap: 7px; }
+.career-slot strong { font-size: 26px; font-weight: 500; letter-spacing: .06em; }
+.career-slot-progress { font-size: 15px; }
+.career-slot-detail { font-size: 13px; color: #70593d; }
+.career-slot-arrow { font-size: 28px; color: #8d7455; }
+.career-slot:disabled { opacity: .5; }
+.career-guide { margin-top: 18px; color: #70593d; }
+.career-guide > summary { cursor: pointer; font-size: 15px; }
+.career-rules { margin: 12px 0 0; font-size: 13px; line-height: 1.7; }
+.career-evaluation-note { margin: 6px 0 0; font-size: 12px; color: #70593d; }
+.setup-panel[data-lobby-view="career"] .setup-secondary-actions,
+.setup-panel[data-lobby-view="career"] .setup-menu-divider { display: none; }
+.setup-panel[data-lobby-view="career"] .setup-menu-paper { overflow-y: auto; }
+@media (prefers-reduced-motion: reduce) { .setup-menu-paper { transition: none; } }

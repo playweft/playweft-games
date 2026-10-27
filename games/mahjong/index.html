@@ -432,10 +432,22 @@
         </section>
       </section>
 
-      <section id="setup-panel" class="setup-panel" aria-label="麻将大厅">
+      <section id="setup-panel" class="setup-panel" data-lobby-view="home" aria-label="麻将大厅">
         <div class="setup-scene">
           <div id="setup-menu" class="setup-menu">
             <div class="setup-menu-paper">
+              <div class="setup-lobby-page" data-lobby-page="home">
+                <div class="setup-match-options" aria-label="选择游戏模式">
+                  <button class="setup-route-sign setup-route-east" type="button" data-lobby-target="career">
+                    <span class="setup-route-name setup-career-name">立志戦</span><i data-lucide="chevron-right" aria-hidden="true"></i>
+                  </button>
+                  <button class="setup-route-sign" type="button" data-lobby-target="training">
+                    <span class="setup-route-name">修練戦</span><i data-lucide="chevron-right" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="setup-lobby-page" data-lobby-page="training" hidden>
+                <header class="setup-submenu-header"><button type="button" data-lobby-target="home" aria-label="返回主菜单">‹ 返回</button><h2>修練戦</h2></header>
               <div class="setup-match-options" aria-label="选择对局长度">
                 <button class="setup-route-sign setup-route-east" type="button" data-match-type="east"
                   aria-label="东风场，东一局至东四局">
@@ -447,6 +459,13 @@
                   <span class="setup-route-name">南風場</span>
                   <i data-lucide="chevron-right" aria-hidden="true"></i>
                 </button>
+              </div>
+              </div>
+              <div class="setup-lobby-page setup-career-page" data-lobby-page="career" hidden>
+                <header class="setup-submenu-header"><button type="button" data-lobby-target="home" aria-label="返回主菜单">‹ 返回</button><h2>立志戦</h2></header>
+                <div id="career-slots" class="career-slots" aria-label="三个生涯存档槽"></div>
+                <details class="career-guide"><summary>赛制说明</summary><p class="career-rules">定段：3 场南风战，战绩为主、决策质量为辅。<br />联赛：每期 8 场，累计 ≥ +80 pt 升级，≤ −80 pt 降级，其余保级。<br />E1 → D3 → D2 → D1 → C3 → C2 → C1 → B2 → B1 → A2 → A1</p>
+                <p class="career-evaluation-note">决策参考用于练习评估，不对应现实职业等级。</p></details>
               </div>
               <div class="setup-menu-divider" aria-hidden="true"><span></span></div>
               <div class="setup-secondary-actions">

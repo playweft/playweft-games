@@ -14,6 +14,7 @@ export function createMahjongSetupScreenController({
 
   function show({ room = false } = {}) {
     elements.setup.inert = false;
+    if (elements.setup.dataset) elements.setup.dataset.room = String(room);
     closePaipuPanel({ animate: false, restoreFocus: false });
     elements.setup.classList.remove(
       "is-leaving",

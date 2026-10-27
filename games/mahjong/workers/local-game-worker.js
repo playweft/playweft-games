@@ -1,5 +1,7 @@
 import { createLocalLuaGame } from "../../../src/local-lua-game.js";
 
+import { evaluateCareerDiscard } from "../career/evaluate-discard.js";
+
 let game;
 
 self.addEventListener("message", ({ data }) => {
@@ -47,9 +49,12 @@ async function handle(type, payload) {
   }
   if (type === "replayActions") return replayActions(payload);
   if (type === "action") {
+    const careerAnalysis = payload.actionOptions?.evaluateCareer
+      ? evaluateCareerDiscard(game, payload.action, payload.actorId) : null;
     const result = game.action(payload.action, payload.actorId);
     return {
       result,
+      careerAnalysis: result?.accepted ? careerAnalysis : null,
       projection: result?.accepted ? game.view(payload.viewerId) : null,
     };
   }

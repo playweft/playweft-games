@@ -165,8 +165,8 @@ export async function createLocalLuaGame(options = {}) {
           viewerId,
         }).then((response) => projectResponse(response, viewerId));
       },
-      action(action, actorId = options.playerId, viewerId = options.playerId) {
-        return request("action", { action, actorId, viewerId }).then((response) =>
+      action(action, actorId = options.playerId, viewerId = options.playerId, actionOptions) {
+        return request("action", { action, actorId, viewerId, actionOptions }).then((response) =>
           projectResponse(response, viewerId),
         );
       },

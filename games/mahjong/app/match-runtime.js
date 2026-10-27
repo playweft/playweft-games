@@ -72,6 +72,8 @@ import {
 } from "../../../src/game-offline-cache.js";
 import {
   readMahjongSoloSave,
+  writeMahjongSoloSave,
+  clearMahjongSoloSave,
   setMahjongSoloOpponentPortraits,
 } from "../replay/solo-save.js";
 import {
@@ -87,6 +89,8 @@ export function createMahjongMatchRuntime({
   document,
   window,
   storage,
+  careerStore,
+  lobbyMenu,
   playweftClient,
   roomEntry,
   releaseFixedViewport,
@@ -198,6 +202,14 @@ export function createMahjongMatchRuntime({
   });
   const soloSaveController = createMahjongSoloSaveController({
     initialSave: readMahjongSoloSave(),
+    writeSave(save, state, evaluation) {
+      if (careerStore?.activeSlot) careerStore.persistMatch(save, state, evaluation);
+      else writeMahjongSoloSave(save);
+    },
+    clearSave() {
+      if (careerStore?.activeSlot) careerStore.clearMatch();
+      else clearMahjongSoloSave();
+    },
     humanId: HUMAN_ID,
     getThemeController: () => themeController,
     saveCompletedPaipu,
@@ -517,6 +529,13 @@ export function createMahjongMatchRuntime({
     onReplayAdvance: (action) => advanceMahjongPaipuReplayFromResult(action),
     onReplayResultExitStart: () => replayController?.onResultExitStart(),
     onReturnToSetup: teardownCompletedSoloMatch,
+    onRestartMatch: async () => {
+      if (!careerStore?.activeSlot) return false;
+      const slot = careerStore.activeSlot;
+      await teardownCompletedSoloMatch();
+      await startCareer(slot);
+      return true;
+    },
   });
 
   roomPlayerProfiles = createMahjongRoomPlayerProfiles({
@@ -617,6 +636,7 @@ export function createMahjongMatchRuntime({
       tableController.clearActionInFlight();
       showMessage("尚未连接到房间");
     },
+    getSoloActionOptions: ({ source }) => ({ evaluateCareer: Boolean(careerStore?.activeSlot) && source === "manual" }),
     persistAcceptedAction: (...args) =>
       soloSaveController.persistAcceptedAction(...args),
     refreshProjection: tableController.refresh,
@@ -744,6 +764,19 @@ export function createMahjongMatchRuntime({
     setAutoActions: (value) => autoActionController.set(value),
     getSoloSave: () => soloSaveController.get(),
     setSoloSave: (value) => soloSaveController.set(value),
+    persistSave: (save) => soloSaveController.write(save),
+    getMatchRules: () => careerStore?.activeSlot ? {
+      multipleRon: true, tripleRonAbort: false, abortiveDraws: true,
+      nagashiMangan: true, pao: true, bankruptcy: true, extensions: true, agariYame: true,
+    } : null,
+    onMatchReady: async () => {
+      if (!careerStore?.activeSlot) return;
+      // Also repairs settlement after restoring an already finished checkpoint.
+      const snapshot = await matchCoordinator.getGame().checkpoint();
+      careerStore.persistMatch(soloSaveController.get(), snapshot.state);
+      await storage.flush();
+      settingsDialog.setEndMatchLabel("保存并返回");
+    },
     tableController,
     themeController,
     settingsDialog,
@@ -788,6 +821,24 @@ export function createMahjongMatchRuntime({
   async function initialize(matchType = "east") {
     if (matchCoordinator.getMode() !== "solo") return;
     return soloController?.initialize(matchType);
+  }
+
+  async function startCareer(slot) {
+    if (matchCoordinator.getMode() !== "solo" || matchCoordinator.getGame() || matchCoordinator.isGameInitializing()) return;
+    const career = careerStore.activate(slot);
+    // An already settled checkpoint may have been left on the result screen.
+    // It must never become the next match or be settled a second time.
+    if (career.currentMatch && career.lastSettlement?.matchId === career.currentMatch.matchId) {
+      careerStore.clearMatch();
+      soloSaveController.set(null);
+    } else soloSaveController.set(career.currentMatch);
+    await storage.flush();
+    await soloController.initialize("hanchan");
+    if (!matchCoordinator.getGame()) {
+      careerStore.deactivate();
+      soloSaveController.set(readMahjongSoloSave());
+      lobbyMenu?.refresh();
+    }
   }
 
   function selectedMatchRules() {
@@ -845,6 +896,13 @@ export function createMahjongMatchRuntime({
     )
       return;
     try {
+      if (careerStore?.activeSlot) {
+        if (session?.isActionInFlight()) return;
+        await storage.flush();
+        settingsDialog.setOpen(false, { restoreFocus: false, animate: false });
+        await teardownCompletedSoloMatch({ preserveCareerMatch: true });
+        return;
+      }
       const message = "结束本局并返回标题？本局进度不会保留。";
       const confirmed = isStandalone
         ? window.confirm(message)
@@ -859,7 +917,8 @@ export function createMahjongMatchRuntime({
     }
   }
 
-  async function teardownCompletedSoloMatch() {
+  async function teardownCompletedSoloMatch({ preserveCareerMatch = false } = {}) {
+    const careerSlot = careerStore?.activeSlot;
     session?.cancelScheduledActions();
     tableController.syncMatchMusic({ enabled: false });
     presentation.suspend();
@@ -868,7 +927,14 @@ export function createMahjongMatchRuntime({
     tableController.reset();
     elements.result.hidden = true;
     elements.loading.hidden = true;
-    soloSaveController.clear();
+    if (!preserveCareerMatch || !careerSlot) soloSaveController.clear();
+    if (careerSlot) {
+      careerStore.deactivate();
+      soloSaveController.set(readMahjongSoloSave());
+      await lobbyMenu?.showCareer();
+      lobbyMenu?.refresh();
+    }
+    await storage.flush();
     setupScreen.show();
     settingsDialog.setSoloMatchActive(false);
     settingsDialog.setEndMatchLabel("结束本局");
@@ -925,6 +991,7 @@ export function createMahjongMatchRuntime({
     initialize: (matchType) => matchCoordinator.getMode() === "room"
       ? roomController.startMatch(matchType)
       : initialize(matchType),
+    startCareer,
     openSettings: () => settingsDialog.setOpen(true),
     openPaipuPanel,
     destroy,

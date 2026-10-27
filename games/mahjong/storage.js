@@ -4,7 +4,10 @@ import {
   readMahjongSoloSave,
 } from "./replay/solo-save.js";
 
+import { CAREER_KEYS, parseCareer } from "./career/career.js";
+
 export const MAHJONG_STORAGE_KEYS = [
+  ...CAREER_KEYS,
   MAHJONG_SOLO_SAVE_KEY,
   "playweft.mahjong.double-click-tsumogiri",
   "playweft.mahjong.double-click-pass",
@@ -27,6 +30,7 @@ export function initializeMahjongStorage(bridge) {
     gameId: "mahjong",
     keys: MAHJONG_STORAGE_KEYS,
     validate(key, raw) {
+      if (CAREER_KEYS.includes(key)) { parseCareer(raw); return; }
       if (key !== MAHJONG_SOLO_SAVE_KEY || raw === null) return;
       if (!readMahjongSoloSave({ getItem: () => raw }))
         throw Object.assign(

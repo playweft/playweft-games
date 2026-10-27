@@ -2,6 +2,8 @@
 import { BookOpen, ChevronRight, Cog, UsersRound, createIcons } from "lucide";
 import { createPlayweftClient } from "../../../src/playweft-client.js";
 import { initializeMahjongStorage } from "../storage.js";
+import { createCareerStore } from "../career/career.js";
+import { createMahjongLobbyMenu } from "./lobby-menu-controller.js";
 import { readMahjongSoloSave } from "../replay/solo-save.js";
 import { deferMahjongDecorativeAssets } from "../theme/deferred-visual-assets.js";
 import { bindFixedViewport } from "./fixed-viewport.js";
@@ -68,6 +70,11 @@ export async function createMahjongApplication({
   });
   let roomEntry;
   const storage = await initializeMahjongStorage(client);
+  const careerStore = createCareerStore(storage);
+  const lobbyMenu = createMahjongLobbyMenu({ document, window, careerStore,
+    startCareer: (slot) => enter((readyRuntime) => readyRuntime.startCareer(slot)),
+    showError: (message) => transientNotice.show(message),
+  });
   roomEntry = createMahjongRoomEntry({
     button: document.querySelector("#create-room-button"),
     getClient: () => client,
@@ -124,6 +131,7 @@ export async function createMahjongApplication({
       if (destroyed) throw new DOMException("Mahjong page closed", "AbortError");
       runtime = createMahjongMatchRuntime({
         document, window, storage, playweftClient: client, roomEntry,
+        careerStore, lobbyMenu,
         releaseFixedViewport, initialContext, initialState,
         setBridgeHandlers: (next) => { handlers = next; },
       });
@@ -180,6 +188,7 @@ export async function createMahjongApplication({
     document.removeEventListener("click", onEarlyClick, true);
     window.removeEventListener("pagehide", onPageHide);
     preloader.destroy();
+    lobbyMenu.destroy();
     if (!runtime) {
       roomEntry.destroy();
       releaseFixedViewport();

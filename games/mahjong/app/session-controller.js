@@ -28,6 +28,7 @@ export function createMahjongSessionController({
   sendRoomAction,
   onRoomUnavailable,
   persistAcceptedAction,
+  getSoloActionOptions,
   refreshProjection,
   onSoloActionAccepted,
   onActionRejected,
@@ -141,7 +142,7 @@ export function createMahjongSessionController({
     let rescheduleOptions;
     actionInFlight = true;
     try {
-      const outcome = await currentGame.action(action, humanId);
+      const outcome = await currentGame.action(action, humanId, humanId, getSoloActionOptions?.({ action, source }));
       if (!sameCurrentGame(currentGame)) return false;
       if (!outcome.result?.accepted) {
         onActionRejected?.(outcome.result?.error?.code);
@@ -160,6 +161,7 @@ export function createMahjongSessionController({
         humanId,
         outcome.projection,
         currentGame,
+        outcome.careerAnalysis,
       );
       onSoloActionAccepted?.(action, outcome.projection);
       if (onAcceptedProjection) {

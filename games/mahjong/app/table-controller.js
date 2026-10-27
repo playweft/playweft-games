@@ -85,6 +85,7 @@ export function createMahjongTableController({
   onReplayAdvance,
   onReplayResultExitStart,
   onReturnToSetup,
+  onRestartMatch,
 } = {}) {
   let state;
   let viewerSeat = 1;
@@ -599,6 +600,7 @@ export function createMahjongTableController({
     elements.matchSummaryRematch.disabled = true;
     elements.matchSummarySetup.disabled = true;
     try {
+      if (await onRestartMatch?.()) return;
       syncMatchMusic({ transition: "next-hand" });
       const advanced = await advanceFromResult({ type: "new_match" });
       if (!advanced && state?.phase === "hand_ended") syncMatchMusic();

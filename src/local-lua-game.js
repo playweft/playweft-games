@@ -187,6 +187,11 @@ function __playweft_local_ai_decision(viewer_id)
   }
 end
 
+function __playweft_local_ai_review(state, actor_id, action)
+  if type(ai_action_review) ~= "function" then return nil end
+  return ai_action_review(state, actor_id, action)
+end
+
 function __playweft_local_ai_action(state, actor_id)
   if type(state) ~= "table" or type(actor_id) ~= "string" then
     error("AI action requires a state and actor id")
@@ -439,6 +444,7 @@ export async function createLocalLuaGame({
     const advanceAiTurn = lua.global.get("__playweft_local_ai_turn");
     const decideCurrentAiAction = lua.global.get("__playweft_local_ai_decision");
     const decideAiAction = lua.global.get("__playweft_local_ai_action");
+    const reviewAiAction = lua.global.get("__playweft_local_ai_review");
     const readLegalActions = lua.global.get("__playweft_local_legal_actions");
     const readTenpaiReports = lua.global.get("__playweft_local_tenpai_reports");
     const readTenpaiReport = lua.global.get("__playweft_local_tenpai_report");
@@ -493,6 +499,10 @@ export async function createLocalLuaGame({
       aiDecision(viewerId = playerId) {
         ensureOpen(closed);
         return decideCurrentAiAction(viewerId);
+      },
+      aiActionReview(state, actorId, action) {
+        ensureOpen(closed);
+        return reviewAiAction(state, actorId, action);
       },
       aiAction(state, actorId) {
         ensureOpen(closed);

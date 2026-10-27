@@ -4594,7 +4594,7 @@ local function endgame_tenpai_value(state, candidate, objective)
 	return value
 end
 
-local function choose_ai_discard(state, seat, hand, allowed, forbidden, melds)
+local function choose_ai_discard(state, seat, hand, allowed, forbidden, melds, review_tile)
 	local player_id = state.players[seat]
 	melds = melds or state.melds[player_id]
 	local allow
@@ -4680,13 +4680,15 @@ local function choose_ai_discard(state, seat, hand, allowed, forbidden, melds)
 	table.sort(ukeire_candidates, function(left, right)
 		return left.preliminary > right.preliminary
 	end)
-	for index = 1, math.min(8, #ukeire_candidates) do
+	for index = 1, #ukeire_candidates do
 		local candidate = ukeire_candidates[index]
+		if index > 8 and candidate.tile ~= review_tile then goto continue_ukeire end
 		candidate.ukeire = effective_tile_count(candidate.hand, melds, candidate.shanten, visible, cache)
 		if candidate.shanten == 0 then
 			candidate.wait = tenpai_wait_profile(state, seat, candidate.hand, melds, visible, tile_type(candidate.tile))
 			candidate.waitQuality = candidate.wait.quality
 		end
+		::continue_ukeire::
 	end
 	local best_ukeire = 0
 	for _, candidate in ipairs(candidates) do
@@ -4836,7 +4838,11 @@ local function choose_ai_discard(state, seat, hand, allowed, forbidden, melds)
 	end
 	best.folding, best.mode, best.pressure, best.aggression = mode == "fold", mode, pressure, aggression
 	best.objective = objective.mode
-	return best.tile, best
+	local reviewed
+	for _, candidate in ipairs(candidates) do
+		if candidate.tile == review_tile then reviewed = candidate end
+	end
+	return best.tile, best, reviewed
 end
 
 function setup(context)
@@ -5310,6 +5316,34 @@ local function should_abort_nine_tiles(state, player_id)
 		count = count + 1
 	end
 	return count < 11
+end
+
+-- Compare discards under the same push/fold mode and candidate scoring. These
+-- scores are policy heuristics, not calibrated point loss or human ratings.
+function ai_action_review(state, actor_id, action)
+  local seat = player_index(state, actor_id)
+  if not seat or state.phase ~= "playing" or state.turnIndex ~= seat
+    or state.riichi[actor_id] or (action.type ~= "discard" and action.type ~= "riichi") then return nil end
+  local hand = hand_with_drawn(state, actor_id)
+  local forbidden = state.kuikaeForbidden and state.kuikaeForbidden[actor_id]
+  local review_tile = action.tileId
+  for _, tile in ipairs(hand) do
+    if tile_type(tile) == tile_type(action.tileId)
+      and (RED_FIVES[tile] == true) == (RED_FIVES[action.tileId] == true) then
+      review_tile = tile
+      break
+    end
+  end
+  local _, best, chosen = choose_ai_discard(state, seat, hand, nil, forbidden, nil, review_tile)
+  if not best or not chosen then return nil end
+  return {
+    bestTile = best.tile, chosenTile = chosen.tile, mode = best.mode,
+    scoreLoss = math.max(0, best.score - chosen.score),
+    shantenLoss = math.max(0, chosen.shanten - best.shanten),
+    ukeireLoss = chosen.shanten == best.shanten and math.max(0, best.ukeire - chosen.ukeire) or 0,
+    riskIncrease = math.max(0, chosen.dealinRisk - best.dealinRisk),
+    valueLoss = math.max(0, best.value - chosen.value),
+  }
 end
 
 function ai_action(state, actor_id)
