@@ -2,7 +2,6 @@ import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import { emitGamePackages } from "./build/vite/plugins/emit-game-packages.js";
 import { emitBuildVersion } from "./build/vite/plugins/emit-build-version.js";
-import { mahjongDefaultAssets } from "./build/vite/plugins/mahjong-default-assets.js";
 import { preserveGameUrls } from "./build/vite/plugins/preserve-game-urls.js";
 
 const games = [
@@ -18,9 +17,7 @@ const games = [
   "gomoku",
   "xiangqi",
   "chess",
-  "mahjong",
 ];
-const THREE_VENDOR_CHUNK = "three-r185.1";
 const SHARED_RUNTIME_CHUNK = "shared-runtime";
 
 function isSharedRuntimeModule(id) {
@@ -48,7 +45,6 @@ for (const game of games) {
 
 export default defineConfig({
   plugins: [
-    mahjongDefaultAssets(),
     emitGamePackages({ games }),
     preserveGameUrls({ games }),
     emitBuildVersion(),
@@ -63,21 +59,14 @@ export default defineConfig({
         codeSplitting: {
           groups: [
             {
-              name: THREE_VENDOR_CHUNK,
-              test: /node_modules[\\/]three[\\/]/,
-              priority: 20,
-            },
-            {
               name: SHARED_RUNTIME_CHUNK,
               test: isSharedRuntimeModule,
               priority: 10,
             },
           ],
         },
-        chunkFileNames(chunk) {
-          return chunk.name === THREE_VENDOR_CHUNK
-            ? `assets/vendor/${THREE_VENDOR_CHUNK}-[hash].js`
-            : "assets/[name]-[hash].js";
+        chunkFileNames() {
+          return "assets/[name]-[hash].js";
         },
       },
     },

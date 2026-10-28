@@ -8,7 +8,6 @@ import {
   hashBundle,
 } from "../build/vite/plugins/emit-build-version.js";
 import { emitGamePackages } from "../build/vite/plugins/emit-game-packages.js";
-import { mahjongDefaultAssets } from "../build/vite/plugins/mahjong-default-assets.js";
 import { preserveGameUrls } from "../build/vite/plugins/preserve-game-urls.js";
 
 test("Vite config keeps the configured dev port and composes its build plugins", () => {
@@ -16,7 +15,6 @@ test("Vite config keeps the configured dev port and composes its build plugins",
   assert.deepEqual(
     viteConfig.plugins.map((plugin) => plugin.name),
     [
-      "mahjong-default-assets",
       "emit-game-packages",
       "preserve-game-urls",
       "emit-build-version",
@@ -27,10 +25,10 @@ test("Vite config keeps the configured dev port and composes its build plugins",
 test("build version hashes output content and is stamped into HTML", () => {
   const createBundle = (code) => ({
     "assets/app.js": { type: "chunk", fileName: "assets/app.js", code },
-    "mahjong/index.html": {
+    "gomoku/index.html": {
       type: "asset",
-      fileName: "mahjong/index.html",
-      source: "<!doctype html><html><head><title>麻将</title></head></html>",
+      fileName: "gomoku/index.html",
+      source: "<!doctype html><html><head><title>五子棋</title></head></html>",
     },
   });
   const bundle = createBundle("console.log('one')");
@@ -46,7 +44,7 @@ test("build version hashes output content and is stamped into HTML", () => {
 
   assert.notEqual(firstVersion, secondVersion);
   assert.ok(
-    addBuildVersionMeta(bundle["mahjong/index.html"].source, firstVersion).includes(
+    addBuildVersionMeta(bundle["gomoku/index.html"].source, firstVersion).includes(
       `<meta name="playweft-build-version" content="${firstVersion}" />`,
     ),
   );
@@ -57,109 +55,36 @@ test("build version hashes output content and is stamped into HTML", () => {
   }]);
 });
 
-test("Vite keeps initial shared modules in intentional runtime chunks", () => {
+test("Vite keeps common bridge modules in the shared runtime chunk", () => {
   const output = viteConfig.build.rolldownOptions.output;
-  const [three, sharedRuntime] = output.codeSplitting.groups;
-
-  assert.equal(three.name, "three-r185.1");
-  assert.equal(three.test.test("/project/node_modules/three/build/three.module.js"), true);
+  const [sharedRuntime] = output.codeSplitting.groups;
+  assert.equal(output.codeSplitting.groups.length, 1);
   assert.equal(sharedRuntime.name, "shared-runtime");
-  assert.equal(
-    sharedRuntime.test("/project/node_modules/lucide/dist/esm/icons/play.js"),
-    true,
-  );
+  assert.equal(sharedRuntime.test("/project/node_modules/lucide/dist/esm/icons/play.js"), true);
   assert.equal(sharedRuntime.test("\0vite/modulepreload-polyfill.js"), true);
   assert.equal(sharedRuntime.test("/project/src/playweft-client.js"), true);
-  assert.equal(sharedRuntime.test("/project/games/mahjong/three-renderer.js"), false);
-  assert.equal(
-    output.chunkFileNames({ name: "three-r185.1" }),
-    "assets/vendor/three-r185.1-[hash].js",
-  );
+  assert.equal(sharedRuntime.test("/project/games/gomoku/solo.js"), false);
+  assert.equal(output.chunkFileNames({ name: "shared-runtime" }), "assets/[name]-[hash].js");
 });
 
-test("Mahjong default asset plugin injects the fetched source configuration", async () => {
-  const previousUrl = process.env.MAHJONG_DEFAULT_ASSET_CONFIG_URL;
-  const previousFetch = globalThis.fetch;
-  const sourceConfig = {
-    portraits: [
-      { id: "remote", url: "https://example.com/portrait.png", label: "远程人物" },
-    ],
-  };
-  process.env.MAHJONG_DEFAULT_ASSET_CONFIG_URL = "https://example.com/assets.json";
-  globalThis.fetch = async (url) => {
-    assert.equal(url, "https://example.com/assets.json");
-    return {
-      ok: true,
-      async json() {
-        return sourceConfig;
-      },
-    };
-  };
-  try {
-    const result = await mahjongDefaultAssets().config();
-    assert.equal(
-      result.define.__MAHJONG_DEFAULT_ASSET_CONFIG__,
-      JSON.stringify(sourceConfig),
-    );
-  } finally {
-    if (previousUrl === undefined) delete process.env.MAHJONG_DEFAULT_ASSET_CONFIG_URL;
-    else process.env.MAHJONG_DEFAULT_ASSET_CONFIG_URL = previousUrl;
-    globalThis.fetch = previousFetch;
-  }
-});
-
-test("game package plugin serves and emits the generated Mahjong online source", async () => {
-  const plugin = emitGamePackages({ games: ["mahjong", "sudoku"] });
-  const middleware = [];
-  await plugin.configureServer({ middlewares: { use(handler) { middleware.push(handler); } } });
-  assert.equal(middleware.length, 1);
-
-  const response = {
-    headers: {},
-    setHeader(name, value) {
-      this.headers[name] = value;
-    },
-    end(body) {
-      this.body = body;
-    },
-  };
-  let nextCalls = 0;
-  await middleware[0]({ url: "/mahjong/game-online.lua?watch=1" }, response, () => {
-    nextCalls += 1;
-  });
-  assert.equal(nextCalls, 0);
-  assert.equal(response.statusCode, 200);
-  assert.equal(response.headers["Content-Type"], "text/plain; charset=utf-8");
-  assert.equal(response.headers["Cache-Control"], "no-cache");
-  assert.ok(response.body.length > 0);
-
+test("game package plugin emits only requested manifests and room Lua files", async () => {
   const emitted = [];
-  await plugin.generateBundle.call({
-    emitFile(file) {
-      emitted.push(file);
-    },
-  });
-  assert.deepEqual(
-    emitted.map(({ fileName }) => fileName),
-    [
-      "games/mahjong/playweft.json",
-      "games/mahjong/game.lua",
-      "games/mahjong/game-online.lua",
-      "games/sudoku/playweft.json",
-    ],
-  );
-  assert.ok(emitted.find(({ fileName }) => fileName.endsWith("game-online.lua")).source.length > 0);
+  await emitGamePackages({ games: ["pig-dice", "sudoku"] }).generateBundle.call({ emitFile(file) { emitted.push(file); } });
+  assert.deepEqual(emitted.map(({ fileName }) => fileName), [
+    "games/pig-dice/playweft.json", "games/pig-dice/game.lua", "games/sudoku/playweft.json",
+  ]);
+  assert.ok(emitted.every(({ source }) => source.length > 0));
 });
 
 test("preserve-game-urls plugin rewrites public game paths in dev", async () => {
-  const plugin = preserveGameUrls({ games: ["mahjong", "sudoku"] });
+  const plugin = preserveGameUrls({ games: ["gomoku", "sudoku"] });
   const middleware = [];
   plugin.configureServer({ middlewares: { use(handler) { middleware.push(handler); } } });
-  const request = { url: "/mahjong/index.html?mode=solo" };
+  const request = { url: "/gomoku/index.html?mode=solo" };
   let nextCalls = 0;
   middleware[0](request, {}, () => {
     nextCalls += 1;
   });
-  assert.equal(request.url, "/games/mahjong/index.html?mode=solo");
+  assert.equal(request.url, "/games/gomoku/index.html?mode=solo");
   assert.equal(nextCalls, 1);
 });

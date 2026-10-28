@@ -38,8 +38,8 @@ test("offline cache names follow the current build content version", () => {
   const version = "0123456789abcdef";
   assert.equal(readBuildContentVersion(buildDocument(version)), version);
   assert.equal(
-    gameOfflineCacheName("mahjong", version),
-    `playweft-offline:mahjong:${version}`,
+    gameOfflineCacheName("sudoku", version),
+    `playweft-offline:sudoku:${version}`,
   );
 });
 
@@ -48,13 +48,13 @@ test("offline download settings retain the cached build version", () => {
   const version = "fedcba9876543210";
   assert.deepEqual(
     writeGameOfflineSettings(
-      "mahjong",
+      "sudoku",
       { mode: "download", policy: "local-first", version },
       storage,
     ),
     { mode: "download", policy: "local-first", version },
   );
-  assert.deepEqual(readGameOfflineSettings("mahjong", storage), {
+  assert.deepEqual(readGameOfflineSettings("sudoku", storage), {
     mode: "download",
     policy: "local-first",
     version,
@@ -63,24 +63,24 @@ test("offline download settings retain the cached build version", () => {
 
 
 const version = "0123456789abcdef";
-const urls = ["https://game.example/mahjong/", "https://game.example/mahjong/game.lua"];
+const urls = ["https://game.example/sudoku/", "https://game.example/sudoku/game.lua"];
 const settings = { mode: "download", policy: "local-first", version };
 
 test("offline packages become usable only after a complete download and remain version-specific", async (t) => {
   const { caches } = installOfflineCache(t);
-  const available = (next = settings) => hasGameOfflineResources("mahjong", { settings: next, buildVersion: version });
+  const available = (next = settings) => hasGameOfflineResources("sudoku", { settings: next, buildVersion: version });
   assert.equal(await available(), false);
-  await cacheGameOfflineResources("mahjong", urls, { buildVersion: version,
+  await cacheGameOfflineResources("sudoku", urls, { buildVersion: version,
     fetchImpl: async (request) => new Response("resource", { status: request.url.endsWith("game.lua") ? 503 : 200 }),
   });
   assert.equal(await available(), false, "partial download has no completion record");
-  await cacheGameOfflineResources("mahjong", urls, { buildVersion: version,
+  await cacheGameOfflineResources("sudoku", urls, { buildVersion: version,
     fetchImpl: async () => new Response("resource"),
   });
   assert.equal(await available(), true);
   assert.equal(await available({ ...settings, version: "fedcba9876543210" }), false);
   assert.equal(await available({ ...settings, mode: "none" }), false);
-  const cache = await caches.open(gameOfflineCacheName("mahjong", version));
+  const cache = await caches.open(gameOfflineCacheName("sudoku", version));
   await cache.delete(urls[1]);
   assert.equal(await available(), false, "evicted resources invalidate the package");
 });
@@ -88,36 +88,36 @@ test("offline packages become usable only after a complete download and remain v
 test("resource requests and service-worker policy ignore an unavailable package but retain the preference", async (t) => {
   const { caches, setGlobal } = installOfflineCache(t);
   const storage = memoryStorage();
-  const keys = gameOfflineSettingsKeys("mahjong");
-  writeGameOfflineSettings("mahjong", settings, storage);
-  await loadGameStorageCache({ gameId: "mahjong", keys: Object.values(keys), backend: storage });
+  const keys = gameOfflineSettingsKeys("sudoku");
+  writeGameOfflineSettings("sudoku", settings, storage);
+  await loadGameStorageCache({ gameId: "sudoku", keys: Object.values(keys), backend: storage });
   setGlobal("document", buildDocument(version));
   const messages = [];
   setGlobal("navigator", { serviceWorker: { controller: { postMessage: (message) => messages.push(message) } } });
-  const cache = await caches.open(gameOfflineCacheName("mahjong", version));
+  const cache = await caches.open(gameOfflineCacheName("sudoku", version));
   await cache.put(urls[1], new Response("partial cache"));
   let requests = 0;
   const fetchImpl = async () => { requests++; return new Response("network"); };
-  const options = { buildVersion: version, fetchImpl };
+  const options = { gameId: "sudoku", buildVersion: version, fetchImpl };
   assert.equal(await (await fetchGameResource(urls[1], options)).text(), "network");
-  await notifyGameOfflineSettings("mahjong");
+  await notifyGameOfflineSettings("sudoku");
   assert.equal(messages.at(-1).mode, "none");
   assert.equal(messages.at(-1).policy, "network-first");
-  await cacheGameOfflineResources("mahjong", urls, { buildVersion: version,
+  await cacheGameOfflineResources("sudoku", urls, { buildVersion: version,
     fetchImpl: async () => new Response("complete cache"),
   });
   assert.equal(await (await fetchGameResource(urls[1], options)).text(), "complete cache");
   // Workers pass mode and build version explicitly rather than hydrating browser preferences.
   assert.equal(await (await fetchGameResource(urls[1], { ...options, mode: "download", policy: "local-first" })).text(), "complete cache");
   assert.equal(requests, 1);
-  await notifyGameOfflineSettings("mahjong");
+  await notifyGameOfflineSettings("sudoku");
   assert.equal(messages.at(-1).mode, "download");
   assert.equal(messages.at(-1).policy, "local-first");
-  await caches.delete(gameOfflineCacheName("mahjong", version));
+  await caches.delete(gameOfflineCacheName("sudoku", version));
   assert.equal(await (await fetchGameResource(urls[1], options)).text(), "network");
-  await notifyGameOfflineSettings("mahjong");
+  await notifyGameOfflineSettings("sudoku");
   assert.equal(messages.at(-1).mode, "none");
-  assert.equal(readGameOfflineSettings("mahjong", storage).policy, "local-first");
+  assert.equal(readGameOfflineSettings("sudoku", storage).policy, "local-first");
 });
 
 test("workers can use a verified package without a hydrated settings store", async (t) => {

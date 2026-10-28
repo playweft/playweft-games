@@ -7,7 +7,6 @@ const ROOM_GAMES = new Map([
   ["connect-four", [2, 2]],
   ["texas-holdem", [2, 6]],
   ["dou-dizhu", [3, 3]],
-  ["mahjong", [2, 4]],
   ["werewolf-dealer", [6, 15]],
   ["uno", [2, 4]],
   ["go", [2, 2]],
@@ -18,7 +17,6 @@ const ROOM_GAMES = new Map([
 ]);
 const ALL_GAMES = [
   "dou-dizhu",
-  "mahjong",
   "xiangqi",
   "chess",
   "uno",
@@ -57,7 +55,7 @@ test("Every game package has a strict Playweft Manifest v1 for bridge v1", async
         ...(game === "sudoku" ? [] : ["modes"]),
         "name",
         "name_localized",
-        ...(["dou-dizhu", "mahjong"].includes(game) ? ["orientation"] : []),
+        ...(["dou-dizhu"].includes(game) ? ["orientation"] : []),
         "protocol",
         "start_url",
         "theme_color",
@@ -108,7 +106,7 @@ test("Every game package has a strict Playweft Manifest v1 for bridge v1", async
       assert.equal(manifestIcon.type, "image/svg+xml");
     }
 
-    if (["dou-dizhu", "mahjong"].includes(game)) {
+    if (["dou-dizhu"].includes(game)) {
       assert.equal(manifest.orientation, "landscape");
     } else {
       assert.equal("orientation" in manifest, false);
@@ -126,12 +124,12 @@ test("Every game package has a strict Playweft Manifest v1 for bridge v1", async
         players: { min, max },
         server: {
           runtime: "lua",
-          entry: game === "mahjong" ? "./game-online.lua" : "./game.lua",
+          entry: "./game.lua",
           persistence: "durable",
         },
       },
     };
-    if (["go", "reversi", "dou-dizhu", "gomoku", "xiangqi", "chess", "werewolf-dealer", "mahjong", "connect-four"].includes(game)) {
+    if (["go", "reversi", "dou-dizhu", "gomoku", "xiangqi", "chess", "werewolf-dealer", "connect-four"].includes(game)) {
       expectedModes.solo = {};
     }
     assert.deepEqual(manifest.modes, expectedModes);
