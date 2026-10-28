@@ -33,9 +33,8 @@ uses the same Lua rules in room and local play. Go, Xiangqi, and Gomoku have
 JavaScript local implementations alongside their room Lua rules. Relevant
 rule and local-mode tests live in `tests/`.
 
-Mahjong uses Three.js/WebGL for its table and a worker-based local Lua runtime.
-Its rendering, rule adapters, and match controllers are separated under
-`games/mahjong/`.
+Mahjong has moved to [playweft-mahjong](https://github.com/playweft/playweft-mahjong) and is no longer
+built by this checkout.
 
 ## Shared button styles
 
@@ -117,9 +116,9 @@ for ports and commands. Cross-repository links should use complete URLs under
 
 ## Persistent game progress
 
-Mahjong's local match and browser preferences, and Sudoku's current puzzle,
-use the asynchronous `localStorage.*` capabilities on the existing Playweft
-bridge. The platform stores strings in its top-level IndexedDB, isolated by
+Sudoku's current puzzle and browser preferences use the asynchronous
+`localStorage.*` capabilities on the existing Playweft bridge. The platform
+stores strings in its top-level IndexedDB, isolated by
 validated game origin. Standalone pages use their own first-party IndexedDB.
 These are local browser saves, not account or cloud synchronization.
 
@@ -137,85 +136,4 @@ Write failures retain the newest in-memory snapshot for explicit retry. They
 never fall back to iframe localStorage. Add new keys to the game's allowlist
 before using them.
 
-Mahjong's separate replay archive and imported asset-pack databases are outside
-this localStorage migration. Other games retain their existing storage paths.
-
-
-## Mahjong career progress
-
-The lobby has a `立志戦` submenu with three independent save slots and a
-`修練戦` submenu for the existing East and South free matches. Menu contents
-fade out/in while the scene and timber frame stay fixed. Empty slots display
-only their number and “新游戏”; format details live in a collapsed rules guide.
-
-Career slots use `playweft.mahjong.career.slot-{1,2,3}.v1` in the same acknowledged
-platform/standalone storage as local match saves. Each slot contains its current
-match, placement results, current league period, recent period summaries, and
-analysis counters together. Free practice keeps `playweft.mahjong.solo-save.v1`.
-Completed replay archives remain independent and may be evicted without losing
-career results. No account synchronization is implied by platform-owned storage.
-
-After the third placement match's final-hand result, the ordinary match summary
-is replaced by a paper-and-bamboo `定段結果` page. It shows the initial grade,
-all three matches' ranks, final scores and points, and their total; it does not
-display decision evaluation. “开始联赛” starts the first league match in the
-same slot, while “返回大厅” returns to the three career slots. The slot's
-`placementResultSeen` flag is acknowledged and flushed only on either action.
-An unacknowledged grade is shown when the slot is reopened after a reload.
-Older slots can show it once if league play has not already begun.
-
-Version 1 progression is deliberately game-specific, not the official league
-rulebook: three hanchan placement matches, then eight hanchan per period across
-E1, D3, D2, D1, C3, C2, C1, B2, B1, A2, A1. Match points are
-`(final score - 25000) / 1000 + [30, 10, -10, -30][rank - 1]`; raw canonical
-opening-seat order breaks tied scores consistently with replay export. Period
-scores of at least +80 promote one tier, at most -80 relegate one, and otherwise
-retain the tier. E1 and A1 are boundaries. Progression constants and placement
-thresholds are in `games/mahjong/career/career.js`; opponents currently use the
-existing local AI policy at every tier.
-
-Initial placement grants C2 when three-match points total at least +120,
-regardless of decision metrics, or when the total is at least +90 and at least
-30 reviewed manual discards have mean quality strictly >80 and a major-deviation
-rate <=10%. Quality and mistakes are pooled across all reviewed decisions.
-Otherwise the three-match total determines the tier: >=+90 C3, >=+30 D1,
->=-30 D2, >=-90 D3, below -90 E1. There is no subsequent one-tier adjustment,
-no exact-agreement fallback and no hidden point bonus. Saved, completed placements
-are not recalculated. Placement is bounded to E1–C2. These are provisional
-game-balance thresholds, not calibrated human-rank estimates.
-
-The match worker optionally reviews a manual career discard before applying it.
-Lua compares the same candidate set under one push/fold mode and returns score,
-shanten, acceptance, value and risk differences. JS uses
-`100 * (1 - clamp((scoreLoss - 14) / scale, 0, 1))`, rounded to an integer, with
-scales 300/400/1050 for push/mixed/fold; a normalized loss >=0.4 is a major deviation.
-The 14-point tolerance prevents near-equivalent choices from counting as errors.
-Agreement compares tile kind and red status, not interchangeable physical copies.
-Forced post-riichi discards, automatic actions and non-discard decisions are not
-rated. Missing analysis is recorded separately rather than as a failed decision.
-These scores are heuristic policy comparisons, not expected-point loss or Elo.
-
-Final settlement and the resumable match are written together, deduplicated by
-match ID. Starting the next match allocates a fresh seed and ID. Restoring a
-finished but unsettled checkpoint repairs its settlement; restoring an already
-settled result never counts the match twice. Settings offers “保存并返回” during
-career play. Invalid slot records block startup and preserve the original data.
-
-
-### Brush font coverage
-
-Mahjong uses the Bakudai subset for lobby mode signs, match/round/wind labels,
-action buttons/callouts, result continuation/waiting labels, traditional yaku
-names, draw reasons, and career result titles/buttons/grades. Ordinary settings text, career save summaries, player
-names, and score-sheet numbers use their existing UI/Kalam fonts.
-
-`node build/fonts/mahjong-brush-text.js --check` verifies the generated glyph list
-against the current lobby labels and known dynamic brush labels. Rebuild using
-`bash games/mahjong/assets/fonts/build-bakudai-subset.sh /path/to/Bakudai-Regular.woff2`.
-The script regenerates the text list, checks source coverage, builds WOFF2 and
-verifies its output cmap. Missing simplified 继/续/厅/联/赛/开 codepoints use
-the corresponding 繼/續/廳/聯/賽/開 glyphs while preserving UI/accessibility text.
-
-The home `友人戦` sign is the existing capability-gated `room.create` entry;
-progress is flushed before creation. Legacy API-created rooms return to the
-originating game after they end; the platform owns this navigation.
+Other games retain their existing storage paths.

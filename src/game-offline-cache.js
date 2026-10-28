@@ -8,16 +8,12 @@ const DEVELOPMENT_BUILD_VERSION = "development";
 const BUILD_VERSION_META_NAME = "playweft-build-version";
 const OFFLINE_MANIFEST_URL = "/__playweft-offline-package__";
 
-export const MAHJONG_GAME_ID = "mahjong";
 // Kept as the fallback for pages produced before build-version metadata existed.
 export const CACHE_VERSION = "v2";
-export const SETTINGS_KEY = "playweft.mahjong.offline-cache-mode";
-export const POLICY_KEY = "playweft.mahjong.offline-cache-policy";
-export const CACHE_NAME = `playweft-offline:${MAHJONG_GAME_ID}:${CACHE_VERSION}`;
 
-function normalizeGameId(gameId = MAHJONG_GAME_ID) {
-  const value = String(gameId || MAHJONG_GAME_ID).trim().toLowerCase();
-  return GAME_ID_PATTERN.test(value) ? value : MAHJONG_GAME_ID;
+function normalizeGameId(gameId = HOME_GAME_ID) {
+  const value = String(gameId || HOME_GAME_ID).trim().toLowerCase();
+  return GAME_ID_PATTERN.test(value) ? value : HOME_GAME_ID;
 }
 
 export function readBuildContentVersion(document = globalThis.document) {
@@ -37,13 +33,13 @@ function normalizeBuildVersion(version) {
 }
 
 export function gameOfflineCacheName(
-  gameId = MAHJONG_GAME_ID,
+  gameId = HOME_GAME_ID,
   buildVersion = readBuildContentVersion(),
 ) {
   return `playweft-offline:${normalizeGameId(gameId)}:${normalizeBuildVersion(buildVersion)}`;
 }
 
-export function gameOfflineSettingsKeys(gameId = MAHJONG_GAME_ID) {
+export function gameOfflineSettingsKeys(gameId = HOME_GAME_ID) {
   const normalized = normalizeGameId(gameId);
   return {
     mode: `playweft.${normalized}.offline-cache-mode`,
@@ -56,12 +52,12 @@ function defaultSettingsStorage(gameId) {
   const storage = getGameStorage(gameId);
   // Migrated entries hydrate before startup and must never fall back to the
   // iframe partition. Other games keep their existing storage behavior.
-  if (storage || gameId === "mahjong" || gameId === "sudoku") return storage;
+  if (storage || gameId === "sudoku") return storage;
   return globalThis.localStorage;
 }
 
 export function readGameOfflineSettings(
-  gameId = MAHJONG_GAME_ID,
+  gameId = HOME_GAME_ID,
   storage = defaultSettingsStorage(gameId),
 ) {
   const keys = gameOfflineSettingsKeys(gameId);
@@ -102,7 +98,7 @@ export function writeGameOfflineSettings(
 
 /** A complete package must still contain every resource recorded at download time. */
 export async function hasGameOfflineResources(
-  gameId = MAHJONG_GAME_ID,
+  gameId = HOME_GAME_ID,
   {
     settings = readGameOfflineSettings(gameId),
     buildVersion = readBuildContentVersion(),
@@ -129,7 +125,7 @@ export async function hasGameOfflineResources(
 export async function fetchGameResource(
   url,
   {
-    gameId = MAHJONG_GAME_ID,
+    gameId = HOME_GAME_ID,
     mode,
     policy,
     buildVersion = readBuildContentVersion(),
@@ -203,7 +199,7 @@ export async function cacheGameOfflineResources(
   return results;
 }
 
-export async function clearGameOfflineCache(gameId = MAHJONG_GAME_ID) {
+export async function clearGameOfflineCache(gameId = HOME_GAME_ID) {
   if (typeof caches === "undefined") return false;
   const prefix = `playweft-offline:${normalizeGameId(gameId)}:`;
   const names = await caches.keys();
@@ -225,7 +221,7 @@ export async function registerGameOfflineServiceWorker() {
 }
 
 export async function notifyGameOfflineSettings(
-  gameId = MAHJONG_GAME_ID,
+  gameId = HOME_GAME_ID,
   settings = readGameOfflineSettings(gameId),
 ) {
   const buildVersion = readBuildContentVersion();
@@ -245,7 +241,7 @@ export async function notifyGameOfflineSettings(
   }).catch(() => {});
 }
 
-export function gameOfflineResourceUrls(gameId = MAHJONG_GAME_ID, extra = []) {
+export function gameOfflineResourceUrls(gameId = HOME_GAME_ID, extra = []) {
   const prefix = `/${normalizeGameId(gameId)}/`;
   const current = performance.getEntriesByType?.("resource")
     ?.map((entry) => entry.name)
@@ -266,25 +262,5 @@ export function gameOfflineResourceUrls(gameId = MAHJONG_GAME_ID, extra = []) {
     ...extra,
   ])];
 }
-
-// Backward-compatible Mahjong facade for existing callers.
-export const readMahjongOfflineSettings = (storage) =>
-  readGameOfflineSettings(MAHJONG_GAME_ID, storage);
-export const writeMahjongOfflineSettings = (settings, storage) =>
-  writeGameOfflineSettings(MAHJONG_GAME_ID, settings, storage);
-export const fetchMahjongResource = (url, options) =>
-  fetchGameResource(url, { ...options, gameId: MAHJONG_GAME_ID });
-export const cacheMahjongOfflineResources = (urls, options) =>
-  cacheGameOfflineResources(MAHJONG_GAME_ID, urls, options);
-export const clearMahjongOfflineCache = () =>
-  clearGameOfflineCache(MAHJONG_GAME_ID);
-export const registerMahjongOfflineServiceWorker = registerGameOfflineServiceWorker;
-export const notifyMahjongOfflinePolicy = (policy) =>
-  notifyGameOfflineSettings(MAHJONG_GAME_ID, {
-    ...readMahjongOfflineSettings(),
-    policy,
-  });
-export const mahjongOfflineResourceUrls = (extra) =>
-  gameOfflineResourceUrls(MAHJONG_GAME_ID, extra);
 
 export { DEFAULT_MODE, DEFAULT_POLICY, HOME_GAME_ID };

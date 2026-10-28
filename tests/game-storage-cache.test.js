@@ -10,73 +10,9 @@ import {
 } from "../src/game-storage-cache.js";
 import { IDBFactory } from "fake-indexeddb";
 import {
-  createMahjongSoloSave,
-  writeMahjongSoloSave,
-  readMahjongSoloSave,
-  clearMahjongSoloSave,
-  MAHJONG_SOLO_SAVE_KEY,
-} from "../games/mahjong/replay/solo-save.js";
-import {
   SUDOKU_PROGRESS_KEY,
   validateSudokuProgress,
 } from "../games/sudoku/storage.js";
-
-test("Mahjong saves and independent settings migrate, persist, reopen and clear through IndexedDB", async () => {
-  const factory = new IDBFactory();
-  let disk = createStandaloneStorage({ factory });
-  const save = createMahjongSoloSave({
-    randomSeed: "0123456789abcdef0123456789abcdef",
-    matchId: "solo-test",
-    matchType: "east",
-    rules: { multipleRon: true },
-    playerName: "Player",
-  });
-  assert.ok(save);
-  const volume = "playweft.mahjong.master-volume";
-  const old = new Map([
-    [MAHJONG_SOLO_SAVE_KEY, JSON.stringify(save)],
-    [volume, "42"],
-    [SUDOKU_PROGRESS_KEY, "untouched"],
-  ]);
-  const options = {
-    embedded: false,
-    standalone: disk,
-    legacyKeys: [MAHJONG_SOLO_SAVE_KEY, volume],
-    migrationKey: "mahjong-migrated",
-    legacyStorage: () => ({
-      getItem: (key) => old.get(key) ?? null,
-      removeItem: (key) => old.delete(key),
-    }),
-  };
-  let backend = createGameStorage(null, options);
-  let cache = await loadGameStorageCache({
-    gameId: "mahjong",
-    keys: options.legacyKeys,
-    backend,
-  });
-  assert.deepEqual(readMahjongSoloSave(), save);
-  assert.equal(cache.getItem(volume), "42");
-  assert.equal(old.get(SUDOKU_PROGRESS_KEY), "untouched");
-  assert.equal(old.has(MAHJONG_SOLO_SAVE_KEY), false);
-  writeMahjongSoloSave({ ...save, playerName: "Updated" });
-  cache.setItem(volume, "65");
-  await cache.flush();
-  await disk.close();
-  disk = createStandaloneStorage({ factory });
-  backend = createGameStorage(null, { ...options, standalone: disk });
-  cache = await loadGameStorageCache({
-    gameId: "mahjong",
-    keys: options.legacyKeys,
-    backend,
-  });
-  assert.equal(readMahjongSoloSave().playerName, "Updated");
-  assert.equal(getGameStorage("mahjong").getItem(volume), "65");
-  clearMahjongSoloSave();
-  await cache.flush();
-  assert.equal(await backend.getItem(MAHJONG_SOLO_SAVE_KEY), null);
-  assert.equal(await backend.getItem(volume), "65");
-  await disk.close();
-});
 
 test("failed writes retain the newest snapshot and deletion for explicit retry, without stale overwrite", async () => {
   const disk = new Map([

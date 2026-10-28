@@ -19,7 +19,6 @@ refer to seated human players; spectators do not occupy a seat.
 | Game | Local play | Room players | Local entry |
 | --- | --- | --- | --- |
 | Dou Dizhu / 斗地主 | One human + two AI opponents | 3 | [/dou-dizhu/](http://localhost:9139/dou-dizhu/) |
-| Mahjong / 麻将 | One human + three AI opponents | 2–4 | [/mahjong/](http://localhost:9139/mahjong/) |
 | Chess / 国际象棋 | Two players, same device | 2 | [/chess/](http://localhost:9139/chess/) |
 | Xiangqi / 中国象棋 | Two players, same device | 2 | [/xiangqi/](http://localhost:9139/xiangqi/) |
 | UNO | — | 2–4 | [/uno/](http://localhost:9139/uno/) |
@@ -96,6 +95,9 @@ use addresses reachable by both the players and the Worker rather than
 For the package contract and bridge protocol, see the
 [game integration guide](https://github.com/playweft/playweft/blob/main/docs/game-integration/README.md).
 
+Mahjong is maintained separately in [playweft-mahjong](https://github.com/playweft/playweft-mahjong).
+It is no longer built or listed as a local package here.
+
 ## Development
 
 | Command | Purpose |
@@ -120,18 +122,8 @@ vite.config.js      Game entries and development server configuration
 
 The client uses JavaScript, HTML, and CSS. Room rules run in Lua; some local
 modes reuse Lua through Wasmoon/WebAssembly, while others use JavaScript.
-Mahjong's table uses Three.js/WebGL, and Gomoku's local AI runs in a Web Worker.
+Gomoku's local AI runs in a Web Worker.
 See [development notes](docs/development.md) for architecture and AI details.
-
-### Optional Mahjong asset configuration
-
-No environment variables are required for the default games.
-`MAHJONG_DEFAULT_ASSET_CONFIG_URL` optionally points to a raw JSON configuration
-for Mahjong backgrounds, portraits, tile backs, and music. Export it in the
-process environment before starting Vite or building; see [.env.example](.env.example)
-for the supported asset categories and
-[the configuration normalizer](games/mahjong/theme/default-assets.js) for its shape.
-An omitted or unusable configuration falls back to the bundled defaults.
 
 ## Build and deploy
 
@@ -147,8 +139,7 @@ server's default port.
 Deploy the **entire `dist/` directory** to a static host at the site's root.
 It contains the catalogue, shared assets, and each game's directory with
 `index.html`, `help.html`, and `playweft.json`. Room packages also contain the
-Lua entry named in their manifest; Mahjong's room entry is `game-online.lua`.
-Sudoku has no room server entry.
+Lua entry named in their manifest. Sudoku has no room server entry.
 
 For production room play, serve the package over HTTPS and keep its Lua entry
 on the same origin as the manifest. Allow the Playweft page to fetch
@@ -173,8 +164,5 @@ Third-party assets retain their own licenses:
 
 - Chess piece SVGs by Cburnett use CC BY-SA 3.0. Attribution, source URLs, and
   asset terms are recorded in [the chess asset README](games/chess/assets/README.md).
-- Mahjong's Bakudai font subset uses SIL Open Font License 1.1; see
-  [the font notice](games/mahjong/assets/fonts/BAKUDAI-FONT-NOTICE.txt) and
-  [license text](games/mahjong/assets/fonts/BAKUDAI-OFL.txt).
 
 Dependency licenses are included with their respective packages.

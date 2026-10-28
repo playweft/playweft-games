@@ -70,7 +70,7 @@ test("service worker follows build manifest changes without changing its script"
       request: {
         method: "GET",
         mode: "navigate",
-        url: "https://play.example/mahjong/",
+        url: "https://play.example/sudoku/",
       },
       clientId: "",
       respondWith(value) {
@@ -85,9 +85,9 @@ test("service worker follows build manifest changes without changing its script"
   }
 
   await navigate();
-  assert.ok(openedCaches.includes(`playweft-offline:mahjong:${version}`));
+  assert.ok(openedCaches.includes(`playweft-offline:sudoku:${version}`));
 
   version = "fedcba9876543210";
   await navigate();
-  assert.ok(openedCaches.includes(`playweft-offline:mahjong:${version}`));
+  assert.ok(openedCaches.includes(`playweft-offline:sudoku:${version}`));
 });
