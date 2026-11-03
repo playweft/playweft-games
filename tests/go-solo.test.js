@@ -170,3 +170,65 @@ test("Go solo mode immediately undoes the last move", () => {
     "NO_MOVE_TO_UNDO",
   );
 });
+
+test("Chinese Go defaults to seven-point komi and first-pass tiebreak", () => {
+  assert.equal(createSoloGoState().settings.komi, 7);
+  assert.equal(createSoloGoState().settings.tieBreak, "first-pass");
+  assert.equal(startSolo().settings.tieBreak, "first-pass");
+});
+
+for (const tieBreak of ["draw", "white", "first-pass"]) {
+  for (const blackMode of ["player1", "player2"]) {
+    for (const firstColor of [1, 2]) {
+      test(`solo tied score: ${tieBreak}, ${blackMode}, color ${firstColor} passes first`, () => {
+        let state = startSolo({ tieBreak, komi: 7, blackMode });
+        // Eight black stones and one white stone share a neutral outside region.
+        state.board[0].fill(1, 0, 8);
+        state.board[8][8] = 2;
+        const whiteIndex = (state.blackIndex % 2) + 1;
+        state.current = firstColor === 1 ? state.blackIndex : whiteIndex;
+        const first = state.current;
+        state = applySoloGoAction(state, { type: "pass" }).state;
+        state = applySoloGoAction(state, { type: "pass" }).state;
+        state = applySoloGoAction(state, { type: "score" }).state;
+        assert.equal(state.scores.black, 8);
+        assert.equal(state.scores.white, 8);
+        const expected = tieBreak === "draw" ? 0 : tieBreak === "white" ? whiteIndex : first;
+        assert.equal(state.winnerIndex, expected);
+        assert.equal(state.winner, state.players[expected - 1] ?? "");
+        assert.equal(state.firstPassIndex, first);
+      });
+    }
+  }
+}
+
+test("first-pass tiebreak records the earliest effective pass and undo restores it", () => {
+  let state = startSolo({ tieBreak: "first-pass" });
+  state = applySoloGoAction(state, { type: "pass" }).state;
+  assert.equal(state.firstPassIndex, 1);
+  state = applySoloGoAction(state, { type: "undo" }).state;
+  assert.equal(state.firstPassIndex, 0);
+  state = applySoloGoAction(state, { type: "play", row: 4, column: 4 }).state;
+  state = applySoloGoAction(state, { type: "pass" }).state;
+  assert.equal(state.firstPassIndex, 2);
+  state = applySoloGoAction(state, { type: "play", row: 5, column: 5 }).state;
+  assert.equal(state.firstPassIndex, 2);
+  state = applySoloGoAction(state, { type: "undo" }).state;
+  assert.equal(state.firstPassIndex, 2);
+  state = applySoloGoAction(state, { type: "pass" }).state;
+  assert.equal(state.phase, "scoring");
+  state = applySoloGoAction(state, { type: "score" }).state;
+  assert.equal(state.winnerIndex, 1, "higher score still wins, independent of tiebreak");
+  state = applySoloGoAction(state, { type: "rematch" }).state;
+  assert.equal(state.firstPassIndex, 0);
+  assert.equal(state.settings.tieBreak, "first-pass");
+});
+
+test("solo Go rejects unsupported tiebreak settings", () => {
+  for (const tieBreak of ["black", false, 0, {}]) {
+    assert.equal(applySoloGoAction(createSoloGoState(), {
+      type: "start", size: 9, rules: "chinese", komi: 7,
+      handicap: 0, blackMode: "player1", tieBreak,
+    }).accepted, false);
+  }
+});

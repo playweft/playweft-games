@@ -1,3 +1,4 @@
+import { goTieBreakLabel } from "./rules.js";
 import { applySoloGoAction, createSoloGoState } from "./solo.js";
 
 const STORAGE_KEY = "playweft:go-history:v1";
@@ -158,7 +159,9 @@ export function updateGoHistory(records, snapshot, recordedAt = Date.now()) {
     const blackIndex = Math.max(0, Number(state.blackIndex) - 1);
     record.endedAt ??= recordedAt;
     record.result = {
-      winnerColor: Number(state.winnerIndex) - 1 === blackIndex ? "B" : "W",
+      winnerColor: Number(state.winnerIndex) > 0
+        ? Number(state.winnerIndex) - 1 === blackIndex ? "B" : "W"
+        : "",
       black: Number(state.scores?.black) || 0,
       white: Number(state.scores?.white) || 0,
       reason:
@@ -207,8 +210,20 @@ export function updateGoResumeSnapshot(
 export function restoreGoResumeState(record, resumedAt = Date.now()) {
   if (!canResumeGoRecord(record)) return undefined;
   const state = structuredClone(record.resume.state);
+  state.settings.tieBreak ??= "white";
+  state.firstPassIndex ??= firstPassIndex(record.moves, state.blackIndex);
+  if (state.undoSnapshot) {
+    state.undoSnapshot.firstPassIndex ??= firstPassIndex(
+      record.moves.slice(0, state.undoSnapshot.moves), state.blackIndex,
+    );
+  }
   state.turnStartedAt = state.phase === "playing" ? resumedAt : 0;
   return state;
+}
+
+function firstPassIndex(moves = [], blackIndex) {
+  const move = moves.find((entry) => entry.pass);
+  return !move ? 0 : move.color === "B" ? blackIndex : (blackIndex % 2) + 1;
 }
 
 export function goRecordToReplayFrames(record) {
@@ -320,6 +335,7 @@ export function goRecordToSgf(record) {
       `AB${record.initialBlack.map((point) => `[${toSgfPoint(point)}]`).join("")}`,
     );
   }
+  if (settings.tieBreak) properties.push(`C[平分判定：${escapeSgf(goTieBreakLabel(settings.tieBreak))}]`);
   const result = formatSgfResult(record.result);
   if (result) properties.push(`RE[${result}]`);
 
@@ -333,11 +349,14 @@ export function goRecordToSgf(record) {
 export function historyResultLabel(record) {
   if (record.status === "scoring") return "计分确认中";
   if (!record.result) return "进行中";
+  if (!record.result.winnerColor) return "和棋";
   if (record.result.reason === "resign") {
     return `${record.result.winnerColor === "B" ? "黑方" : "白方"}胜`;
   }
   const difference = Math.abs(record.result.black - record.result.white);
-  return `${record.result.winnerColor === "B" ? "黑方" : "白方"}胜 ${formatNumber(difference)} 目`;
+  const winner = record.result.winnerColor === "B" ? "黑方" : "白方";
+  return difference === 0 ? `${winner}胜（平分判定）`
+    : `${winner}胜 ${formatNumber(difference)} 目`;
 }
 
 function appendMove(record, event, state, version) {
@@ -370,7 +389,7 @@ function appendMove(record, event, state, version) {
 
 function fallbackMoveEvent(state) {
   const kind = state.lastEvent?.kind;
-  if (kind !== "play" && kind !== "pass") return undefined;
+  if (kind !== "play" && kind !== "pass" && kind !== "scoring_started") return undefined;
   const playerIndex = Number(state.lastEvent.playerIndex) - 1;
   return {
     type: kind === "play" ? "played" : "passed",
@@ -410,9 +429,11 @@ function toSgfPoint(point) {
 }
 
 function formatSgfResult(result) {
-  if (!result?.winnerColor) return "";
+  if (!result) return "";
+  if (!result.winnerColor) return "0";
   if (result.reason === "resign") return `${result.winnerColor}+R`;
-  return `${result.winnerColor}+${formatNumber(Math.abs(result.black - result.white))}`;
+  const difference = Math.abs(result.black - result.white);
+  return `${result.winnerColor}+${difference === 0 ? "" : formatNumber(difference)}`;
 }
 
 function formatNumber(value) {

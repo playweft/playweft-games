@@ -1,3 +1,5 @@
+import { DEFAULT_GO_SETTINGS, GO_TIE_BREAKS, goWinnerIndex } from "./rules.js";
+
 const DIRECTIONS = [
   [-1, 0],
   [1, 0],
@@ -5,16 +7,8 @@ const DIRECTIONS = [
   [0, 1],
 ];
 
-const DEFAULT_SETTINGS = {
-  size: 19,
-  rules: "chinese",
-  komi: 6.5,
-  handicap: 0,
-  blackMode: "random",
-};
-
 export function createSoloGoState() {
-  return setupState(1, DEFAULT_SETTINGS);
+  return setupState(1, DEFAULT_GO_SETTINGS);
 }
 
 export function applySoloGoAction(
@@ -96,11 +90,8 @@ export function applySoloGoAction(
     state.scoreSubmitted = [true, true];
     state.ended = true;
     state.phase = "ended";
-    state.winnerIndex =
-      scores.black > scores.white
-        ? state.blackIndex
-        : (state.blackIndex % state.players.length) + 1;
-    state.winner = state.players[state.winnerIndex - 1];
+    state.winnerIndex = goWinnerIndex(state, scores);
+    state.winner = state.players[state.winnerIndex - 1] ?? "";
     state.lastEvent = { kind: "scored", playerIndex: 0, captured: 0 };
     return accepted(state, [{ type: "scored", winner: state.winner }]);
   }
@@ -115,6 +106,7 @@ export function applySoloGoAction(
     recordTurnTime(state, playerIndex, now);
     state.moves += 1;
     state.consecutivePasses += 1;
+    if (!state.firstPassIndex) state.firstPassIndex = playerIndex + 1;
     state.lastMove = { row: 0, column: 0 };
     state.lastEvent = {
       kind: "pass",
@@ -309,6 +301,7 @@ function setupState(round, settings) {
     scoreRound: 0,
     scoreSubmitted: [false, false],
     consecutivePasses: 0,
+    firstPassIndex: 0,
     moves: 0,
     ended: false,
     winner: "",
@@ -367,8 +360,10 @@ function normalizeSettings(action) {
   const size = Number(action.size);
   const komi = Number(action.komi);
   const handicap = Number(action.handicap);
+  const tieBreak = action.tieBreak ?? "first-pass";
   if (![9, 13, 19].includes(size)) return undefined;
   if (!["chinese", "japanese"].includes(action.rules)) return undefined;
+  if (!GO_TIE_BREAKS.includes(tieBreak)) return undefined;
   if (!Number.isFinite(komi) || komi < 0 || komi > 20) return undefined;
   if (handicap !== 0 && (!Number.isInteger(handicap) || handicap < 2 || handicap > 9)) {
     return undefined;
@@ -381,6 +376,7 @@ function normalizeSettings(action) {
     size,
     rules: action.rules,
     komi,
+    tieBreak,
     handicap,
     blackMode: action.blackMode,
   };
@@ -458,6 +454,7 @@ function createUndoSnapshot(state) {
     scoreRound: state.scoreRound,
     scoreSubmitted: [...state.scoreSubmitted],
     consecutivePasses: state.consecutivePasses,
+    firstPassIndex: state.firstPassIndex || 0,
     moves: state.moves,
     previousBoard: state.previousBoard,
     lastMove: { ...state.lastMove },
@@ -475,6 +472,7 @@ function restoreUndoSnapshot(state, snapshot, now) {
   state.scoreRound = snapshot.scoreRound;
   state.scoreSubmitted = [...snapshot.scoreSubmitted];
   state.consecutivePasses = snapshot.consecutivePasses;
+  state.firstPassIndex = snapshot.firstPassIndex || 0;
   state.moves = snapshot.moves;
   state.previousBoard = snapshot.previousBoard;
   state.lastMove = { ...snapshot.lastMove };

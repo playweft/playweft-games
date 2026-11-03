@@ -1,3 +1,4 @@
+import { DEFAULT_GO_SETTINGS, defaultGoKomi, goTieBreakLabel } from "./rules.js";
 import {
   ChevronLeft,
   ChevronRight,
@@ -58,6 +59,7 @@ const elements = {
   sizeSetting: document.querySelector("#size-setting"),
   rulesSetting: document.querySelector("#rules-setting"),
   komiSetting: document.querySelector("#komi-setting"),
+  tieBreakSetting: document.querySelector("#tie-break-setting"),
   blackSetting: document.querySelector("#black-setting"),
   handicapSetting: document.querySelector("#handicap-setting"),
   handicapNote: document.querySelector("#handicap-note"),
@@ -197,13 +199,7 @@ elements.playerTimes.forEach((element) => renderClockDigits(element, "00:00"));
 const preview = {
   players: ["preview-one", "preview-two"],
   phase: "playing",
-  settings: {
-    size: 19,
-    rules: "chinese",
-    komi: 6.5,
-    handicap: 0,
-    blackMode: "random",
-  },
+  settings: { ...DEFAULT_GO_SETTINGS },
   board: Array.from({ length: 19 }, () => Array(19).fill(0)),
   current: 1,
   blackIndex: 1,
@@ -213,7 +209,7 @@ const preview = {
   ended: false,
   winner: "",
   winnerIndex: 0,
-  scores: { black: 0, white: 0, komi: 6.5 },
+  scores: { black: 0, white: 0, komi: defaultGoKomi() },
   timeUsed: [0, 0],
   turnStartedAt: 0,
   scoreRound: 0,
@@ -446,6 +442,12 @@ elements.setupForm.addEventListener("input", (event) => {
     return;
   }
   if (!isSettingControl(event.target)) return;
+  if (event.target === elements.rulesSetting) {
+    const previousRules = (draftSettings || state?.settings || preview.settings).rules;
+    if (Number(elements.komiSetting.value) === defaultGoKomi(previousRules)) {
+      elements.komiSetting.value = String(defaultGoKomi(elements.rulesSetting.value));
+    }
+  }
   updateHandicapControls();
   renderSettingValues();
   syncSetupSettings();
@@ -1157,7 +1159,10 @@ function renderPlayerCards(
     } else if (ended && nextState.scores) {
       const score =
         color === 1 ? nextState.scores.black : nextState.scores.white;
-      detail.textContent = `${formatScore(score)} 目`;
+      const result = Number(nextState.winnerIndex) === 0 ? " · 和棋"
+        : nextState.scores.black === nextState.scores.white && Number(nextState.winnerIndex) - 1 === playerIndex
+          ? " · 获胜" : "";
+      detail.textContent = `${formatScore(score)} 目${result}`;
     } else {
       const captures = Number(nextState.captures?.[playerIndex]) || 0;
       detail.textContent = `提子 ${captures}`;
@@ -1252,13 +1257,15 @@ function renderSetup(nextState, ownIndex) {
     : "设置会随房主调整实时更新";
   elements.sizeSetting.value = String(settings.size ?? 19);
   elements.rulesSetting.value = settings.rules ?? "chinese";
-  elements.komiSetting.value = String(settings.komi ?? 6.5);
+  elements.komiSetting.value = String(settings.komi ?? defaultGoKomi(settings.rules));
+  elements.tieBreakSetting.value = settings.tieBreak ?? "white";
   elements.blackSetting.value = settings.blackMode ?? "random";
   elements.handicapSetting.value = String(settings.handicap ?? 0);
   const controls = [
     elements.sizeSetting,
     elements.rulesSetting,
     elements.komiSetting,
+    elements.tieBreakSetting,
     elements.blackSetting,
     elements.handicapSetting,
     elements.start,
@@ -1376,6 +1383,7 @@ function renderGameInfo(nextState) {
     ["棋盘", `${settings.size ?? 19} × ${settings.size ?? 19}`],
     ["规则", ruleLabel(settings)],
     ["贴目", `${formatScore(settings.komi)} 目`],
+    ["平分判定", goTieBreakLabel(settings.tieBreak)],
     [
       "让子",
       Number(settings.handicap) > 0 ? `让 ${settings.handicap} 子` : "不让子",
@@ -1579,6 +1587,7 @@ function isSettingControl(target) {
     elements.sizeSetting,
     elements.rulesSetting,
     elements.komiSetting,
+    elements.tieBreakSetting,
     elements.blackSetting,
     elements.handicapSetting,
   ].includes(target);
@@ -1589,6 +1598,7 @@ function readSetupSettings() {
     size: Number(elements.sizeSetting.value),
     rules: elements.rulesSetting.value,
     komi: Number(elements.komiSetting.value),
+    tieBreak: elements.tieBreakSetting.value,
     blackMode: elements.blackSetting.value,
     handicap: Number(elements.handicapSetting.value),
   };
@@ -1631,6 +1641,7 @@ function sameSettings(left = {}, right = {}) {
   return (
     Number(left.size) === Number(right.size) &&
     left.rules === right.rules &&
+    (left.tieBreak ?? "white") === (right.tieBreak ?? "white") &&
     Number(left.komi) === Number(right.komi) &&
     left.blackMode === right.blackMode &&
     Number(left.handicap) === Number(right.handicap)
@@ -1747,7 +1758,7 @@ function ruleLabel(settings = {}) {
 }
 
 function scoringRuleSummary(settings = {}) {
-  return `按${ruleLabel(settings)}计分 · 贴 ${formatScore(settings.komi)} 目`;
+  return `按${ruleLabel(settings)}计分 · 贴 ${formatScore(settings.komi)} 目 · 平分${goTieBreakLabel(settings.tieBreak)}`;
 }
 
 function translateError(error, code) {
@@ -1768,6 +1779,7 @@ function translateError(error, code) {
     ONLY_HOST_CAN_SETUP: "只有房主可以调整并确认对局设置",
     invalid_score: "计分结果无效",
     INVALID_SCORE: "计分结果无效",
+    INVALID_TIE_BREAK: "平分判定无效",
     scoring_required: "当前正在等待双方确认计分",
     SCORING_REQUIRED: "当前正在等待双方确认计分",
     stale_score_round: "计分状态已更新，请重新确认",

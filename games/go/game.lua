@@ -1,5 +1,5 @@
 local DEFAULT_SIZE = 19
-local DEFAULT_KOMI = 6.5
+local DEFAULT_KOMI = 7
 local DIRECTIONS = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } }
 local RANDOM_MODULUS = 2147483647
 
@@ -91,6 +91,7 @@ local function undo_snapshot(state)
     scoreRound = state.scoreRound,
     scoreSubmitted = copy_list(state.scoreSubmitted),
     consecutivePasses = state.consecutivePasses,
+    firstPassIndex = state.firstPassIndex or 0,
     moves = state.moves,
     previousBoard = state.previousBoard,
     lastMove = copy_record(state.lastMove),
@@ -110,6 +111,7 @@ local function restore_undo_snapshot(state, snapshot, context)
   state.scoreSubmitted = copy_list(snapshot.scoreSubmitted)
   state.scoreProposals = {}
   state.consecutivePasses = snapshot.consecutivePasses
+  state.firstPassIndex = snapshot.firstPassIndex or 0
   state.moves = snapshot.moves
   state.previousBoard = snapshot.previousBoard
   state.lastMove = copy_record(snapshot.lastMove)
@@ -177,9 +179,14 @@ local function normalized_settings(action)
   local komi = tonumber(action.komi)
   local handicap = tonumber(action.handicap)
   local black_mode = action.blackMode
+  local tie_break = action.tieBreak
+  if tie_break == nil then tie_break = "first-pass" end
 
   if size ~= 9 and size ~= 13 and size ~= 19 then return nil, "invalid_size" end
   if rules ~= "chinese" and rules ~= "japanese" then return nil, "invalid_rules" end
+  if tie_break ~= "draw" and tie_break ~= "white" and tie_break ~= "first-pass" then
+    return nil, "invalid_tie_break"
+  end
   if not komi or komi ~= komi or komi < 0 or komi > 20 then
     return nil, "invalid_komi"
   end
@@ -199,6 +206,7 @@ local function normalized_settings(action)
     komi = komi,
     handicap = handicap,
     blackMode = black_mode,
+    tieBreak = tie_break,
   }
 end
 
@@ -363,6 +371,7 @@ local function new_round(
     scoreSubmitted = { false, false },
     scoreProposals = {},
     consecutivePasses = 0,
+    firstPassIndex = 0,
     moves = 0,
     ended = false,
     winner = "",
@@ -408,6 +417,7 @@ local function setup_state(players, player_names, round, settings, seed, host_id
     scoreSubmitted = { false, false },
     scoreProposals = {},
     consecutivePasses = 0,
+    firstPassIndex = 0,
     moves = 0,
     ended = false,
     winner = "",
@@ -433,6 +443,7 @@ function setup(context)
     size = DEFAULT_SIZE,
     rules = "chinese",
     komi = DEFAULT_KOMI,
+    tieBreak = "first-pass",
     handicap = 0,
     blackMode = "random",
   }
@@ -644,12 +655,17 @@ function on_action(state, action, context)
     state.scores = state.scoreProposals[1]
     state.ended = true
     state.phase = "ended"
+    local white_index = (state.blackIndex % #state.players) + 1
     if state.scores.black > state.scores.white then
       state.winnerIndex = state.blackIndex
+    elseif state.scores.white > state.scores.black then
+      state.winnerIndex = white_index
     else
-      state.winnerIndex = (state.blackIndex % #state.players) + 1
+      local tie_break = state.settings.tieBreak or "white"
+      state.winnerIndex = tie_break == "white" and white_index
+        or (tie_break == "first-pass" and (state.firstPassIndex or 0) or 0)
     end
-    state.winner = state.players[state.winnerIndex]
+    state.winner = state.players[state.winnerIndex] or ""
     state.lastEvent = { kind = "scored", playerIndex = index, captured = 0 }
     return {
       accepted = true,
@@ -668,6 +684,9 @@ function on_action(state, action, context)
     record_turn_time(state, index, context)
     state.moves = (state.moves or 0) + 1
     state.consecutivePasses = state.consecutivePasses + 1
+    if not state.firstPassIndex or state.firstPassIndex == 0 then
+      state.firstPassIndex = index
+    end
     state.lastMove = { row = 0, column = 0 }
     state.lastEvent = { kind = "pass", playerIndex = index, captured = 0 }
     if state.consecutivePasses >= 2 then

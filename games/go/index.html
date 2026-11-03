@@ -72,9 +72,20 @@
             <li class="setting-field">
               <label for="komi-setting" class="setting-title">贴目</label>
               <span class="number-input">
-                <input id="komi-setting" name="komi" type="number" min="0" max="20" step="0.5" value="6.5" />
+                <input id="komi-setting" name="komi" type="number" min="0" max="20" step="0.5" value="7" />
                 <span>目</span>
               </span>
+            </li>
+            <li class="settings-divider" role="presentation"><hr /></li>
+            <li class="setting-field">
+              <span id="tie-break-setting-label" class="setting-title">平分判定</span>
+              <span class="setting-value" aria-hidden="true"></span>
+              <i class="setting-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+              <select id="tie-break-setting" name="tieBreak" aria-labelledby="tie-break-setting-label">
+                <option value="draw">和棋</option>
+                <option value="white">白胜</option>
+                <option value="first-pass" selected>先停着者胜</option>
+              </select>
             </li>
             <li class="settings-divider" role="presentation"><hr /></li>
             <li class="setting-field">

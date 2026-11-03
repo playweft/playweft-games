@@ -538,3 +538,72 @@ test("Go requires the opponent to approve a one-step undo", async () => {
     requestCleared: true,
   });
 });
+
+test("room Go defaults to seven-point komi and first-pass tiebreak", async () => {
+  const settings = await runGo(`result = setup({ players = { "black", "white" } }).settings`);
+  assert.equal(settings.komi, 7);
+  assert.equal(settings.tieBreak, "first-pass");
+});
+
+for (const tieBreak of ["draw", "white", "first-pass"]) {
+  for (const blackMode of ["player1", "player2"]) {
+    test(`room tied scores honor ${tieBreak} with ${blackMode}`, async () => {
+      const result = await runGo(`
+        state = setup({ players = { "one", "two" } })
+        state = on_action(state, {
+          type = "start", size = 9, rules = "chinese", komi = 7,
+          handicap = 0, blackMode = "${blackMode}", tieBreak = "${tieBreak}"
+        }, { playerId = "one" }).state
+        for column = 1, 8 do state.board[1][column] = 1 end
+        state.board[9][9] = 2
+        -- Black passes first even when black belongs to player two.
+        state.current = state.blackIndex
+        state = on_action(state, { type = "pass" }, { playerId = state.players[state.current] }).state
+        state = on_action(state, { type = "pass" }, { playerId = state.players[state.current] }).state
+        score = { black = 8, white = 8, blackStones = 8, whiteStones = 1,
+          blackTerritory = 0, whiteTerritory = 0, neutral = 72, komi = 7, rules = "chinese" }
+        state = on_action(state, { type = "score", scoreRound = state.scoreRound, score = score }, { playerId = "one" }).state
+        state = on_action(state, { type = "score", scoreRound = state.scoreRound, score = score }, { playerId = "two" }).state
+        result = state
+      `);
+      const whiteIndex = (result.blackIndex % 2) + 1;
+      assert.equal(result.firstPassIndex, result.blackIndex);
+      const expected = tieBreak === "draw" ? 0 : tieBreak === "white" ? whiteIndex : result.blackIndex;
+      assert.equal(result.winnerIndex, expected);
+      assert.equal(result.winner, result.players[expected - 1] ?? "");
+      assert.equal(result.ended, true);
+    });
+  }
+}
+
+test("room tiebreak settings synchronize and reject invalid values", async () => {
+  const result = await runGo(`
+    state = setup({ players = { "one", "two" } })
+    action = { type = "update_settings", size = 9, rules = "chinese", komi = 7,
+      handicap = 0, blackMode = "player1", tieBreak = "draw" }
+    updated = on_action(state, action, { playerId = "one" })
+    action.tieBreak = false
+    invalid = on_action(state, action, { playerId = "one" })
+    result = { settings = updated.state.settings, invalid = invalid }
+  `);
+  assert.equal(result.settings.tieBreak, "draw");
+  assert.equal(result.invalid.accepted, false);
+  assert.equal(result.invalid.error.code, "INVALID_TIE_BREAK");
+});
+
+test("room undo cancels a first pass and later play does not erase an earlier pass", async () => {
+  const result = await runGo(`
+    state = setup({ players = { "one", "two" } })
+    state = on_action(state, { type = "start", size = 9, rules = "chinese", komi = 7,
+      handicap = 0, blackMode = "player1", tieBreak = "first-pass" }, { playerId = "one" }).state
+    state = on_action(state, { type = "pass" }, { playerId = "one" }).state
+    state = on_action(state, { type = "request_undo" }, { playerId = "one" }).state
+    state = on_action(state, { type = "respond_undo", accept = true }, { playerId = "two" }).state
+    undone = state.firstPassIndex
+    state = on_action(state, { type = "play", row = 4, column = 4 }, { playerId = "one" }).state
+    state = on_action(state, { type = "pass" }, { playerId = "two" }).state
+    state = on_action(state, { type = "play", row = 5, column = 5 }, { playerId = "one" }).state
+    result = { undone = undone, firstPassIndex = state.firstPassIndex }
+  `);
+  assert.deepEqual(result, { undone: 0, firstPassIndex: 2 });
+});

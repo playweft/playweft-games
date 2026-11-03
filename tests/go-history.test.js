@@ -371,3 +371,73 @@ test("Go history rebuilds every replay frame when resuming a solo game", () => {
   assert.equal(frames[2].board[1][1], 2);
   assert.equal(frames.at(-1).board[1][1], 0);
 });
+
+for (const tieBreak of ["draw", "white", "first-pass"]) {
+  test(`Go history and SGF preserve a ${tieBreak} tied result`, () => {
+    let records = updateGoHistory([], {
+      matchId: "tied", version: 1,
+      state: gameState({ moves: 1, current: 2, lastEvent: { kind: "pass", playerIndex: 1 } }),
+      events: [{ type: "passed", player: "black" }],
+    });
+    records = updateGoHistory(records, {
+      matchId: "tied", version: 2,
+      state: gameState({
+        moves: 2, current: 0, phase: "scoring",
+        lastEvent: { kind: "scoring_started", playerIndex: 2 },
+      }),
+      events: [{ type: "scoring_started", player: "white" }],
+    });
+    assert.equal(records[0].moves.length, 2);
+    const winnerIndex = tieBreak === "draw" ? 0 : tieBreak === "white" ? 2 : 1;
+    records = updateGoHistory(records, {
+      matchId: "tied", version: 3,
+      state: gameState({
+        settings: { ...gameState().settings, komi: 7, tieBreak },
+        moves: 2, current: 0, phase: "ended", ended: true,
+        firstPassIndex: 1, winnerIndex, scores: { black: 8, white: 8 },
+        lastEvent: { kind: "scored", playerIndex: 2 },
+      }),
+    });
+    const record = records[0];
+    const winner = winnerIndex === 1 ? "B" : winnerIndex === 2 ? "W" : "";
+    assert.equal(record.result.winnerColor, winner);
+    assert.equal(historyResultLabel(record), !winner ? "和棋" : `${winner === "B" ? "黑方" : "白方"}胜（平分判定）`);
+    const sgf = goRecordToSgf(record);
+    assert.ok(sgf.includes(`RE[${winner ? winner + "+" : "0"}]`));
+    assert.ok(sgf.includes("C[平分判定："));
+    assert.ok(sgf.includes("KM[7]"));
+  });
+}
+
+test("Go resume keeps tiebreak and first-pass history, including undo", () => {
+  const settings = { ...gameState().settings, komi: 7, tieBreak: "first-pass" };
+  const state = gameState({ settings, moves: 1, firstPassIndex: 1, current: 2,
+    lastEvent: { kind: "pass", playerIndex: 1 },
+    undoSnapshot: { moves: 0, firstPassIndex: 0 },
+  });
+  const records = updateGoHistory([], { mode: "solo", matchId: "resume-pass", version: 1,
+    state, events: [{ type: "passed", player: "black" }],
+  });
+  const restored = restoreGoResumeState(records[0]);
+  assert.equal(restored.settings.komi, 7);
+  assert.equal(restored.settings.tieBreak, "first-pass");
+  assert.equal(restored.firstPassIndex, 1);
+  assert.equal(restored.undoSnapshot.firstPassIndex, 0);
+  assert.equal(restored.current, 2);
+});
+
+test("legacy Go saves keep their old komi and white-wins tiebreak", () => {
+  const records = updateGoHistory([], { mode: "solo", matchId: "legacy", version: 1,
+    state: gameState({ moves: 1, current: 2, blackIndex: 2,
+      lastEvent: { kind: "pass", playerIndex: 1 }, undoSnapshot: { moves: 0 },
+    }),
+    events: [{ type: "passed", player: "black" }],
+  });
+  const original = structuredClone(records[0]);
+  const restored = restoreGoResumeState(records[0]);
+  assert.equal(restored.settings.komi, 6.5);
+  assert.equal(restored.settings.tieBreak, "white");
+  assert.equal(restored.firstPassIndex, 1);
+  assert.equal(restored.undoSnapshot.firstPassIndex, 0);
+  assert.deepEqual(records[0], original, "migration must not mutate the saved record");
+});
