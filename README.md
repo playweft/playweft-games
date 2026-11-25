@@ -26,7 +26,7 @@ refer to seated human players; spectators do not occupy a seat.
 | Gomoku / 五子棋 | Human vs. AI or two players, same device | 2 | [/gomoku/](http://localhost:9139/gomoku/) |
 | Sudoku / 数独 | Single-player puzzle | — | [/sudoku/](http://localhost:9139/sudoku/) |
 | Texas Hold'em / 德州扑克 | — | 2–6 | [/texas-holdem/](http://localhost:9139/texas-holdem/) |
-| Go / 围棋 | Two players, same device | 2 | [/go/](http://localhost:9139/go/) |
+| Go / 围棋 | Human vs. AI or two players, same device | 2 | [/go/](http://localhost:9139/go/) |
 | Reversi / 黑白棋 | AI opponent or two players, same device | 2 | [/reversi/](http://localhost:9139/reversi/) |
 | Connect Four / 四子棋 | Human vs. AI | 2 | [/connect-four/](http://localhost:9139/connect-four/) |
 | Pig Dice / 贪心骰子 | — | 2 | [/pig-dice/](http://localhost:9139/pig-dice/) |
@@ -109,6 +109,12 @@ It is no longer built or listed as a local package here.
 
 Use `npm run check` before submitting a change. It already includes the build,
 so a second `npm run build` is unnecessary unless you change files afterward.
+
+Set `VITE_GO_AI_MODEL_URL` in `.env.local` or the deployment's build environment
+to enable Go's enhanced AI difficulty (see [.env.example](.env.example)).
+When unset or empty, enhanced difficulty is absent. Lightweight AI uses the bundled b6 model.
+External model hosts must allow CORS GET. This is a public build-time setting;
+restart Vite or rebuild the production site after changing it.
 
 ```text
 games/<game>/       Game UI, manifest, rules, and help page

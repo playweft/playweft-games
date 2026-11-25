@@ -1424,6 +1424,23 @@ body {
   }
 }
 
+.ai-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #4d5c50;
+}
+
+.ai-feedback button {
+  padding: 4px 8px;
+  border: 0;
+  background: transparent;
+  color: #1976d2;
+  cursor: pointer;
+}
+
 .replay-status-track {
   position: absolute;
   top: 0;

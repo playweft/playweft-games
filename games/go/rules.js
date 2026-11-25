@@ -1,4 +1,9 @@
 export const GO_TIE_BREAKS = ["draw", "white", "first-pass"];
+export const GO_AI_DIFFICULTIES = { b6: "普通", b18: "困难" };
+
+export function goAiPlayerName(settings = {}) {
+  return `${GO_AI_DIFFICULTIES[settings.aiModel] ?? GO_AI_DIFFICULTIES.b6} AI`;
+}
 
 export function defaultGoKomi(rules = "chinese") {
   return rules === "japanese" ? 6.5 : 7;

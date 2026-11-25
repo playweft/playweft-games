@@ -1,4 +1,4 @@
-import { goTieBreakLabel } from "./rules.js";
+import { goAiPlayerName, goTieBreakLabel } from "./rules.js";
 import { applySoloGoAction, createSoloGoState } from "./solo.js";
 
 const STORAGE_KEY = "playweft:go-history:v1";
@@ -113,8 +113,8 @@ export function updateGoHistory(records, snapshot, recordedAt = Date.now()) {
       updatedAt: recordedAt,
       status: state.phase,
       settings: { ...state.settings },
-      blackPlayer: `玩家 ${blackIndex + 1}`,
-      whitePlayer: `玩家 ${whiteIndex + 1}`,
+      blackPlayer: state.playerNames?.[blackIndex] || `玩家 ${blackIndex + 1}`,
+      whitePlayer: state.playerNames?.[whiteIndex] || `玩家 ${whiteIndex + 1}`,
       initialBlack:
         moveCount === 1 ? collectInitialBlackBeforeFirstMove(state) : [],
       partial: moveCount > 1,
@@ -148,6 +148,12 @@ export function updateGoHistory(records, snapshot, recordedAt = Date.now()) {
   record.mode = snapshot.mode ?? record.mode ?? "room";
   record.status = state.ended ? "ended" : state.phase;
   record.settings = { ...state.settings };
+  if (record.mode === "solo" && state.settings?.opponent === "ai") {
+    const blackIsHuman = Number(state.blackIndex) === 1;
+    const aiName = goAiPlayerName(state.settings);
+    record.blackPlayer = blackIsHuman ? "你" : aiName;
+    record.whitePlayer = blackIsHuman ? aiName : "你";
+  }
   record.captures = [...(state.captures ?? [0, 0])];
   record.timeUsed = [...(state.timeUsed ?? [0, 0])];
   if (hasVersion) record.lastVersion = versionNumber;

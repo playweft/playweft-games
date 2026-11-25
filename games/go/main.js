@@ -1,4 +1,15 @@
-import { DEFAULT_GO_SETTINGS, defaultGoKomi, goTieBreakLabel } from "./rules.js";
+import {
+  DEFAULT_GO_SETTINGS,
+  defaultGoKomi,
+  goTieBreakLabel,
+  goAiPlayerName,
+} from "./rules.js";
+import { createGoAiController } from "./ai-controller.js";
+import {
+  GO_AI_MODELS,
+  DEFAULT_GO_AI_MODEL_ID,
+  resolveGoAiModelId,
+} from "./ai-model.js";
 import {
   ChevronLeft,
   ChevronRight,
@@ -50,6 +61,14 @@ const elements = {
   setupPanel: document.querySelector("#setup-panel"),
   setupForm: document.querySelector("#setup-form"),
   setupNote: document.querySelector("#setup-note"),
+  opponentSettings: document.querySelector("#opponent-settings"),
+  opponentSetting: document.querySelector("#opponent-setting"),
+  aiDifficulty: document.querySelector("#ai-difficulty"),
+  aiDifficultyField: document.querySelector("#ai-difficulty-field"),
+  aiDifficultyDivider: document.querySelector("#ai-difficulty-divider"),
+  aiFeedback: document.querySelector("#ai-feedback"),
+  aiStatus: document.querySelector("#ai-status"),
+  aiRetry: document.querySelector("#ai-retry"),
   sourceSetting: document.querySelector("#source-setting"),
   newGameSettings: document.querySelector("#new-game-settings"),
   resumeSource: document.querySelector("#resume-source"),
@@ -113,6 +132,10 @@ const elements = {
   playerTimes: [...document.querySelectorAll("[data-player-time]")],
 };
 const segmentNames = ["a", "b", "c", "d", "e", "f", "g"];
+for (const [id, model] of Object.entries(GO_AI_MODELS)) {
+  elements.aiDifficulty.add(new Option(model.difficulty, id));
+}
+elements.aiDifficulty.value = DEFAULT_GO_AI_MODEL_ID;
 const digitSegments = [
   "abcdef",
   "bc",
@@ -172,6 +195,8 @@ let replayFrames = [];
 let replayIndex;
 let setupSource = "new";
 let selectedResumeRecordId = "";
+let startingAi = false;
+let aiStatus = { phase: "idle" };
 
 createIcons({
   icons: {
@@ -235,6 +260,62 @@ const setupDialog = createOverlayDialog({
   dismissible: false,
   initialFocus: elements.setupForm,
 });
+const goAi = createGoAiController({
+  onMove: (action) => sendAction(action),
+  onStatus: (status) => {
+    aiStatus = { ...aiStatus, ...status };
+    renderAiFeedback();
+  },
+});
+
+function updateAiTurn() {
+  goAi.update(
+    state,
+    replayFrames,
+    playMode === "solo" &&
+      !pendingAction &&
+      !isReplayOpen() &&
+      !document.hidden,
+    resolveGoAiModelId(state?.settings?.aiModel),
+  );
+  renderAiFeedback();
+}
+
+function renderAiFeedback() {
+  const enabled =
+    playMode === "solo" &&
+    state?.settings?.opponent === "ai" &&
+    state.phase !== "setup" &&
+    !state.ended;
+  const message =
+    aiStatus.phase === "error" || aiStatus.phase === "loading"
+      ? aiStatus.message
+      : aiStatus.phase === "thinking"
+        ? "AI 正在思考…"
+        : "";
+  elements.aiFeedback.hidden = !enabled || !message;
+  elements.aiStatus.textContent = enabled ? message : "";
+  elements.aiRetry.hidden = aiStatus.phase !== "error";
+  if (
+    startingAi ||
+    (state?.phase === "setup" && elements.opponentSetting.value === "ai")
+  ) {
+    const message =
+      aiStatus.phase === "loading" || aiStatus.phase === "error"
+        ? aiStatus.message
+        : aiStatus.phase === "ready"
+          ? "AI 已就绪 · 本地运行"
+          : "";
+    if (message)
+      showSetupFeedback(
+        message,
+        aiStatus.phase === "error" ? "error" : "pending",
+      );
+    if (!startingAi)
+      elements.startLabel.textContent =
+        setupSource === "resume" ? "继续对局" : "开始对局";
+  }
+}
 const historyDialog = createOverlayDialog({
   root: elements.historyPanel,
   surface: elements.historyDialog,
@@ -308,6 +389,7 @@ function handleState(message) {
   }
   render(state);
   submitScoreIfNeeded();
+  updateAiTurn();
 }
 
 function handleActionResult(result) {
@@ -331,6 +413,7 @@ function handleActionResult(result) {
   }
   render(state ?? preview);
   submitScoreIfNeeded();
+  updateAiTurn();
 }
 
 function handleError(error, code, requestId) {
@@ -366,9 +449,15 @@ window.addEventListener("pagehide", () => {
   window.clearTimeout(resignConfirmTimer);
   window.clearTimeout(moreMenuCloseTimer);
   client?.destroy();
+  goAi.destroy();
 });
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") persistSoloResumeSnapshot();
+  updateAiTurn();
+});
+elements.aiRetry.addEventListener("click", () => {
+  goAi.retry();
+  updateAiTurn();
 });
 document.addEventListener("pointerdown", (event) => {
   if (
@@ -401,8 +490,9 @@ elements.confirmMove.addEventListener("animationend", (event) => {
   elements.confirmMove.hidden = true;
   elements.confirmMove.classList.remove("is-exiting");
 });
-elements.setupForm.addEventListener("submit", (event) => {
+elements.setupForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (startingAi || pendingAction) return;
   clearSetupFeedback();
   if (setupSource === "resume") {
     if (playMode === "solo" && selectedResumeRecordId) {
@@ -412,12 +502,27 @@ elements.setupForm.addEventListener("submit", (event) => {
     showSetupFeedback("这份棋谱暂时无法在房间中续下", "error");
     return;
   }
+  const settings = readSetupSettings();
+  if (playMode === "solo" && settings.opponent === "ai") {
+    startingAi = true;
+    render(state);
+    renderAiFeedback();
+    try {
+      await goAi.prepare(settings.size, settings.aiModel);
+    } catch {
+      startingAi = false;
+      render(state);
+      renderAiFeedback();
+      return;
+    }
+    startingAi = false;
+  }
   queuedSettings = undefined;
   draftSettings = undefined;
   const sent = sendAction(
     {
       type: "start",
-      ...readSetupSettings(),
+      ...settings,
     },
     false,
   );
@@ -442,10 +547,22 @@ elements.setupForm.addEventListener("input", (event) => {
     return;
   }
   if (!isSettingControl(event.target)) return;
+  if (
+    elements.opponentSetting.value === "ai" &&
+    (event.target === elements.opponentSetting ||
+      event.target === elements.aiDifficulty)
+  ) {
+    goAi
+      .prepare(Number(elements.sizeSetting.value), elements.aiDifficulty.value)
+      .catch(() => {});
+  }
   if (event.target === elements.rulesSetting) {
-    const previousRules = (draftSettings || state?.settings || preview.settings).rules;
+    const previousRules = (draftSettings || state?.settings || preview.settings)
+      .rules;
     if (Number(elements.komiSetting.value) === defaultGoKomi(previousRules)) {
-      elements.komiSetting.value = String(defaultGoKomi(elements.rulesSetting.value));
+      elements.komiSetting.value = String(
+        defaultGoKomi(elements.rulesSetting.value),
+      );
     }
   }
   updateHandicapControls();
@@ -840,6 +957,7 @@ function setReplayOpen(open) {
     elements.replayControls.dataset.state = "closing";
   }
   render(state ?? preview);
+  updateAiTurn();
 }
 
 function isReplayOpen() {
@@ -1046,7 +1164,9 @@ function render(nextState) {
     !ended &&
     !isScoring &&
     !hasUndoRequest &&
-    (playMode === "solo" || ownIndex === currentIndex) &&
+    (playMode === "solo"
+      ? nextState.settings?.opponent !== "ai" || currentIndex === 0
+      : ownIndex === currentIndex) &&
     !actionPending &&
     !isReviewingPast;
   const canResign =
@@ -1126,7 +1246,6 @@ function render(nextState) {
       );
     }
   }
-
 }
 
 function renderPlayerCards(
@@ -1140,11 +1259,18 @@ function renderPlayerCards(
     const panel = elements.players[panelIndex];
     const isSelf =
       playMode === "solo"
-        ? color === 1
+        ? nextState.settings?.opponent === "ai"
+          ? playerIndex === 0
+          : color === 1
         : ownIndex >= 0
           ? playerIndex === ownIndex
           : color === 1;
-    const savedName = nextState.playerNames?.[playerIndex];
+    const savedName =
+      playMode === "solo" && nextState.settings?.opponent === "ai"
+        ? playerIndex === 0
+          ? "你"
+          : goAiPlayerName({ ...nextState.settings, aiModel: resolveGoAiModelId(nextState.settings.aiModel) })
+        : nextState.playerNames?.[playerIndex];
     const name =
       typeof savedName === "string" && savedName.trim()
         ? savedName.trim()
@@ -1159,9 +1285,13 @@ function renderPlayerCards(
     } else if (ended && nextState.scores) {
       const score =
         color === 1 ? nextState.scores.black : nextState.scores.white;
-      const result = Number(nextState.winnerIndex) === 0 ? " · 和棋"
-        : nextState.scores.black === nextState.scores.white && Number(nextState.winnerIndex) - 1 === playerIndex
-          ? " · 获胜" : "";
+      const result =
+        Number(nextState.winnerIndex) === 0
+          ? " · 和棋"
+          : nextState.scores.black === nextState.scores.white &&
+              Number(nextState.winnerIndex) - 1 === playerIndex
+            ? " · 获胜"
+            : "";
       detail.textContent = `${formatScore(score)} 目${result}`;
     } else {
       const captures = Number(nextState.captures?.[playerIndex]) || 0;
@@ -1225,8 +1355,9 @@ function formatScore(score) {
 
 function renderSetup(nextState, ownIndex) {
   const hostId = nextState.hostId ?? nextState.players?.[0];
-  const isHost = Boolean(state) && (nextState.canConfigure ?? playerId === hostId);
-  const canConfigure = isHost && !pendingAction;
+  const isHost =
+    Boolean(state) && (nextState.canConfigure ?? playerId === hostId);
+  const canConfigure = isHost && !pendingAction && !startingAi;
   const resumeRecords = availableSetupResumeRecords();
   if (
     !selectedResumeRecordId ||
@@ -1250,14 +1381,34 @@ function renderSetup(nextState, ownIndex) {
     setupSource === "resume" && selectedRecord
       ? selectedRecord.settings
       : (isHost && draftSettings) || nextState.settings || preview.settings;
-  elements.setupNote.textContent = canConfigure
-    ? playMode === "solo"
-      ? "本机控制黑白双方轮流落子"
-      : "调整会立即同步给另一方，确认后开始"
-    : "设置会随房主调整实时更新";
+  elements.opponentSettings.hidden = playMode !== "solo";
+  elements.opponentSetting.value = settings.opponent ?? "local";
+  elements.opponentSetting.disabled = !canConfigure || setupSource === "resume";
+  const aiMatch = playMode === "solo" && settings.opponent === "ai";
+  elements.aiDifficultyField.hidden = elements.aiDifficultyDivider.hidden =
+    !aiMatch;
+  elements.aiDifficulty.value = resolveGoAiModelId(settings.aiModel);
+  elements.aiDifficulty.disabled = !canConfigure || setupSource === "resume";
+  elements.blackSetting.querySelector('[value="player1"]').textContent = aiMatch
+    ? "我执黑"
+    : "玩家 1 执黑";
+  elements.blackSetting.querySelector('[value="player2"]').textContent = aiMatch
+    ? "AI 执黑"
+    : "玩家 2 执黑";
+  elements.setupNote.textContent = startingAi
+    ? "正在准备本地 AI…"
+    : canConfigure
+      ? playMode === "solo"
+        ? aiMatch
+          ? "浏览器本地 AI · 首次使用需加载模型"
+          : "本机控制黑白双方轮流落子"
+        : "调整会立即同步给另一方，确认后开始"
+      : "设置会随房主调整实时更新";
   elements.sizeSetting.value = String(settings.size ?? 19);
   elements.rulesSetting.value = settings.rules ?? "chinese";
-  elements.komiSetting.value = String(settings.komi ?? defaultGoKomi(settings.rules));
+  elements.komiSetting.value = String(
+    settings.komi ?? defaultGoKomi(settings.rules),
+  );
   elements.tieBreakSetting.value = settings.tieBreak ?? "white";
   elements.blackSetting.value = settings.blackMode ?? "random";
   elements.handicapSetting.value = String(settings.handicap ?? 0);
@@ -1274,19 +1425,23 @@ function renderSetup(nextState, ownIndex) {
     control.disabled = !canConfigure || setupSource === "resume";
   }
   elements.start.disabled = !canConfigure;
-  elements.startLabel.textContent = pendingAction
-    ? "正在开始…"
-    : setupSource === "resume"
-      ? "继续对局"
-      : "开始对局";
+  elements.startLabel.textContent =
+    pendingAction || startingAi
+      ? "正在开始…"
+      : setupSource === "resume"
+        ? "继续对局"
+        : "开始对局";
   updateHandicapControls();
   renderSettingValues();
+  renderAiFeedback();
 }
 
 function renderSettingValues() {
   for (const select of elements.setupForm.querySelectorAll("select")) {
     const option = select.selectedOptions[0];
-    const value = select.closest(".setting-field").querySelector(".setting-value");
+    const value = select
+      .closest(".setting-field")
+      .querySelector(".setting-value");
     value.textContent = option?.dataset.display ?? option?.textContent ?? "";
   }
 }
@@ -1380,6 +1535,14 @@ function renderGameInfo(nextState) {
         ? `${blackName}（随机）`
         : blackName;
   const entries = [
+    ...(playMode === "solo"
+      ? [
+          [
+            "对战",
+            settings.opponent === "ai" ? "人机对战 · 本地 AI" : "本机双人",
+          ],
+        ]
+      : []),
     ["棋盘", `${settings.size ?? 19} × ${settings.size ?? 19}`],
     ["规则", ruleLabel(settings)],
     ["贴目", `${formatScore(settings.komi)} 目`],
@@ -1500,8 +1663,8 @@ function renderHistory() {
   });
 }
 
-function resumeHistoryRecord(recordId) {
-  if (playMode !== "solo" || pendingAction) return;
+async function resumeHistoryRecord(recordId) {
+  if (playMode !== "solo" || pendingAction || startingAi) return;
   persistSoloResumeSnapshot();
   const record = historyStore.load().find((entry) => entry.id === recordId);
   const resumedAt = Date.now();
@@ -1509,6 +1672,26 @@ function resumeHistoryRecord(recordId) {
   if (!record?.matchId || !resumedState) {
     renderHistory();
     return;
+  }
+  if (resumedState.settings.opponent === "ai") {
+    startingAi = true;
+    goAi.cancel();
+    try {
+      resumedState.settings.aiModel = resolveGoAiModelId(
+        resumedState.settings.aiModel,
+      );
+      resumedState.playerNames = ["你", goAiPlayerName(resumedState.settings)];
+      await goAi.prepare(
+        resumedState.board.length,
+        resumedState.settings.aiModel,
+      );
+    } catch {
+      startingAi = false;
+      renderAiFeedback();
+      showActionError("AI 加载失败，请重试继续对局");
+      return;
+    }
+    startingAi = false;
   }
 
   localMatchId = record.matchId;
@@ -1584,6 +1767,8 @@ function updateHandicapControls() {
 
 function isSettingControl(target) {
   return [
+    elements.opponentSetting,
+    elements.aiDifficulty,
     elements.sizeSetting,
     elements.rulesSetting,
     elements.komiSetting,
@@ -1595,6 +1780,14 @@ function isSettingControl(target) {
 
 function readSetupSettings() {
   return {
+    ...(playMode === "solo"
+      ? {
+          opponent: elements.opponentSetting.value,
+          ...(elements.opponentSetting.value === "ai"
+            ? { aiModel: elements.aiDifficulty.value }
+            : {}),
+        }
+      : {}),
     size: Number(elements.sizeSetting.value),
     rules: elements.rulesSetting.value,
     komi: Number(elements.komiSetting.value),
@@ -1639,6 +1832,8 @@ function sendSettingsUpdate(settings) {
 
 function sameSettings(left = {}, right = {}) {
   return (
+    (left.opponent ?? "local") === (right.opponent ?? "local") &&
+    (left.aiModel ?? "b6") === (right.aiModel ?? "b6") &&
     Number(left.size) === Number(right.size) &&
     left.rules === right.rules &&
     (left.tieBreak ?? "white") === (right.tieBreak ?? "white") &&

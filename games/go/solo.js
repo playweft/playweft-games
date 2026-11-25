@@ -1,4 +1,4 @@
-import { DEFAULT_GO_SETTINGS, GO_TIE_BREAKS, goWinnerIndex } from "./rules.js";
+import { DEFAULT_GO_SETTINGS, GO_TIE_BREAKS, goAiPlayerName, goWinnerIndex } from "./rules.js";
 
 const DIRECTIONS = [
   [-1, 0],
@@ -55,9 +55,9 @@ export function applySoloGoAction(
 
   if (action.type === "resign") {
     if (state.ended || state.phase !== "playing") return rejected("GAME_OVER");
-    const playerIndex = state.current - 1;
+    const playerIndex = state.settings.opponent === "ai" ? 0 : state.current - 1;
     const actor = state.players[playerIndex];
-    recordTurnTime(state, playerIndex, now);
+    recordTurnTime(state, state.current - 1, now);
     state.ended = true;
     state.phase = "ended";
     state.current = 0;
@@ -101,8 +101,7 @@ export function applySoloGoAction(
   const actor = state.players[playerIndex];
 
   if (action.type === "pass") {
-    state.undoSnapshot = createUndoSnapshot(state);
-    state.undoAvailable = true;
+    saveUndoSnapshot(state);
     recordTurnTime(state, playerIndex, now);
     state.moves += 1;
     state.consecutivePasses += 1;
@@ -172,8 +171,7 @@ export function applySoloGoAction(
     return rejected("KO");
   }
 
-  state.undoSnapshot = createUndoSnapshot(state);
-  state.undoAvailable = true;
+  saveUndoSnapshot(state);
   recordTurnTime(state, playerIndex, now);
   state.previousBoard = boardSignature(state.board);
   state.board = candidate;
@@ -289,6 +287,7 @@ export function calculateGoScore(state) {
 function setupState(round, settings) {
   return {
     players: ["solo-player-1", "solo-player-2"],
+    ...(settings.opponent === "ai" ? { playerNames: ["你", goAiPlayerName(settings)] } : {}),
     hostId: "solo-player-1",
     phase: "setup",
     settings: { ...settings },
@@ -372,6 +371,8 @@ function normalizeSettings(action) {
     return undefined;
   }
   if (handicap > 0 && action.blackMode === "random") return undefined;
+  if (action.opponent != null && !["local", "ai"].includes(action.opponent)) return undefined;
+  if (action.aiModel != null && !["b6", "b18"].includes(action.aiModel)) return undefined;
   return {
     size,
     rules: action.rules,
@@ -379,6 +380,7 @@ function normalizeSettings(action) {
     tieBreak,
     handicap,
     blackMode: action.blackMode,
+    ...(action.opponent === "ai" ? { opponent: "ai", aiModel: action.aiModel ?? "b6" } : {}),
   };
 }
 
@@ -460,6 +462,14 @@ function createUndoSnapshot(state) {
     lastMove: { ...state.lastMove },
     lastEvent: { ...state.lastEvent },
   };
+}
+
+function saveUndoSnapshot(state) {
+  // One undo returns the player to their previous decision, including an AI
+  // reply. The AI's opening move cannot be undone into another AI-only turn.
+  if (state.settings.opponent === "ai" && state.current === 2) return;
+  state.undoSnapshot = createUndoSnapshot(state);
+  state.undoAvailable = true;
 }
 
 function restoreUndoSnapshot(state, snapshot, now) {

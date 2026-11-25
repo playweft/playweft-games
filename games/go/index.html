@@ -23,6 +23,24 @@
         </header>
 
         <div class="setup-content">
+          <ul id="opponent-settings" class="settings-list" role="list" aria-label="对手选项" hidden>
+            <li class="setting-field">
+              <span id="opponent-setting-label" class="setting-title">对战方式</span>
+              <span class="setting-value" aria-hidden="true"></span>
+              <i class="setting-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+              <select id="opponent-setting" name="opponent" aria-labelledby="opponent-setting-label">
+                <option value="local">本机双人</option>
+                <option value="ai">人机对战</option>
+              </select>
+            </li>
+            <li id="ai-difficulty-divider" class="settings-divider" role="presentation" hidden><hr /></li>
+            <li id="ai-difficulty-field" class="setting-field" hidden>
+              <span id="ai-difficulty-label" class="setting-title">AI 难度</span>
+              <span class="setting-value" aria-hidden="true"></span>
+              <i class="setting-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+              <select id="ai-difficulty" name="aiModel" aria-labelledby="ai-difficulty-label"></select>
+            </li>
+          </ul>
           <ul class="settings-list" role="list" aria-label="对局来源选项">
             <li class="setting-field">
               <span id="source-setting-label" class="setting-title">对局来源</span>
@@ -197,6 +215,10 @@
     <aside class="action-panel">
       <div class="sidebar-move-number" data-move-number hidden>开局</div>
       <p id="action-feedback" class="action-feedback" role="status" hidden></p>
+      <div id="ai-feedback" class="ai-feedback" hidden>
+        <span id="ai-status" role="status" aria-live="polite"></span>
+        <button id="ai-retry" type="button" hidden>重试</button>
+      </div>
       <p id="scoring-summary" class="scoring-summary" hidden></p>
       <section class="move-log" aria-labelledby="move-log-title">
         <header class="move-log-heading">
