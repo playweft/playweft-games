@@ -1,0 +1,202 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1086" height="1448" viewBox="0 0 1086 1448" role="img" aria-labelledby="title desc">
+ <title id="title">围棋小程序无文字背景</title>
+ <desc id="desc">水墨东方风格的梅花、竹叶、红日、墨圈、山峦、棋盘与棋罐。未绘制任何可见文字或按钮。全矢量，无位图。</desc>
+ <defs>
+  <linearGradient id="paper" x2="0" y2="1">
+   <stop stop-color="#f3f1f0" />
+   <stop offset=".54" stop-color="#f3f2f2" />
+   <stop offset="1" stop-color="#eeeded" />
+  </linearGradient>
+  <radialGradient id="paperWash">
+   <stop stop-color="#fff" stop-opacity=".43" />
+   <stop offset="1" stop-color="#fff" stop-opacity="0" />
+  </radialGradient>
+  <linearGradient id="sun" x1=".25" y1="0" x2=".75" y2="1">
+   <stop stop-color="#f7cdab" />
+   <stop offset=".51" stop-color="#f8d7bb" />
+   <stop offset="1" stop-color="#f8e9de" />
+  </linearGradient>
+  <linearGradient id="mountain1" x2=".12" y2="1">
+   <stop stop-color="#c5d3de" />
+   <stop offset=".55" stop-color="#d5dfe6" />
+   <stop offset="1" stop-color="#f0f0f1" stop-opacity=".23" />
+  </linearGradient>
+  <linearGradient id="mountain2" x2="0" y2="1">
+   <stop stop-color="#d2dee7" />
+   <stop offset=".59" stop-color="#e4e9ed" />
+   <stop offset="1" stop-color="#f0f0f0" stop-opacity=".2" />
+  </linearGradient>
+  <linearGradient id="mountain3" x2=".1" y2="1">
+   <stop stop-color="#d6e0e7" />
+   <stop offset="1" stop-color="#eceef0" />
+  </linearGradient>
+  <linearGradient id="ink" x1="0" y1="0" x2="1" y2=".8">
+   <stop stop-color="#99aab7" />
+   <stop offset=".55" stop-color="#a2afbb" />
+   <stop offset="1" stop-color="#9aabb8" />
+  </linearGradient>
+  <linearGradient id="branch" x1="0" y1="0" x2="1" y2="1">
+   <stop stop-color="#4d4c4c" />
+   <stop offset="1" stop-color="#646466" />
+  </linearGradient>
+  <linearGradient id="bamboo" x1="0" y1="0" x2="1" y2="1">
+   <stop stop-color="#5c7c8b" />
+   <stop offset="1" stop-color="#78939e" />
+  </linearGradient>
+  <linearGradient id="wood" x1="0" y1="0" x2=".45" y2="1">
+   <stop stop-color="#f0cbaa" />
+   <stop offset=".45" stop-color="#efd0b7" />
+   <stop offset="1" stop-color="#e7bea0" />
+  </linearGradient>
+  <linearGradient id="woodEdge" x1="0" y1="0" x2=".8" y2="1">
+   <stop stop-color="#c49c7e" />
+   <stop offset="1" stop-color="#dab399" />
+  </linearGradient>
+  <linearGradient id="bowlBack" x1="0" y1="0" x2="1" y2=".8">
+   <stop stop-color="#7a5b48" />
+   <stop offset="1" stop-color="#826550" />
+  </linearGradient>
+  <linearGradient id="bowlFront" x1="0" y1="0" x2="1" y2=".7">
+   <stop stop-color="#a38268" />
+   <stop offset="1" stop-color="#96735f" />
+  </linearGradient>
+  <linearGradient id="rim" x1="0" y1="0" x2="1" y2=".9">
+   <stop stop-color="#c59c7a" />
+   <stop offset=".5" stop-color="#e4bda0" />
+   <stop offset="1" stop-color="#deb99b" />
+  </linearGradient>
+  <linearGradient id="hole" x2="0" y2="1">
+   <stop stop-color="#70533f" />
+   <stop offset="1" stop-color="#996f52" />
+  </linearGradient>
+  <radialGradient id="blackStone" cx=".38" cy=".26" r=".8">
+   <stop stop-color="#3b4044" />
+   <stop offset=".76" stop-color="#292d31" />
+   <stop offset="1" stop-color="#20252a" />
+  </radialGradient>
+  <radialGradient id="whiteStone" cx=".4" cy=".22" r=".8">
+   <stop stop-color="#fff" />
+   <stop offset=".8" stop-color="#fff" />
+   <stop offset="1" stop-color="#f1eeec" />
+  </radialGradient>
+  <g id="flower">
+   <path fill="#fffdfb" d="M-3,-5C-16,-20 -9,-32 3,-31C14,-31 17,-19 13,-11C24,-22 38,-14 35,-2C34,8 25,10 17,9C28,20 20,31 9,29C1,28 -4,21 -5,15C-14,30 -29,25 -31,15C-34,4 -25,-1 -16,-1C-31,-6 -30,-19 -19,-21C-12,-22 -6,-14 -3,-5Z" />
+   <g stroke="#ff984b" stroke-width="1.9" stroke-linecap="round" fill="#ff984b">
+    <path d="M2 2L0 -9M2 2l8 -6M2 2l4 8M2 2l-9 3M2 2l-6 -7" />
+    <circle cx="0" cy="-9" r="1.5" />
+    <circle cx="10" cy="-4" r="1.5" />
+    <circle cx="6" cy="10" r="1.5" />
+    <circle cx="-7" cy="5" r="1.5" />
+   </g>
+  </g>
+  <g id="black">
+   <ellipse cx="0" cy="2.5" rx="35" ry="18" fill="#584936" opacity=".22" />
+   <ellipse rx="34" ry="17" fill="#24282b" />
+   <ellipse cy="-2" rx="33" ry="15.3" fill="url(#blackStone)" />
+  </g>
+  <g id="white">
+   <ellipse cy="3" rx="36" ry="18" fill="#514433" opacity=".16" />
+   <ellipse rx="36" ry="17" fill="#e6e0d9" />
+   <ellipse cy="-3" rx="35.5" ry="15.5" fill="url(#whiteStone)" />
+  </g>
+  <clipPath id="boardClip">
+   <path d="M304 1278 889 1191 1408 1385 643 1566Z" />
+  </clipPath>
+  <clipPath id="rearHole">
+   <ellipse cx="130" cy="1187" rx="79" ry="25" />
+  </clipPath>
+  <clipPath id="frontHole">
+   <ellipse cx="263" cy="1255" rx="85" ry="24" />
+  </clipPath>
+ </defs>
+ <g id="background">
+  <rect width="1086" height="1448" fill="url(#paper)" />
+  <ellipse cx="522" cy="503" rx="500" ry="610" fill="url(#paperWash)" />
+  <ellipse cx="805" cy="222" rx="111" ry="116.5" fill="url(#sun)" />
+  <path d="M260 700C316 689 395 628 472 610C548 600 597 584 650 554S712 533 738 525C764 517 791 487 821 485C852 480 871 499 889 497C908 495 944 465 978 449C1017 434 1047 466 1086 471V700H260Z" fill="url(#mountain1)" />
+  <path d="M590 917C662 906 720 840 775 807C823 777 868 755 902 737C925 725 934 737 949 730C967 722 985 706 1009 709C1035 712 1062 729 1086 739V917H590Z" fill="url(#mountain2)" />
+  <path d="M0 979C34 960 57 945 82 946C112 946 150 976 182 986C210 995 248 991 279 1001C371 1024 437 1023 508 1053C589 1085 651 1124 706 1140C743 1150 789 1157 844 1158L1086 1178V1279H0Z" fill="url(#mountain2)" />
+  <path d="M0 1120C66 1108 126 1109 178 1127C236 1147 273 1166 311 1157C378 1143 419 1146 479 1158C554 1174 597 1184 653 1176C722 1169 794 1146 856 1139C927 1129 972 1146 1020 1159L1086 1172V1328H0Z" fill="url(#mountain3)" />
+ </g>
+ <g id="plum-branch">
+  <path fill="url(#branch)" fill-rule="evenodd" d="M108,283l5,10 1-1-1-2 2-1 22,13 16,7-38-22-4-5zM28,194l12,26 3,13 2,0-1-6 2-1 9,7 7,1 4,4-1,2 17,13 4-1-29-23 1-5 5-8-2,0-7,7-3,1-9-9-8-22zM200,190l11,11 5,10 2-2-5-8 1-1 10,1 30,8 0-3-40-10-10-5-2-3zM0,153l0,7 13,8 6,8 2-3-1-6zM410,122l18,2 2-2-17-2zM475,23l0,2 7-1 0-1zM468,0l-5,0-17,15-23,17-37,13-25,11-1-2 10-14-5,1-3,6-12,13-10,4-30,26-39,15-10,1-21-7-10-5 7-7 17-10 6-2 7-12-8,3-9,9-28,15-9,1-15-2-1,5-3,4 2-1 25,2 40,14 9,1 17,8 2,0 1-2-14-8 1-2 15-7 22-7 21,3 11,5 4,0 13,5 1-3-42-13-2-2 23-21 28-14 39-16 28-7-1-3-3-1 7-8 6-1 6-8 2,0zM0,84l0,43 20-20 61,12 26,16 22,11 13,18 6,11 2,1 23-1 14,4-7-5-1-4-4,2-7,0-17-3-12-18-1-6-3-3-13-6-15-10-9-8 7-7 21-14 28-1 2-7-22-1-2-2 2-5-4-2-11,8-32,18-34-10-18-7 0-2 7-8 32-21 14-16 36-12 31-7 21-22-7,0-11,10-11,7-54,13-2-2 6-16 16-12-15,0-8,4-6,16-12,21-43,25-17,16z" />
+  <use href="#flower" xlink:href="#flower" transform="translate(74 -4) rotate(7) scale(0.4)" />
+  <use href="#flower" xlink:href="#flower" transform="translate(170 76) rotate(-11) scale(0.93)" />
+  <use href="#flower" xlink:href="#flower" transform="translate(273 43) rotate(9) scale(0.82)" />
+  <use href="#flower" xlink:href="#flower" transform="translate(373 26) rotate(4) scale(0.62)" />
+  <use href="#flower" xlink:href="#flower" transform="translate(456 32) rotate(-15) scale(0.62)" />
+  <use href="#flower" xlink:href="#flower" transform="translate(391 116) rotate(16) scale(0.86)" />
+  <use href="#flower" xlink:href="#flower" transform="translate(43 170) rotate(5) scale(0.83)" />
+  <use href="#flower" xlink:href="#flower" transform="translate(68 229) rotate(-4) scale(0.45)" />
+  <use href="#flower" xlink:href="#flower" transform="translate(44 245) rotate(-23) scale(0.67)" />
+  <use href="#flower" xlink:href="#flower" transform="translate(100 263) rotate(7) scale(0.58)" />
+  <use href="#flower" xlink:href="#flower" transform="translate(202 171) rotate(-2) scale(0.63)" />
+  <use href="#flower" xlink:href="#flower" transform="translate(224 225) rotate(-7) scale(0.45)" />
+  <use href="#flower" xlink:href="#flower" transform="translate(273 210) rotate(25) scale(0.51)" />
+  <use href="#flower" xlink:href="#flower" transform="translate(121 299) rotate(20) scale(0.19)" />
+ </g>
+ <g id="bamboo-leaves">
+  <path fill="url(#bamboo)" fill-rule="evenodd" d="M174,532l-15-5-18-3-13,0-12,2-12,4-8,5-10,0-4-2-6,0-6,3-16,1-22,5-1-1 3-2 27-33-12,6-13,9-13,13-9,16-14,7 0,9 5-2 13,0 10,3-8,13-3,10-3,25 0,14 17-28 6-12 2-8 2-1 10,29 24,48 5,13-1-44-4-18-5-12 2-1 20,11-12-18-19-17-12-6-12-2-4-3-7-2-9,0-1-1 1-2 11-6 23-7 24-1 3-4 17,1 1,1 0,12 3,14 17,43 1,0 1-38 1-1 31,27 11,12-6-17-13-24-9-11-9-8-14-8 9-1 14,2 25,0 1,1 28,1 11,2zM10,412l-10,11 0,21 5,10 8,11 21,24 2,1-2-7 0-6-5-20-11-21-8-7 4-1 16,3 12,6 0,4 4,11 14,21 17,17 23,20-22-45-9-13-7-7-9-6 6-1 12,2 38,0 1,1 27,1-17-11-14-5-14-3-24,0-18,5-5,3-11-1-12-4-8-1-1-1 9-4 22-14 18-8-13,0-17,3-11,4z" />
+  <path fill="url(#bamboo)" fill-rule="evenodd" d="M1085,985l-7,0-13,3-14,5-11,6-4-1-7,3 0,2 3,3-4,6-6,5-13-5-23-2-16,2-20,6-15,7-17,11-19,16-6,7 9-5 28-10 71-20 3,1-17,11-12,12-13,18-7,13-9,22-6,21 11-14 43-48 15-21 8-14 7-6 1,1-2,8 1,29 13,45 6-27 4-27 0-27-1-2 1-1 9,9 29,23 0-15-7-11-13-14-14-8-1-2 21-9 14-2zM1085,890l-18-1-19,4-11-4-15-3-12,0-1-1-20,1-19,4-16,6-15,8-11,8 9-3 18-3 29-1 1-1 11,0 1,1-12,9-12,14-14,24-8,22 5-7 17-17 16-13 20-20 13-18 12-4 1,2-5,3-7,9-5,11-3,12-2,17 1,29 6-13 21-33 11-26 8,6 9,9 4,6 3,0 9,7-1-4-8-4-4-4-7-14-10-10 1-2 8-2 21,1z" />
+ </g>
+ <g id="floating-petals" fill="#fffdfa">
+  <path d="M252 330Q273 321 290 347Q262 359 252 330Z" />
+  <path d="M216 416Q241 418 243 439Q219 441 216 416Z" />
+ </g>
+ <g id="go-board">
+  <path d="M304 1278 643 1566 643 1603 303 1344Z" fill="url(#woodEdge)" />
+  <path d="M304 1278 889 1191 1408 1385 643 1566Z" fill="url(#wood)" />
+  <g clip-path="url(#boardClip)" fill="none" stroke="#b08b70" stroke-width="1.8" opacity=".83" stroke-linecap="round">
+   <path d="M330.0 1290.0L888.0 1211.0" />
+   <path d="M371.6 1321.1L948.9 1233.5" />
+   <path d="M413.2 1352.2L1009.8 1256.0" />
+   <path d="M454.9 1383.4L1070.6 1278.5" />
+   <path d="M496.5 1414.5L1131.5 1301.0" />
+   <path d="M538.1 1445.6L1192.4 1323.5" />
+   <path d="M579.8 1476.8L1253.2 1346.0" />
+   <path d="M621.4 1507.9L1314.1 1368.5" />
+   <path d="M663.0 1539.0L1375.0 1391.0" />
+   <path d="M330.0 1290.0L663.0 1539.0" />
+   <path d="M399.8 1280.1L752.0 1520.5" />
+   <path d="M469.5 1270.2L841.0 1502.0" />
+   <path d="M539.2 1260.4L930.0 1483.5" />
+   <path d="M609.0 1250.5L1019.0 1465.0" />
+   <path d="M678.8 1240.6L1108.0 1446.5" />
+   <path d="M748.5 1230.8L1197.0 1428.0" />
+   <path d="M818.2 1220.9L1286.0 1409.5" />
+   <path d="M888.0 1211.0L1375.0 1391.0" />
+  </g>
+  <use href="#white" xlink:href="#white" transform="translate(837 1257) rotate(-1) scale(0.9)" />
+  <use href="#black" xlink:href="#black" transform="translate(918 1284) rotate(-1) scale(0.97)" />
+  <use href="#black" xlink:href="#black" transform="translate(667 1331) rotate(0) scale(1.04)" />
+  <use href="#white" xlink:href="#white" transform="translate(827 1348) rotate(0) scale(1.03)" />
+ </g>
+ <g id="white-stone-bowl">
+  <path d="M47 1178C29 1196 13 1239 11 1268C7 1320 44 1346 116 1346C190 1346 238 1316 238 1268C238 1234 222 1193 213 1180C187 1150 75 1148 47 1178Z" fill="url(#bowlBack)" />
+  <ellipse cx="130" cy="1186" rx="87" ry="29" fill="url(#rim)" />
+  <ellipse cx="130" cy="1186" rx="79" ry="24" fill="url(#hole)" />
+  <g clip-path="url(#rearHole)">
+   <use href="#white" xlink:href="#white" transform="translate(84 1203) rotate(0) scale(0.55)" />
+   <use href="#white" xlink:href="#white" transform="translate(117 1197) rotate(0) scale(0.67)" />
+   <use href="#white" xlink:href="#white" transform="translate(144 1196) rotate(0) scale(0.66)" />
+   <use href="#white" xlink:href="#white" transform="translate(173 1205) rotate(0) scale(0.6)" />
+   <use href="#white" xlink:href="#white" transform="translate(110 1210) rotate(0) scale(0.64)" />
+   <use href="#white" xlink:href="#white" transform="translate(150 1210) rotate(0) scale(0.65)" />
+  </g>
+  <path d="M43 1187C43 1203 81 1214 130 1214C177 1214 215 1202 217 1187C212 1198 175 1207 130 1207C85 1207 49 1199 43 1187Z" fill="#e0b89a" />
+ </g>
+ <g id="black-stone-bowl">
+  <path d="M163 1249C145 1271 133 1311 132 1342C130 1397 174 1424 260 1424C341 1424 390 1394 388 1341C387 1306 372 1267 360 1249C331 1212 193 1212 163 1249Z" fill="url(#bowlFront)" />
+  <ellipse cx="262" cy="1254" rx="101" ry="33" fill="url(#rim)" />
+  <ellipse cx="263" cy="1255" rx="86" ry="25.5" fill="url(#hole)" />
+  <g clip-path="url(#frontHole)">
+   <use href="#black" xlink:href="#black" transform="translate(208 1274) rotate(0) scale(0.71)" />
+   <use href="#black" xlink:href="#black" transform="translate(233 1267) rotate(0) scale(0.75)" />
+   <use href="#black" xlink:href="#black" transform="translate(267 1262) rotate(0) scale(0.72)" />
+   <use href="#black" xlink:href="#black" transform="translate(304 1269) rotate(0) scale(0.71)" />
+   <use href="#black" xlink:href="#black" transform="translate(259 1278) rotate(0) scale(0.78)" />
+   <use href="#black" xlink:href="#black" transform="translate(282 1277) rotate(0) scale(0.7)" />
+  </g>
+  <path d="M161 1255C161 1271 206 1287 262 1287C319 1287 362 1271 363 1255C357 1269 315 1279 262 1279C209 1279 168 1270 161 1255Z" fill="#e7c1a1" />
+ </g>
+</svg>

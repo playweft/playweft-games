@@ -15,10 +15,28 @@
     <h1>围棋</h1>
   </header>
 
-  <main class="go-layout">
+  <main id="start-screen" class="start-screen" aria-labelledby="start-title">
+    <h1 id="start-title" class="start-title"><img src="./assets/launch-title.svg" alt="围棋" width="380" height="360" /></h1>
+    <div class="start-controls">
+      <div class="start-menu" aria-label="选择对战方式">
+      <button id="play-ai" class="start-menu-button" type="button" disabled><i
+          data-lucide="bot" aria-hidden="true"></i>人机对战<i data-lucide="chevron-right" aria-hidden="true"></i></button>
+      <button id="play-local" class="start-menu-button" type="button" disabled><i data-lucide="users"
+          aria-hidden="true"></i>本地双人<i data-lucide="chevron-right" aria-hidden="true"></i></button>
+      <button id="play-online" class="start-menu-button" type="button" disabled><i data-lucide="link"
+          aria-hidden="true"></i><span id="play-online-label">好友联机</span><i data-lucide="chevron-right"
+          aria-hidden="true"></i></button>
+      </div>
+      <p id="start-status" class="start-status" role="status" aria-live="polite"></p>
+    </div>
+  </main>
+
+  <main id="game-screen" class="go-layout" hidden>
     <dialog id="setup-panel" class="overlay-dialog setup-panel" aria-labelledby="setup-title">
       <form id="setup-form" class="overlay-dialog__surface setup-form" tabindex="-1">
         <header class="setup-heading">
+          <button id="setup-back" class="round-icon-button setup-back" type="button" aria-label="返回启动页" hidden><i
+              data-lucide="chevron-left" aria-hidden="true"></i></button>
           <h2 id="setup-title">对局设置</h2>
         </header>
 
@@ -33,7 +51,9 @@
                 <option value="ai">人机对战</option>
               </select>
             </li>
-            <li id="ai-difficulty-divider" class="settings-divider" role="presentation" hidden><hr /></li>
+            <li id="ai-difficulty-divider" class="settings-divider" role="presentation" hidden>
+              <hr />
+            </li>
             <li id="ai-difficulty-field" class="setting-field" hidden>
               <span id="ai-difficulty-label" class="setting-title">AI 难度</span>
               <span class="setting-value" aria-hidden="true"></span>
@@ -76,7 +96,9 @@
                 <option value="19" selected>19 × 19 · 标准</option>
               </select>
             </li>
-            <li class="settings-divider" role="presentation"><hr /></li>
+            <li class="settings-divider" role="presentation">
+              <hr />
+            </li>
             <li class="setting-field">
               <span id="rules-setting-label" class="setting-title">计分规则</span>
               <span class="setting-value" aria-hidden="true"></span>
@@ -86,7 +108,9 @@
                 <option value="japanese" data-display="日本规则">日本规则 · 地与提子</option>
               </select>
             </li>
-            <li class="settings-divider" role="presentation"><hr /></li>
+            <li class="settings-divider" role="presentation">
+              <hr />
+            </li>
             <li class="setting-field">
               <label for="komi-setting" class="setting-title">贴目</label>
               <span class="number-input">
@@ -94,7 +118,9 @@
                 <span>目</span>
               </span>
             </li>
-            <li class="settings-divider" role="presentation"><hr /></li>
+            <li class="settings-divider" role="presentation">
+              <hr />
+            </li>
             <li class="setting-field">
               <span id="tie-break-setting-label" class="setting-title">平分判定</span>
               <span class="setting-value" aria-hidden="true"></span>
@@ -105,7 +131,9 @@
                 <option value="first-pass" selected>先停着者胜</option>
               </select>
             </li>
-            <li class="settings-divider" role="presentation"><hr /></li>
+            <li class="settings-divider" role="presentation">
+              <hr />
+            </li>
             <li class="setting-field">
               <span id="black-setting-label" class="setting-title">执黑方式</span>
               <span class="setting-value" aria-hidden="true"></span>
@@ -116,7 +144,9 @@
                 <option value="player2">玩家 2 执黑</option>
               </select>
             </li>
-            <li class="settings-divider" role="presentation"><hr /></li>
+            <li class="settings-divider" role="presentation">
+              <hr />
+            </li>
             <li class="setting-field">
               <span id="handicap-setting-label" class="setting-title">让子</span>
               <span class="setting-value" aria-hidden="true"></span>
@@ -246,8 +276,7 @@
               <div class="replay-status-track" aria-hidden="true">
                 <output id="replay-status" class="replay-status" for="replay-slider">0</output>
               </div>
-              <input id="replay-slider" type="range" min="0" max="0" value="0" step="1"
-                aria-label="回看进度" />
+              <input id="replay-slider" type="range" min="0" max="0" value="0" step="1" aria-label="回看进度" />
             </div>
             <button id="replay-next" type="button" aria-label="下一手" title="下一手">
               <i data-lucide="chevron-right"></i>
@@ -272,8 +301,8 @@
         <button id="pass-button" class="pass-action" type="button" disabled>
           <span class="icon-button-content"><i data-lucide="flag"></i>停一手</span>
         </button>
-        <button id="more-button" class="round-icon-button more-action" type="button" aria-label="更多操作" aria-haspopup="menu"
-          aria-expanded="false" aria-controls="more-menu">
+        <button id="more-button" class="round-icon-button more-action" type="button" aria-label="更多操作"
+          aria-haspopup="menu" aria-expanded="false" aria-controls="more-menu">
           <i data-lucide="ellipsis"></i>
         </button>
         <div id="more-menu" class="more-menu" role="menu" aria-label="更多操作" hidden>
@@ -286,6 +315,9 @@
           <a id="help-link" class="more-menu-item" href="./help.html" target="_blank" rel="noopener" role="menuitem">
             <i data-lucide="circle-help"></i><span>玩法与计分</span>
           </a>
+          <button id="home-button" class="more-menu-item" type="button" role="menuitem" hidden>
+            <i data-lucide="house"></i><span>返回首页</span>
+          </button>
           <button id="resign-button" class="more-menu-item is-danger" type="button" role="menuitem" disabled>
             <i data-lucide="flag"></i><span id="resign-label">认输</span>
           </button>

@@ -14,6 +14,8 @@ export function createPlayweftClient({
   onContext,
   onLatency,
   onPlayerProfileChanged,
+  onRoomState,
+  onRoomClosed,
 } = {}) {
   let playerId;
   let latestMatchId;
@@ -42,6 +44,16 @@ export function createPlayweftClient({
       if (method === "platform.latency") {
         const rttMs = Number(params?.rttMs);
         if (Number.isFinite(rttMs) && rttMs >= 0) onLatency?.(rttMs);
+        return;
+      }
+      if (method === "room.stateChanged") {
+        onRoomState?.(params);
+        return;
+      }
+      if (method === "room.closed") {
+        latestMatchId = undefined;
+        latestVersion = -1;
+        onRoomClosed?.(params);
         return;
       }
       if (method === "room.players.profileChanged") {
@@ -139,6 +151,9 @@ export function createPlayweftClient({
   return {
     ready: storageBridge.ready,
     localStorage: storageBridge.localStorage,
+    createRoom(options) {
+      return rpc.call("rooms.create", options);
+    },
     sendAction(action) {
       if (!rpc.isConnected()) return undefined;
       const requestId = crypto.randomUUID();

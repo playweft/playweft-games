@@ -11,6 +11,7 @@ import {
   resolveGoAiModelId,
 } from "./ai-model.js";
 import {
+  Bot,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -19,12 +20,15 @@ import {
   Ellipsis,
   Flag,
   History,
+  House,
   Info,
+  Link,
   NotebookPen,
   RotateCcw,
   Settings2,
   Trash2,
   Undo2,
+  Users,
   X,
   createIcons,
 } from "lucide";
@@ -52,6 +56,15 @@ import tableTextureUrl from "./assets/table-texture-plywood.webp?url";
 scheduleTableTexture();
 
 const elements = {
+  startScreen: document.querySelector("#start-screen"),
+  gameScreen: document.querySelector("#game-screen"),
+  startStatus: document.querySelector("#start-status"),
+  playAi: document.querySelector("#play-ai"),
+  playLocal: document.querySelector("#play-local"),
+  playOnline: document.querySelector("#play-online"),
+  playOnlineLabel: document.querySelector("#play-online-label"),
+  setupBack: document.querySelector("#setup-back"),
+  home: document.querySelector("#home-button"),
   actionFeedback: document.querySelector("#action-feedback"),
   board: document.querySelector("#board"),
   boardShell: document.querySelector(".board-shell"),
@@ -197,9 +210,15 @@ let setupSource = "new";
 let selectedResumeRecordId = "";
 let startingAi = false;
 let aiStatus = { phase: "idle" };
+let menuVisible = true;
+let platformReady = false;
+let canCreateRoom = false;
+let creatingRoom = false;
+let roomState;
 
 createIcons({
   icons: {
+    Bot,
     ChevronLeft,
     ChevronRight,
     ChevronsLeft,
@@ -208,12 +227,15 @@ createIcons({
     Ellipsis,
     Flag,
     History,
+    House,
     Info,
+    Link,
     NotebookPen,
     RotateCcw,
     Settings2,
     Trash2,
     Undo2,
+    Users,
     X,
   },
 });
@@ -249,7 +271,12 @@ const client = isStandalone
   ? undefined
   : createPlayweftClient({
       onReady: handleReady,
-      onState: handleState,
+      onState: (message) => {
+        if (playMode === "room") handleState(message);
+      },
+      onContext: (context) => { roomState = context.room; },
+      onRoomState: enterRoom,
+      onRoomClosed: showStartScreen,
       onActionResult: handleActionResult,
       onError: handleError,
     });
@@ -335,26 +362,105 @@ const gameInfoDialog = createOverlayDialog({
 });
 
 function handleReady(message) {
+  platformReady = true;
+  canCreateRoom = message.capabilities?.includes("rooms.create") ?? false;
   playMode = message.mode ?? "room";
-  if (playMode === "solo") {
-    playerId = "solo-player-1";
-    localMatchId = `solo-${crypto.randomUUID()}`;
-    localVersion = 0;
-    const now = Date.now();
-    handleState({
-      playerId,
-      state: createSoloGoState(),
-      events: [],
-      matchId: localMatchId,
-      version: localVersion,
-      serverTime: now,
-    });
+  playerId = message.playerId;
+  if (roomState) enterRoom(roomState);
+  renderStartScreen();
+}
+
+function renderStartScreen(message = "") {
+  elements.startScreen.hidden = !menuVisible;
+  elements.gameScreen.hidden = menuVisible;
+  document.querySelector(".game-header").hidden = menuVisible;
+  elements.playAi.disabled = elements.playLocal.disabled =
+    !platformReady || creatingRoom || Boolean(roomState);
+  elements.playOnline.disabled = creatingRoom || Boolean(roomState) ||
+    (!isStandalone && (!platformReady || !canCreateRoom));
+  elements.playOnlineLabel.textContent = creatingRoom ? "正在创建房间…" : "好友联机";
+  elements.startStatus.textContent = message ||
+    (!platformReady ? "正在连接平台…" : roomState ? "等待房间开始…" : "");
+}
+
+function showStartScreen() {
+  persistSoloResumeSnapshot();
+  goAi.cancel();
+  menuVisible = true;
+  playMode = "solo";
+  state = undefined;
+  roomState = undefined;
+  pendingAction = settingsRequestId = queuedSettings = draftSettings = undefined;
+  replayGameKey = "";
+  replayFrames = [];
+  replayIndex = undefined;
+  clearPendingMove();
+  clearSetupFeedback();
+  setSetupOpen(false);
+  setMoreMenuOpen(false);
+  setHistoryOpen(false);
+  setGameInfoOpen(false);
+  renderStartScreen();
+}
+
+function startLocalGame(opponent) {
+  if (!platformReady || creatingRoom || roomState) return;
+  playMode = "solo";
+  menuVisible = false;
+  setupSource = "new";
+  playerId = "solo-player-1";
+  localMatchId = `solo-${crypto.randomUUID()}`;
+  localVersion = 0;
+  const initial = applySoloGoAction(createSoloGoState(), {
+    type: "update_settings",
+    ...DEFAULT_GO_SETTINGS,
+    opponent,
+    aiModel: DEFAULT_GO_AI_MODEL_ID,
+  });
+  renderStartScreen();
+  handleState({ playerId, state: initial.state, events: [],
+    matchId: localMatchId, version: localVersion, serverTime: Date.now() });
+}
+
+function enterRoom(next) {
+  if (!next) return;
+  if (playMode !== "room") {
+    persistSoloResumeSnapshot();
+    goAi.cancel();
+    state = undefined;
+    pendingAction = settingsRequestId = queuedSettings = draftSettings = undefined;
+    setupSource = "new";
+    setSetupOpen(false);
+  }
+  playMode = "room";
+  roomState = next;
+  renderStartScreen();
+}
+
+async function createOnlineRoom() {
+  if (isStandalone) {
+    const url = new URL("https://play.longern.com/");
+    url.searchParams.set("game", new URL("./playweft.json", location.href).href);
+    window.location.assign(url);
     return;
   }
-  playerId = message.playerId;
+  if (!canCreateRoom || creatingRoom || roomState) return;
+  creatingRoom = true;
+  renderStartScreen();
+  let errorMessage = "";
+  try {
+    enterRoom(await client.createRoom({ minPlayers: 2, maxPlayers: 2, lobby: "platform" }));
+  } catch (error) {
+    errorMessage = error.message || "创建房间失败，请重试";
+  } finally {
+    creatingRoom = false;
+    renderStartScreen(errorMessage);
+  }
 }
 
 function handleState(message) {
+  menuVisible = false;
+  renderStartScreen();
   clearPendingMove();
   elements.actionFeedback.hidden = true;
   playerId = playMode === "solo" ? "solo-player-1" : message.playerId;
@@ -417,6 +523,10 @@ function handleActionResult(result) {
 }
 
 function handleError(error, code, requestId) {
+  if (menuVisible) {
+    renderStartScreen(translateError(error, code));
+    return;
+  }
   if (requestId === settingsRequestId) {
     settingsRequestId = undefined;
     queuedSettings = undefined;
@@ -459,6 +569,11 @@ elements.aiRetry.addEventListener("click", () => {
   goAi.retry();
   updateAiTurn();
 });
+elements.playAi.addEventListener("click", () => startLocalGame("ai"));
+elements.playLocal.addEventListener("click", () => startLocalGame("local"));
+elements.playOnline.addEventListener("click", createOnlineRoom);
+elements.setupBack.addEventListener("click", showStartScreen);
+elements.home.addEventListener("click", showStartScreen);
 document.addEventListener("pointerdown", (event) => {
   if (
     pendingMove &&
@@ -713,7 +828,7 @@ window.addEventListener("keydown", (event) => {
 if (isStandalone) {
   handleReady({ mode: "solo" });
 } else {
-  render(preview);
+  renderStartScreen();
 }
 
 function buildBoard(size) {
@@ -1101,6 +1216,8 @@ function formatMoveCoordinate(move, size) {
 }
 
 function render(nextState) {
+  if (menuVisible) return;
+  elements.home.hidden = playMode !== "solo";
   const players = Array.isArray(nextState.players) ? nextState.players : [];
   const ownIndex = players.indexOf(playerId);
   const isSetup = nextState.phase === "setup";
@@ -1354,6 +1471,8 @@ function formatScore(score) {
 }
 
 function renderSetup(nextState, ownIndex) {
+  elements.setupBack.hidden = playMode !== "solo";
+  elements.setupBack.disabled = startingAi || Boolean(pendingAction);
   const hostId = nextState.hostId ?? nextState.players?.[0];
   const isHost =
     Boolean(state) && (nextState.canConfigure ?? playerId === hostId);

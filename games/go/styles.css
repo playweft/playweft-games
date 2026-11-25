@@ -11,6 +11,195 @@ body {
   background-size: cover;
 }
 
+/* Keep the title and controls separate from the decorative artwork. */
+.start-screen {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(20px, 4dvh, 48px);
+  padding: max(36px, env(safe-area-inset-top)) 24px
+    max(120px, 16dvh, env(safe-area-inset-bottom));
+  padding-inline: clamp(32px, 14.4vw, 56px);
+  background: #f3f2f2 url("./assets/launch-background.svg") center bottom /
+    cover no-repeat;
+}
+
+.start-title {
+  width: clamp(180px, 32dvh, 300px);
+  max-width: 70vw;
+  margin: 0;
+  line-height: 0;
+}
+
+.start-title img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.start-controls {
+  width: min(360px, 100%);
+  text-align: center;
+}
+
+.start-menu {
+  display: grid;
+  gap: 16px;
+}
+
+.start-menu-button {
+  display: grid;
+  width: 100%;
+  min-height: 64px;
+  grid-template-columns: 32px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 26px;
+  border: 0;
+  border-radius: 22px;
+  background: rgb(246 242 237 / 82%);
+  color: #393834;
+  font-size: 20px;
+  font-weight: 500;
+  text-align: left;
+  box-shadow:
+    0 0 24px 2px rgb(60 52 46 / 12%),
+    0 12px 24px rgb(60 52 46 / 12%);
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.start-menu-button > svg:first-child {
+  width: 30px;
+  height: 30px;
+  color: #5b5954;
+  stroke-width: 1.8;
+}
+
+.start-menu-button > svg:last-child {
+  width: 20px;
+  height: 20px;
+  color: #a6a39e;
+}
+
+.start-menu-button:disabled {
+  opacity: 0.55;
+}
+
+.start-menu-button:focus-visible {
+  outline: none;
+  background-color: #e4dcd3;
+}
+
+.start-status {
+  min-height: 20px;
+  margin: 16px 0 8px;
+  color: #71563c;
+  font-size: 14px;
+}
+
+.start-status:empty {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .start-menu-button:hover:not(:disabled) {
+    background-color: #eee9e3;
+  }
+  .start-menu-button:active:not(:disabled) {
+    background-color: #e4dcd3;
+    box-shadow:
+      0 0 12px rgb(60 52 46 / 10%),
+      0 5px 14px rgb(60 52 46 / 12%);
+    transform: translateY(1px);
+  }
+}
+
+@media (orientation: landscape) {
+  .start-screen {
+    flex-direction: row;
+    gap: clamp(64px, 10vw, 180px);
+    padding: 48px 40px max(100px, 14dvh);
+    background-image: url("./assets/launch-background-wide.svg");
+    background-position: center;
+  }
+  .start-title {
+    width: clamp(250px, 28vw, 360px);
+    max-width: 36vw;
+  }
+  .start-controls {
+    width: min(380px, 38vw);
+  }
+}
+
+@media (max-height: 720px) and (orientation: portrait) {
+  .start-screen {
+    gap: 20px;
+    padding-block: 24px 96px;
+  }
+  .start-title {
+    width: clamp(160px, 28dvh, 200px);
+  }
+  .start-menu {
+    gap: 12px;
+  }
+  .start-menu-button {
+    min-height: 56px;
+    padding-block: 12px;
+    font-size: 18px;
+  }
+  .start-status {
+    margin-top: 12px;
+  }
+}
+
+@media (max-height: 620px) {
+  .start-screen {
+    gap: 12px;
+    padding-block: 16px 64px;
+  }
+  .start-title {
+    width: 140px;
+  }
+  .start-menu {
+    gap: 10px;
+  }
+  .start-menu-button {
+    min-height: 48px;
+    padding-block: 10px;
+    font-size: 17px;
+  }
+  .start-status {
+    margin: 8px 0 4px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 620px) {
+  .start-screen {
+    gap: clamp(24px, 7vw, 72px);
+    padding: max(24px, env(safe-area-inset-top))
+      max(32px, env(safe-area-inset-right))
+      max(48px, env(safe-area-inset-bottom))
+      max(32px, env(safe-area-inset-left));
+  }
+  .start-title {
+    width: clamp(144px, 48dvh, 210px);
+  }
+  .start-controls {
+    width: min(340px, 44vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .start-menu-button {
+    transition: none;
+  }
+}
+
 .sidebar-move-number {
   display: none;
 }
@@ -251,6 +440,7 @@ body {
   display: flex;
   height: 60px;
   align-items: center;
+  gap: 10px;
   padding: 0 var(--setup-padding);
 }
 
@@ -708,7 +898,6 @@ body {
     inset 0 2px 3px rgba(41, 43, 41, 0.22),
     inset 0 -1px 0 rgba(255, 255, 255, 0.3);
 }
-
 
 .go-stone {
   display: block;
@@ -1355,8 +1544,7 @@ body {
 .move-log-stone.go-stone--black {
   --stone-shadow:
     inset 1px 1px 1px rgba(255, 255, 255, 0.14),
-    inset -1px -2px 3px rgba(0, 0, 0, 0.58),
-    0 1px 1px rgba(48, 27, 11, 0.42),
+    inset -1px -2px 3px rgba(0, 0, 0, 0.58), 0 1px 1px rgba(48, 27, 11, 0.42),
     0 2px 3px rgba(48, 27, 11, 0.18);
 }
 
@@ -1364,8 +1552,7 @@ body {
   --stone-shadow:
     inset 1px 1px 1px rgba(255, 255, 255, 0.9),
     inset -1px -2px 3px rgba(112, 100, 84, 0.2),
-    0 1px 1px rgba(51, 30, 12, 0.3),
-    0 2px 3px rgba(51, 30, 12, 0.14);
+    0 1px 1px rgba(51, 30, 12, 0.3), 0 2px 3px rgba(51, 30, 12, 0.14);
 }
 
 .move-log-empty {

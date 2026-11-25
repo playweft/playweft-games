@@ -64,6 +64,53 @@ function notify(port, method, params) {
   });
 }
 
+test("Games create rooms on demand and observe room entry and closure on the same bridge", async () => {
+  const harness = createEmbeddedHarness();
+  const originalWindow = globalThis.window;
+  globalThis.window = harness.fakeWindow;
+  const rooms = [], closed = [], states = [];
+  const client = createPlayweftClient({
+    onRoomState: state => rooms.push(state),
+    onRoomClosed: reason => closed.push(reason),
+    onState: state => states.push(state),
+  });
+  try {
+    harness.connect();
+    respond(harness.fakePort, harness.portMessages[0].id, { mode: "solo", playerId: "human" });
+    await Promise.resolve();
+    assert.equal(harness.portMessages.length, 1, "Initializing solo must not create a room");
+
+    const options = { minPlayers: 2, maxPlayers: 2, lobby: "platform" };
+    const entering = client.createRoom(options);
+    const request = harness.portMessages.at(-1);
+    assert.equal(request.method, "rooms.create");
+    assert.deepEqual(request.params, options);
+    const room = { roomId: "room-one", revision: 1, phase: "lobby" };
+    notify(harness.fakePort, "room.stateChanged", room);
+    respond(harness.fakePort, request.id, room);
+    assert.deepEqual(await entering, room);
+    assert.deepEqual(rooms, [room]);
+
+    const update = { matchId: "same-match", version: 1, state: { phase: "setup" } };
+    notify(harness.fakePort, "game.state", update);
+    notify(harness.fakePort, "game.state", update);
+    assert.equal(states.length, 1);
+    notify(harness.fakePort, "room.closed", { reason: "left" });
+    assert.deepEqual(closed, [{ reason: "left" }]);
+    notify(harness.fakePort, "game.state", update);
+    assert.equal(states.length, 2, "A new room lifecycle must not retain stale version filtering");
+
+    const failed = client.createRoom(options);
+    const failedRequest = harness.portMessages.at(-1);
+    harness.fakePort.onmessage({ data: { jsonrpc: "2.0", id: failedRequest.id,
+      error: { code: -32000, message: "Room limit reached", data: { code: "ROOM_LIMIT" } } } });
+    await assert.rejects(failed, error => error.code === "ROOM_LIMIT");
+  } finally {
+    client.destroy();
+    globalThis.window = originalWindow;
+  }
+});
+
 test("Playweft room client uses bridge v1 and Manifest-owned initialization", async () => {
   const harness = createEmbeddedHarness();
   const results = [];
