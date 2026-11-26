@@ -1,0 +1,113 @@
+.result-dialog,
+.message-dialog {
+  display: flex;
+  width: min(100%, 400px);
+  max-height: 100%;
+  flex-direction: column;
+}
+
+.result-dialog .overlay-dialog__header,
+.message-dialog .overlay-dialog__header {
+  flex-shrink: 0;
+}
+
+.result-content {
+  display: grid;
+  min-height: 0;
+  gap: 16px;
+  padding: 24px;
+  overflow-y: auto;
+  text-align: center;
+}
+
+.result-content h3 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.4;
+}
+
+.result-content p {
+  min-height: 2.8em;
+  margin: 0;
+  color: #6d706a;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.result-scores {
+  display: flex;
+  gap: 16px;
+  margin: 0;
+}
+
+.result-scores > div {
+  flex: 1;
+  padding: 16px 8px;
+  border-radius: 8px;
+  background: #f5f5f5;
+}
+
+.result-scores dt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.result-scores .go-stone {
+  width: 18px;
+  height: 18px;
+}
+
+.result-scores dd {
+  margin: 8px 0 0;
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+
+.message-content {
+  margin: 0;
+  padding: 24px;
+  overflow-y: auto;
+  line-height: 1.6;
+}
+
+.result-actions,
+.message-actions {
+  display: flex;
+  flex-shrink: 0;
+  padding: 8px;
+  gap: 8px;
+  border-top: 1px solid #e5e6e1;
+}
+
+.result-actions button,
+.message-actions button {
+  min-height: 48px;
+  flex: 1;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #1976d2;
+  font: inherit;
+}
+
+.result-actions button:disabled,
+.message-actions button:disabled {
+  color: #999;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .result-actions button:hover:not(:disabled),
+  .message-actions button:hover:not(:disabled) {
+    background: rgb(25 118 210 / 6%);
+  }
+
+  .result-actions button:active:not(:disabled),
+  .message-actions button:active:not(:disabled) {
+    background: rgb(25 118 210 / 12%);
+  }
+}

@@ -25,7 +25,6 @@ import {
   Globe,
   NotebookPen,
   Play,
-  RotateCcw,
   Settings2,
   Trash2,
   Undo2,
@@ -54,6 +53,7 @@ import {
 import { createPlayweftClient } from "../../src/playweft-client.js";
 import { initializeGoStorage } from "./storage.js";
 import { createStartScreen } from "./start-screen.js";
+import { createGoResultDialog } from "./result-dialog.js";
 import "../../src/game-storage.css";
 import "../../src/components/board-stones.css";
 import "./styles.css";
@@ -85,6 +85,9 @@ const elements = {
   aiFeedback: document.querySelector("#ai-feedback"),
   aiStatus: document.querySelector("#ai-status"),
   aiRetry: document.querySelector("#ai-retry"),
+  aiErrorDialog: document.querySelector("#ai-error-dialog"),
+  aiErrorClose: document.querySelector("#ai-error-close"),
+  aiErrorOpen: document.querySelector("#ai-error-button"),
   sourceSetting: document.querySelector("#source-setting"),
   newGameSettings: document.querySelector("#new-game-settings"),
   resumeSource: document.querySelector("#resume-source"),
@@ -129,7 +132,7 @@ const elements = {
   undoLabel: document.querySelector("#undo-label"),
   undoRequest: document.querySelector("#undo-request"),
   undoRequestLabel: document.querySelector("#undo-request-label"),
-  undoResponseActions: document.querySelector("#undo-response-actions"),
+  undoDialog: document.querySelector("#undo-dialog"),
   undoAccept: document.querySelector("#undo-accept"),
   undoReject: document.querySelector("#undo-reject"),
   pass: document.querySelector("#pass-button"),
@@ -137,9 +140,11 @@ const elements = {
   moreMenu: document.querySelector("#more-menu"),
   resign: document.querySelector("#resign-button"),
   resignLabel: document.querySelector("#resign-label"),
-  rematch: document.querySelector("#rematch-button"),
   settings: document.querySelector("#settings-button"),
-  scoringSummary: document.querySelector("#scoring-summary"),
+  resultPanel: document.querySelector("#result-panel"),
+  resultDialog: document.querySelector("#result-dialog"),
+  resultClose: document.querySelector("#result-close"),
+  resultOpen: document.querySelector("#result-button"),
   moveNumbers: [...document.querySelectorAll("[data-move-number]")],
   players: [
     document.querySelector("#black-player"),
@@ -213,6 +218,8 @@ let setupSource = "new";
 let selectedResumeRecordId = "";
 let startingAi = false;
 let aiStatus = { phase: "idle" };
+let shownAiError = false;
+let actionFeedbackTimer;
 let menuVisible = true;
 let platformReady = false;
 let canCreateRoom = false;
@@ -237,7 +244,6 @@ createIcons({
     Globe,
     NotebookPen,
     Play,
-    RotateCcw,
     Settings2,
     Trash2,
     Undo2,
@@ -345,10 +351,22 @@ function renderAiFeedback() {
   const message =
     aiStatus.phase === "error" || aiStatus.phase === "loading"
       ? aiStatus.message
-      : aiStatus.phase === "thinking"
-        ? "AI 正在思考…"
-        : "";
+      : "";
+  const failed = enabled && aiStatus.phase === "error";
+  elements.aiErrorOpen.hidden = !failed;
+  if (!failed) {
+    shownAiError = false;
+    aiErrorDialog.setOpen(false);
+  } else if (!menuVisible && !shownAiError) {
+    elements.aiStatus.textContent = message;
+    shownAiError = true;
+    aiErrorDialog.setOpen(true);
+  }
   if (isAiMenu()) {
+    if (setupDialog.isOpen && aiStatus.phase === "error") {
+      showSetupFeedback(message, "error");
+      return;
+    }
     startScreen.setStatus(
       startingAi
         ? message || "正在准备对局…"
@@ -356,34 +374,15 @@ function renderAiFeedback() {
           ? message
           : "",
     );
-    elements.aiFeedback.hidden = true;
     return;
   }
   if (menuVisible && startingAi) {
     startScreen.setStatus(message || "正在准备对局…");
     return;
   }
-  elements.aiFeedback.hidden = !enabled || !message;
-  elements.aiStatus.textContent = enabled ? message : "";
-  elements.aiRetry.hidden = aiStatus.phase !== "error";
-  if (
-    startingAi ||
-    (state?.phase === "setup" && elements.opponentSetting.value === "ai")
-  ) {
-    const message =
-      aiStatus.phase === "loading" || aiStatus.phase === "error"
-        ? aiStatus.message
-        : aiStatus.phase === "ready"
-          ? "AI 已准备好"
-          : "";
-    if (message)
-      showSetupFeedback(
-        message,
-        aiStatus.phase === "error" ? "error" : "pending",
-      );
-    if (!startingAi)
-      elements.startLabel.textContent =
-        setupSource === "resume" ? "继续对局" : "开始对局";
+  if (state?.phase === "setup" && elements.opponentSetting.value === "ai") {
+    if (aiStatus.phase === "error") showSetupFeedback(message, "error");
+    else if (startingAi) elements.startLabel.textContent = "正在准备…";
   }
 }
 const historyDialog = createOverlayDialog({
@@ -402,6 +401,39 @@ const gameInfoDialog = createOverlayDialog({
   initialFocus: elements.gameInfoDialog,
   returnFocus: elements.more,
   beforeOpen: () => renderGameInfo(state ?? preview),
+});
+const resultDialog = createGoResultDialog({
+  root: elements.resultPanel,
+  dialog: createOverlayDialog({
+    root: elements.resultPanel,
+    surface: elements.resultDialog,
+    closeButtons: [elements.resultClose],
+    initialFocus: elements.resultDialog,
+    returnFocus: elements.more,
+    beforeOpen: () => setMoreMenuOpen(false),
+  }),
+  onRematch: () => sendAction({ type: "rematch" }),
+  onHome: showStartScreen,
+  onRetryScore: () => {
+    scoreRequestRound = undefined;
+    submitScoreIfNeeded();
+  },
+});
+const aiErrorDialog = createOverlayDialog({
+  root: elements.aiFeedback,
+  surface: elements.aiErrorDialog,
+  closeButtons: [elements.aiErrorClose],
+  initialFocus: elements.aiRetry,
+  returnFocus: elements.more,
+  beforeOpen: () => setMoreMenuOpen(false),
+});
+const undoDialog = createOverlayDialog({
+  root: elements.undoRequest,
+  surface: elements.undoDialog,
+  dismissible: false,
+  initialFocus: elements.undoReject,
+  returnFocus: elements.more,
+  beforeOpen: () => setMoreMenuOpen(false),
 });
 
 async function handleReady(message) {
@@ -472,6 +504,11 @@ function showStartScreen() {
   setMoreMenuOpen(false);
   setHistoryOpen(false);
   setGameInfoOpen(false);
+  resultDialog.reset();
+  aiErrorDialog.setOpen(false);
+  undoDialog.setOpen(false);
+  window.clearTimeout(actionFeedbackTimer);
+  elements.actionFeedback.classList.remove("is-visible");
   renderStartScreen();
 }
 
@@ -562,7 +599,6 @@ function handleState(message) {
     message.state.phase === "setup";
   renderStartScreen();
   clearPendingMove();
-  elements.actionFeedback.hidden = true;
   playerId = playMode === "solo" ? "solo-player-1" : message.playerId;
   state = message.state;
   recordReplayFrame(message);
@@ -627,7 +663,7 @@ function handleError(error, code, requestId) {
     renderStartScreen(translateError(error, code));
     return;
   }
-  if (requestId === settingsRequestId) {
+  if (settingsRequestId && requestId === settingsRequestId) {
     settingsRequestId = undefined;
     queuedSettings = undefined;
     draftSettings = undefined;
@@ -638,7 +674,7 @@ function handleError(error, code, requestId) {
     }
     return;
   }
-  if (requestId === pendingAction?.requestId) {
+  if (pendingAction && requestId === pendingAction.requestId) {
     pendingAction = undefined;
     if (
       state?.phase === "scoring" &&
@@ -668,9 +704,11 @@ document.addEventListener("visibilitychange", () => {
   updateAiTurn();
 });
 elements.aiRetry.addEventListener("click", () => {
+  aiErrorDialog.setOpen(false);
   goAi.retry();
   updateAiTurn();
 });
+elements.aiErrorOpen.addEventListener("click", () => aiErrorDialog.setOpen(true));
 elements.setupBack.addEventListener("click", () => {
   if (isSetupMenu()) setSetupOpen(false);
   else showStartScreen();
@@ -873,12 +911,11 @@ elements.resign.addEventListener("click", () => {
   window.clearTimeout(resignConfirmTimer);
   resignConfirmTimer = window.setTimeout(resetResignConfirmation, 3000);
 });
-elements.rematch.addEventListener("click", () =>
-  sendAction({ type: "rematch" }),
-);
-elements.settings.addEventListener("click", () =>
-  sendAction({ type: "configure" }),
-);
+elements.resultOpen.addEventListener("click", () => resultDialog.open());
+elements.settings.addEventListener("click", () => {
+  setMoreMenuOpen(false);
+  sendAction({ type: "configure" });
+});
 elements.historyOpen.addEventListener("click", () => {
   setMoreMenuOpen(false);
   setHistoryOpen(true);
@@ -1359,12 +1396,13 @@ function render(nextState) {
   const whiteIndex = blackIndex === 0 ? 1 : 0;
   const ended = Boolean(nextState.ended);
   const isScoring = nextState.phase === "scoring";
-  elements.scoringSummary.hidden = !isScoring;
-  if (isScoring) {
-    elements.scoringSummary.textContent = scoringRuleSummary(
-      nextState.settings,
-    );
-  }
+  elements.resultOpen.hidden = !ended && !isScoring;
+  resultDialog.update(nextState, {
+    key: replayGameKey,
+    participant: ownIndex >= 0,
+    local: playMode === "solo",
+    busy: actionPending,
+  });
   if (elements.gameInfoPanel.open) renderGameInfo(nextState);
   const colorPlayers = [
     { playerIndex: blackIndex, label: "黑方", color: 1 },
@@ -1392,8 +1430,8 @@ function render(nextState) {
   renderMoveLog(size);
 
   if (isSetup) {
-    elements.undo.hidden = true;
-    elements.undoRequest.hidden = true;
+    elements.undo.disabled = true;
+    undoDialog.setOpen(false);
     renderSetup(nextState, ownIndex);
     renderSetupBoard(nextState, size);
     elements.replayOpen.disabled = true;
@@ -1448,28 +1486,22 @@ function render(nextState) {
     !isReviewingPast &&
     (playMode === "solo" ||
       Number(nextState.lastEvent?.playerIndex) - 1 === ownIndex);
-  elements.undo.hidden = !canUndoAi && (ended || isScoring);
   elements.undo.disabled = !canUndo;
   elements.undoLabel.textContent = isUndoRequester ? "等待同意" : "悔棋";
-  elements.undoRequest.hidden = playMode === "solo" || !hasUndoRequest || ended;
-  if (!elements.undoRequest.hidden) {
+  const respondToUndo = playMode !== "solo" && hasUndoRequest && !isUndoRequester && ownIndex >= 0 && !ended;
+  if (respondToUndo) {
     const requesterName =
       nextState.playerNames?.[undoRequesterIndex] ||
       (undoRequesterIndex === blackIndex ? "黑方" : "白方");
-    elements.undoRequestLabel.textContent = isUndoRequester
-      ? "已请求悔棋，等待对方同意"
-      : `${requesterName}请求悔棋`;
-    elements.undoResponseActions.hidden = isUndoRequester;
+    elements.undoRequestLabel.textContent = `${requesterName}请求悔棋`;
     elements.undoAccept.disabled = actionPending;
     elements.undoReject.disabled = actionPending;
   }
+  undoDialog.setOpen(respondToUndo);
   elements.pass.disabled = !canAct;
-  elements.pass.hidden = ended || isScoring;
   elements.resign.disabled = !canResign;
   elements.resign.hidden = ended || isScoring;
   if (!canResign) resetResignConfirmation();
-  elements.rematch.hidden = !state || !ended || ownIndex < 0;
-  elements.rematch.disabled = actionPending;
   elements.settings.hidden = !state || !ended || ownIndex < 0;
   elements.settings.disabled = actionPending;
   renderReplayControls();
@@ -1665,15 +1697,13 @@ function renderSetup(nextState, ownIndex) {
   elements.blackSetting.querySelector('[value="player2"]').textContent = aiMatch
     ? "AI 执黑"
     : "玩家 2 执黑";
-  elements.setupNote.textContent = startingAi
-    ? "正在准备 AI…"
-    : canConfigure
-      ? playMode === "solo"
-        ? aiMatch
-          ? "首次使用需下载 AI 资源，请稍候"
-          : "本机控制黑白双方轮流落子"
-        : "调整会立即同步给另一方，确认后开始"
-      : "设置会随房主调整实时更新";
+  elements.setupNote.textContent = isHost
+    ? playMode === "solo"
+      ? aiMatch
+        ? "首次使用需下载 AI 资源，请稍候"
+        : "本机控制黑白双方轮流落子"
+      : "调整会立即同步给另一方，确认后开始"
+    : "设置会随房主调整实时更新";
   elements.sizeSetting.value = String(settings.size ?? 19);
   elements.rulesSetting.value = settings.rules ?? "chinese";
   elements.komiSetting.value = String(
@@ -2019,17 +2049,14 @@ function exportHistoryRecord(recordId) {
 }
 
 function showSetupFeedback(message, mode) {
-  elements.setupFeedback.hidden = false;
-  elements.setupFeedback.dataset.mode = mode;
-  elements.setupFeedback.textContent = message;
+  elements.setupFeedback.classList.toggle("is-visible", mode === "error");
+  if (mode === "error") elements.setupFeedback.textContent = message;
   elements.startLabel.textContent =
-    mode === "pending" ? "正在开始…" : "开始对局";
+    mode === "pending" ? "正在开始…" : isSetupMenu() ? "保存设置" : "开始对局";
 }
 
 function clearSetupFeedback() {
-  elements.setupFeedback.hidden = true;
-  elements.setupFeedback.removeAttribute("data-mode");
-  elements.setupFeedback.textContent = "";
+  elements.setupFeedback.classList.remove("is-visible");
   elements.startLabel.textContent = isSetupMenu() ? "保存设置" : "开始对局";
 }
 
@@ -2231,10 +2258,6 @@ function ruleLabel(settings = {}) {
   return settings.rules === "japanese" ? "日本规则" : "中国规则";
 }
 
-function scoringRuleSummary(settings = {}) {
-  return `按${ruleLabel(settings)}计分 · 贴 ${formatScore(settings.komi)} 目 · 平分${goTieBreakLabel(settings.tieBreak)}`;
-}
-
 function translateError(error, code) {
   const messages = {
     occupied: "这个交叉点已经有棋子",
@@ -2281,10 +2304,15 @@ function translateError(error, code) {
 }
 
 function showActionError(message) {
+  if (resultDialog.showError(message)) return;
   if (state?.phase === "setup") {
     showSetupFeedback(message, "error");
     return;
   }
   elements.actionFeedback.textContent = message;
-  elements.actionFeedback.hidden = false;
+  elements.actionFeedback.classList.add("is-visible");
+  window.clearTimeout(actionFeedbackTimer);
+  actionFeedbackTimer = window.setTimeout(() => {
+    elements.actionFeedback.classList.remove("is-visible");
+  }, 4000);
 }

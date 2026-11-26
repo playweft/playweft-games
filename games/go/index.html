@@ -157,6 +157,7 @@
       aria-live="polite"
       aria-atomic="true"
     ></p>
+    <p id="action-feedback" class="start-status" role="status" aria-live="polite" aria-atomic="true"></p>
 
     <dialog
       id="setup-panel"
@@ -432,14 +433,8 @@
           <p id="handicap-note" class="handicap-note">
             让子时受让方固定执黑，摆好让子后由白方先行。
           </p>
-          <p
-            id="setup-feedback"
-            class="setup-feedback"
-            role="status"
-            aria-live="polite"
-            hidden
-          ></p>
         </div>
+        <p id="setup-feedback" class="start-status setup-feedback" role="status" aria-live="polite" aria-atomic="true"></p>
 
         <footer class="setup-actions">
           <button id="start-button" class="start-action" type="submit">
@@ -506,6 +501,38 @@
         </div>
       </dialog>
 
+      <dialog id="result-panel" class="overlay-dialog" aria-labelledby="result-title" aria-describedby="result-reason">
+        <div id="result-dialog" class="overlay-dialog__surface result-dialog" tabindex="-1">
+          <header class="overlay-dialog__header">
+            <h2 id="result-title">对局结果</h2>
+            <button id="result-close" class="overlay-dialog__close" type="button" aria-label="关闭对局结果">
+              <i data-lucide="x" aria-hidden="true"></i>
+            </button>
+          </header>
+          <div class="result-content">
+            <div role="status" aria-live="polite" aria-atomic="true">
+              <h3 id="result-headline">正在计分…</h3>
+              <p id="result-reason">正在核对双方的计分结果，请稍候</p>
+            </div>
+            <dl class="result-scores" aria-label="双方得分（目）">
+              <div>
+                <dt><span class="go-stone go-stone--black" aria-hidden="true"></span>黑方</dt>
+                <dd id="result-black">—</dd>
+              </div>
+              <div>
+                <dt><span class="go-stone go-stone--white" aria-hidden="true"></span>白方</dt>
+                <dd id="result-white">—</dd>
+              </div>
+            </dl>
+            <p id="result-rules"></p>
+          </div>
+          <footer class="result-actions">
+            <button id="result-home" type="button" hidden>返回首页</button>
+            <button id="rematch-button" type="button" disabled>再来一局</button>
+          </footer>
+        </div>
+      </dialog>
+
       <section id="table-layout" class="table-layout">
         <aside
           id="black-player"
@@ -554,17 +581,6 @@
 
       <aside class="action-panel">
         <div class="sidebar-move-number" data-move-number hidden>开局</div>
-        <p
-          id="action-feedback"
-          class="action-feedback"
-          role="status"
-          hidden
-        ></p>
-        <div id="ai-feedback" class="ai-feedback" hidden>
-          <span id="ai-status" role="status" aria-live="polite"></span>
-          <button id="ai-retry" type="button" hidden>重试</button>
-        </div>
-        <p id="scoring-summary" class="scoring-summary" hidden></p>
         <section class="move-log" aria-labelledby="move-log-title">
           <header class="move-log-heading">
             <h2 id="move-log-title">落子记录</h2>
@@ -646,18 +662,6 @@
             </div>
           </section>
         </section>
-        <section
-          id="undo-request"
-          class="undo-request"
-          aria-live="polite"
-          hidden
-        >
-          <p id="undo-request-label">对方请求悔棋</p>
-          <div id="undo-response-actions" class="undo-response-actions">
-            <button id="undo-reject" type="button">拒绝</button>
-            <button id="undo-accept" type="button">同意</button>
-          </div>
-        </section>
         <div class="turn-actions">
           <button id="undo-button" class="undo-action" type="button" disabled>
             <span class="icon-button-content"
@@ -704,6 +708,15 @@
             >
               <i data-lucide="notebook-pen"></i><span>本地棋谱</span>
             </button>
+            <button id="result-button" class="more-menu-item" type="button" role="menuitem" hidden>
+              <i data-lucide="flag" aria-hidden="true"></i><span>对局结果</span>
+            </button>
+            <button id="ai-error-button" class="more-menu-item" type="button" role="menuitem" hidden>
+              <i data-lucide="bot" aria-hidden="true"></i><span>重试 AI</span>
+            </button>
+            <button id="settings-button" class="more-menu-item" type="button" role="menuitem" hidden>
+              <i data-lucide="settings-2" aria-hidden="true"></i><span>返回设置</span>
+            </button>
             <a
               id="help-link"
               class="more-menu-item"
@@ -734,23 +747,32 @@
             </button>
           </div>
         </div>
-        <button id="rematch-button" class="rematch-action" type="button" hidden>
-          <span class="icon-button-content"
-            ><i data-lucide="rotate-ccw"></i>再来一局</span
-          >
-        </button>
-        <button
-          id="settings-button"
-          class="settings-action"
-          type="button"
-          hidden
-        >
-          <span class="icon-button-content"
-            ><i data-lucide="settings-2"></i>返回设置</span
-          >
-        </button>
       </aside>
     </main>
+    <dialog id="ai-feedback" class="overlay-dialog" aria-labelledby="ai-error-title" aria-describedby="ai-status">
+      <div id="ai-error-dialog" class="overlay-dialog__surface message-dialog" tabindex="-1">
+        <header class="overlay-dialog__header">
+          <h2 id="ai-error-title">AI 暂时不可用</h2>
+          <button id="ai-error-close" class="overlay-dialog__close" type="button" aria-label="关闭 AI 提示">
+            <i data-lucide="x" aria-hidden="true"></i>
+          </button>
+        </header>
+        <p id="ai-status" class="message-content"></p>
+        <footer class="message-actions">
+          <button id="ai-retry" type="button">重试</button>
+        </footer>
+      </div>
+    </dialog>
+    <dialog id="undo-request" class="overlay-dialog" aria-labelledby="undo-title" aria-describedby="undo-request-label">
+      <div id="undo-dialog" class="overlay-dialog__surface message-dialog" tabindex="-1">
+        <header class="overlay-dialog__header"><h2 id="undo-title">悔棋请求</h2></header>
+        <p id="undo-request-label" class="message-content">对方请求悔棋</p>
+        <footer class="message-actions">
+          <button id="undo-reject" type="button">拒绝</button>
+          <button id="undo-accept" type="button">同意</button>
+        </footer>
+      </div>
+    </dialog>
     <button id="confirm-move" class="confirm-move" type="button" hidden>
       落子
     </button>

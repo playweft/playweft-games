@@ -2,6 +2,7 @@
 @import "../../src/components/round-icon-button.css";
 @import "../../src/components/game-header.css";
 @import "./start-screen.css";
+@import "./result-dialog.css";
 
 body {
   background-color: #f1f1ed;
@@ -41,16 +42,6 @@ body {
 
 .sidebar-move-number {
   display: none;
-}
-
-.action-feedback {
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 7px;
-  background: #f9e6e2;
-  color: #a43b31;
-  font-size: 0.74rem;
-  line-height: 1.4;
 }
 
 .go-layout {
@@ -396,22 +387,8 @@ body {
 }
 
 .setup-feedback {
-  margin: 0 24px 14px;
-  padding: 10px 12px;
-  border-radius: 7px;
-  font-size: 0.74rem;
-  font-weight: 750;
-  line-height: 1.4;
-}
-
-.setup-feedback[data-mode="pending"] {
-  background: #f5ecde;
-  color: #86571f;
-}
-
-.setup-feedback[data-mode="error"] {
-  background: #f9e6e2;
-  color: #a43b31;
+  position: absolute;
+  bottom: 76px;
 }
 
 .setup-actions {
@@ -981,18 +958,6 @@ body {
   cursor: default;
 }
 
-.scoring-summary {
-  margin: 0;
-  padding: 9px 10px;
-  border: 1px solid #e1c399;
-  border-radius: 7px;
-  background: #fbf4e9;
-  color: #805124;
-  font-size: 0.74rem;
-  font-weight: 800;
-  line-height: 1.4;
-}
-
 .turn-actions {
   position: relative;
   display: grid;
@@ -1007,9 +972,7 @@ body {
 }
 
 .undo-action,
-.pass-action,
-.rematch-action,
-.settings-action {
+.pass-action {
   min-height: 44px;
   padding: 0 16px;
   border-radius: 7px;
@@ -1065,73 +1028,8 @@ body {
   }
 }
 
-.rematch-action {
-  border: 1px solid #202229;
-  background: #202229;
-  color: #fff;
-  box-shadow: 0 3px 0 #050506;
-}
-
-.settings-action {
-  border: 1px solid #c8c9c3;
-  background: #fff;
-  color: #3d403b;
-  box-shadow: 0 3px 0 #c8c9c3;
-}
-
-.undo-request {
-  display: grid;
-  gap: 8px;
-  padding: 10px 4px;
-  border-top: 1px solid #ddd4c6;
-  border-bottom: 1px solid #ddd4c6;
-  background: #faf7f0;
-}
-
-.undo-request[hidden],
-.undo-response-actions[hidden] {
-  display: none;
-}
-
-.undo-request p {
-  margin: 0;
-  color: #5f4a32;
-  font-size: 0.73rem;
-  font-weight: 750;
-  text-align: center;
-}
-
-.undo-response-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.undo-response-actions button {
-  min-height: 32px;
-  border: 1px solid #aaa69d;
-  border-radius: 6px;
-  background: #fff;
-  color: #4f524d;
-  cursor: pointer;
-  font-size: 0.72rem;
-  font-weight: 750;
-}
-
-.undo-response-actions button:last-child {
-  border-color: #95612c;
-  color: #75481d;
-}
-
-.undo-response-actions button:disabled {
-  cursor: default;
-  opacity: 0.48;
-}
-
 .undo-action:disabled,
-.pass-action:disabled,
-.rematch-action:disabled,
-.settings-action:disabled {
+.pass-action:disabled {
   cursor: not-allowed;
   opacity: 0.45;
   box-shadow: none;
@@ -1452,23 +1350,6 @@ body {
   .replay-controls[data-state="closing"] {
     animation-duration: 1ms;
   }
-}
-
-.ai-feedback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #4d5c50;
-}
-
-.ai-feedback button {
-  padding: 4px 8px;
-  border: 0;
-  background: transparent;
-  color: #1976d2;
-  cursor: pointer;
 }
 
 .replay-status-track {
