@@ -274,7 +274,9 @@ const client = isStandalone
       onState: (message) => {
         if (playMode === "room") handleState(message);
       },
-      onContext: (context) => { roomState = context.room; },
+      onContext: (context) => {
+        roomState = context.room;
+      },
       onRoomState: enterRoom,
       onRoomClosed: showStartScreen,
       onActionResult: handleActionResult,
@@ -376,10 +378,15 @@ function renderStartScreen(message = "") {
   document.querySelector(".game-header").hidden = menuVisible;
   elements.playAi.disabled = elements.playLocal.disabled =
     !platformReady || creatingRoom || Boolean(roomState);
-  elements.playOnline.disabled = creatingRoom || Boolean(roomState) ||
+  elements.playOnline.disabled =
+    creatingRoom ||
+    Boolean(roomState) ||
     (!isStandalone && (!platformReady || !canCreateRoom));
-  elements.playOnlineLabel.textContent = creatingRoom ? "正在创建房间…" : "好友联机";
-  elements.startStatus.textContent = message ||
+  elements.playOnlineLabel.textContent = creatingRoom
+    ? "正在创建房间…"
+    : "好友联机";
+  elements.startStatus.textContent =
+    message ||
     (!platformReady ? "正在连接平台…" : roomState ? "等待房间开始…" : "");
 }
 
@@ -390,7 +397,11 @@ function showStartScreen() {
   playMode = "solo";
   state = undefined;
   roomState = undefined;
-  pendingAction = settingsRequestId = queuedSettings = draftSettings = undefined;
+  pendingAction =
+    settingsRequestId =
+    queuedSettings =
+    draftSettings =
+      undefined;
   replayGameKey = "";
   replayFrames = [];
   replayIndex = undefined;
@@ -418,8 +429,14 @@ function startLocalGame(opponent) {
     aiModel: DEFAULT_GO_AI_MODEL_ID,
   });
   renderStartScreen();
-  handleState({ playerId, state: initial.state, events: [],
-    matchId: localMatchId, version: localVersion, serverTime: Date.now() });
+  handleState({
+    playerId,
+    state: initial.state,
+    events: [],
+    matchId: localMatchId,
+    version: localVersion,
+    serverTime: Date.now(),
+  });
 }
 
 function enterRoom(next) {
@@ -428,7 +445,11 @@ function enterRoom(next) {
     persistSoloResumeSnapshot();
     goAi.cancel();
     state = undefined;
-    pendingAction = settingsRequestId = queuedSettings = draftSettings = undefined;
+    pendingAction =
+      settingsRequestId =
+      queuedSettings =
+      draftSettings =
+        undefined;
     setupSource = "new";
     setSetupOpen(false);
   }
@@ -440,7 +461,10 @@ function enterRoom(next) {
 async function createOnlineRoom() {
   if (isStandalone) {
     const url = new URL("https://play.longern.com/");
-    url.searchParams.set("game", new URL("./playweft.json", location.href).href);
+    url.searchParams.set(
+      "game",
+      new URL("./playweft.json", location.href).href,
+    );
     window.location.assign(url);
     return;
   }
@@ -449,7 +473,13 @@ async function createOnlineRoom() {
   renderStartScreen();
   let errorMessage = "";
   try {
-    enterRoom(await client.createRoom({ minPlayers: 2, maxPlayers: 2, lobby: "platform" }));
+    enterRoom(
+      await client.createRoom({
+        minPlayers: 2,
+        maxPlayers: 2,
+        lobby: "platform",
+      }),
+    );
   } catch (error) {
     errorMessage = error.message || "创建房间失败，请重试";
   } finally {
@@ -1304,10 +1334,11 @@ function render(nextState) {
     moveNumberElement.hidden = false;
     moveNumberElement.textContent = moveNumberLabel;
   }
+  const canUndoAi =
+    playMode === "solo" && nextState.settings?.opponent === "ai";
   const canUndo =
     Boolean(state) &&
-    !ended &&
-    !isScoring &&
+    (canUndoAi || (!ended && !isScoring)) &&
     !hasUndoRequest &&
     Boolean(nextState.undoAvailable) &&
     Number(nextState.moves) > 0 &&
@@ -1315,7 +1346,7 @@ function render(nextState) {
     !isReviewingPast &&
     (playMode === "solo" ||
       Number(nextState.lastEvent?.playerIndex) - 1 === ownIndex);
-  elements.undo.hidden = ended || isScoring;
+  elements.undo.hidden = !canUndoAi && (ended || isScoring);
   elements.undo.disabled = !canUndo;
   elements.undoLabel.textContent = isUndoRequester ? "等待同意" : "悔棋";
   elements.undoRequest.hidden = playMode === "solo" || !hasUndoRequest || ended;
@@ -1386,7 +1417,10 @@ function renderPlayerCards(
       playMode === "solo" && nextState.settings?.opponent === "ai"
         ? playerIndex === 0
           ? "你"
-          : goAiPlayerName({ ...nextState.settings, aiModel: resolveGoAiModelId(nextState.settings.aiModel) })
+          : goAiPlayerName({
+              ...nextState.settings,
+              aiModel: resolveGoAiModelId(nextState.settings.aiModel),
+            })
         : nextState.playerNames?.[playerIndex];
     const name =
       typeof savedName === "string" && savedName.trim()

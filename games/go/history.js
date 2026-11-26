@@ -127,6 +127,10 @@ export function updateGoHistory(records, snapshot, recordedAt = Date.now()) {
   const undoAccepted = events.some((event) => event?.type === "undo_accepted");
   if (undoAccepted) {
     record.moves = record.moves.slice(0, Math.max(0, Number(state.moves) || 0));
+    if (!state.ended) {
+      delete record.result;
+      delete record.endedAt;
+    }
   }
 
   const moveEvents = events.filter(
@@ -223,6 +227,18 @@ export function restoreGoResumeState(record, resumedAt = Date.now()) {
       record.moves.slice(0, state.undoSnapshot.moves), state.blackIndex,
     );
   }
+  if (state.settings.opponent === "ai" && !Array.isArray(state.undoHistory)) {
+    const replayed = replayGoRecord({ ...record, settings: state.settings });
+    if (replayed) {
+      state.undoHistory = replayed.state.undoHistory;
+      // Keep the latest saved snapshot, which also contains the actual clocks.
+      if (state.undoSnapshot && state.undoHistory.length) {
+        state.undoHistory[state.undoHistory.length - 1] = state.undoSnapshot;
+      }
+      state.undoSnapshot = state.undoHistory.at(-1) ?? state.undoSnapshot;
+      state.undoAvailable = Boolean(state.undoSnapshot);
+    }
+  }
   state.turnStartedAt = state.phase === "playing" ? resumedAt : 0;
   return state;
 }
@@ -233,9 +249,13 @@ function firstPassIndex(moves = [], blackIndex) {
 }
 
 export function goRecordToReplayFrames(record) {
-  if (!Array.isArray(record?.moves) || !record.settings) return [];
+  return replayGoRecord(record)?.frames ?? [];
+}
+
+function replayGoRecord(record) {
+  if (!Array.isArray(record?.moves) || !record.settings) return;
   const blackIndex = Number(record.resume?.state?.blackIndex);
-  if (blackIndex !== 1 && blackIndex !== 2) return [];
+  if (blackIndex !== 1 && blackIndex !== 2) return;
 
   const setup = createSoloGoState();
   setup.round = Number(record.round) || 1;
@@ -247,14 +267,14 @@ export function goRecordToReplayFrames(record) {
       random: () => (blackIndex === 1 ? 0 : 1),
     },
   );
-  if (!started.accepted) return [];
+  if (!started.accepted) return;
 
   let replayState = started.state;
   const frames = [createReplayFrame(replayState)];
   for (const [index, move] of record.moves.entries()) {
     const currentIndex = Number(replayState.current) - 1;
     const currentColor = currentIndex + 1 === blackIndex ? "B" : "W";
-    if (move.color !== currentColor) return [];
+    if (move.color !== currentColor) return;
     const result = applySoloGoAction(
       replayState,
       move.pass
@@ -262,7 +282,7 @@ export function goRecordToReplayFrames(record) {
         : { type: "play", row: move.row, column: move.column },
       { now: Number(record.createdAt) || 0 },
     );
-    if (!result.accepted) return [];
+    if (!result.accepted) return;
     replayState = result.state;
     frames.push(
       createReplayFrame(replayState, {
@@ -274,7 +294,7 @@ export function goRecordToReplayFrames(record) {
       }),
     );
   }
-  return frames;
+  return { frames, state: replayState };
 }
 
 export function canResumeGoRecord(record) {

@@ -60,6 +60,106 @@ test("AI can open as black, and resignation during thinking resigns the human", 
   assert.equal(isGoAiTurn(resigned), false);
 });
 
+test("AI games can undo every human decision and restore captures, clocks and ko state", () => {
+  let state = start();
+  const decisions = [];
+  for (const [human, ai] of [[[1, 2], [1, 1]], [[2, 1], [7, 7]], [[3, 3], [8, 8]]]) {
+    decisions.push(state);
+    state = play(play(state, ...human), ...ai);
+  }
+  assert.equal(state.captures[0], 1);
+  assert.equal(state.undoHistory.length, 3);
+  assert.equal(state.undoHistory.some(snapshot => "undoHistory" in snapshot || "undoSnapshot" in snapshot), false);
+  const original = structuredClone(state);
+  for (const expected of decisions.reverse()) {
+    const result = applySoloGoAction(state, { type: "undo" }, { now: 4000 });
+    assert.equal(result.accepted, true);
+    state = result.state;
+    for (const key of ["board", "current", "captures", "scores", "timeUsed", "moves", "previousBoard", "firstPassIndex", "lastMove", "lastEvent"]) {
+      assert.deepEqual(state[key], expected[key], key);
+    }
+    assert.equal(state.turnStartedAt, 4000);
+    assert.equal(state.undoAvailable, state.moves > 0);
+  }
+  assert.equal(state.undoHistory.length, 0);
+  assert.equal(applySoloGoAction(state, { type: "undo" }).error.code, "NO_MOVE_TO_UNDO");
+  assert.equal(original.moves, 6);
+  assert.equal(original.undoHistory.length, 3);
+});
+
+test("repeated AI undo while thinking preserves the AI opening and discards the abandoned branch", () => {
+  const opening = play(start("player2"), 3, 3);
+  const firstReply = play(play(opening, 7, 7), 4, 4);
+  const thinking = play(firstReply, 7, 8);
+  let state = applySoloGoAction(thinking, { type: "undo" }).state;
+  assert.deepEqual(state.board, firstReply.board);
+  assert.equal(state.undoAvailable, true);
+  state = applySoloGoAction(state, { type: "undo" }).state;
+  assert.deepEqual(state.board, opening.board);
+  assert.equal(state.moves, 1);
+  assert.equal(state.current, 1);
+  assert.equal(state.undoAvailable, false);
+  state = play(play(state, 8, 8), 4, 5);
+  assert.equal(state.undoHistory.length, 1);
+  state = applySoloGoAction(state, { type: "undo" }).state;
+  assert.deepEqual(state.board, opening.board);
+  assert.equal(state.board[6][6], 0);
+});
+
+test("AI undo history survives JSON saves and is rebuilt for older complete records", () => {
+  let state = start(), records = [], version = 0;
+  for (const [row, column] of [[3, 3], [7, 7], [3, 4], [7, 8]]) {
+    const result = applySoloGoAction(state, { type: "play", row, column });
+    state = result.state;
+    records = updateGoHistory(records, { matchId: "undo-save", mode: "solo", version: ++version,
+      state, events: result.events });
+  }
+  const saved = JSON.parse(JSON.stringify(records[0]));
+  const legacy = structuredClone(saved);
+  delete legacy.resume.state.undoHistory;
+  for (const record of [saved, legacy]) {
+    let resumed = restoreGoResumeState(record, 5000);
+    assert.equal(resumed.undoHistory.length, 2);
+    resumed = applySoloGoAction(resumed, { type: "undo" }).state;
+    assert.equal(resumed.moves, 2);
+    assert.equal(resumed.undoAvailable, true);
+    resumed = applySoloGoAction(resumed, { type: "undo" }).state;
+    assert.equal(resumed.moves, 0);
+    assert.deepEqual(resumed.board, start().board);
+  }
+});
+
+test("AI undo reopens finished games and clears the saved result", () => {
+  let state = play(play(play(play(start(), 3, 3), 7, 7), 3, 4), 7, 8);
+  let records = updateGoHistory([], { matchId: "undo-ended", mode: "solo", version: 1, state });
+  const resign = applySoloGoAction(state, { type: "resign" });
+  records = updateGoHistory(records, { matchId: "undo-ended", mode: "solo", version: 2,
+    state: resign.state, events: resign.events });
+  assert.ok(records[0].result);
+  const undo = applySoloGoAction(resign.state, { type: "undo" });
+  assert.equal(undo.accepted, true);
+  assert.equal(undo.state.ended, false);
+  assert.equal(undo.state.phase, "playing");
+  assert.equal(undo.state.current, 1);
+  assert.equal(undo.state.winnerIndex, 0);
+  records = updateGoHistory(records, { matchId: "undo-ended", mode: "solo", version: 3,
+    state: undo.state, events: undo.events });
+  assert.equal(records[0].result, undefined);
+  assert.equal(records[0].endedAt, undefined);
+  assert.ok(records[0].resume);
+
+  state = applySoloGoAction(state, { type: "pass" }).state;
+  state = applySoloGoAction(state, { type: "pass" }).state;
+  const scoringUndo = applySoloGoAction(state, { type: "undo" });
+  assert.equal(scoringUndo.accepted, true);
+  assert.equal(scoringUndo.state.phase, "playing");
+  state = applySoloGoAction(state, { type: "score" }).state;
+  const scoredUndo = applySoloGoAction(state, { type: "undo" });
+  assert.equal(scoredUndo.accepted, true);
+  assert.equal(scoredUndo.state.moves, 4);
+  assert.deepEqual(scoredUndo.state.scores, start().scores);
+});
+
 test("saved AI games preserve opponent, human undo point, pass history and ko inputs", () => {
   let records = [];
   let state = start();

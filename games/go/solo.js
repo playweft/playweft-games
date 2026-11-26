@@ -76,10 +76,21 @@ export function applySoloGoAction(
   }
 
   if (action.type === "undo") {
-    if (state.ended || !state.undoAvailable || !state.undoSnapshot) {
+    const aiMatch = state.settings.opponent === "ai";
+    if ((!aiMatch && state.ended) || !state.undoAvailable || !state.undoSnapshot) {
       return rejected("NO_MOVE_TO_UNDO");
     }
+    const history = aiMatch ? state.undoHistory ?? [state.undoSnapshot] : [];
     restoreUndoSnapshot(state, state.undoSnapshot, now);
+    if (aiMatch) {
+      history.pop();
+      state.undoHistory = history;
+      state.undoSnapshot = history.at(-1) ?? null;
+      state.undoAvailable = Boolean(state.undoSnapshot);
+      state.ended = false;
+      state.winner = "";
+      state.winnerIndex = 0;
+    }
     return accepted(state, [{ type: "undo_accepted", player: state.players[0] }]);
   }
 
@@ -314,6 +325,7 @@ function setupState(round, settings) {
     previousBoard: "",
     undoAvailable: false,
     undoSnapshot: null,
+    ...(settings.opponent === "ai" ? { undoHistory: [] } : {}),
     lastMove: { row: 0, column: 0 },
     lastEvent: { kind: "setup", playerIndex: 1, captured: 0 },
     round,
@@ -452,6 +464,7 @@ function createUndoSnapshot(state) {
     board: state.board.map((row) => [...row]),
     current: state.current,
     captures: [...state.captures],
+    scores: { ...state.scores },
     timeUsed: [...state.timeUsed],
     scoreRound: state.scoreRound,
     scoreSubmitted: [...state.scoreSubmitted],
@@ -468,6 +481,14 @@ function saveUndoSnapshot(state) {
   // One undo returns the player to their previous decision, including an AI
   // reply. The AI's opening move cannot be undone into another AI-only turn.
   if (state.settings.opponent === "ai" && state.current === 2) return;
+  if (state.settings.opponent === "ai") {
+    // Keep a flat stack: snapshots must not recursively contain earlier history.
+    state.undoHistory ??= state.undoSnapshot ? [state.undoSnapshot] : [];
+    state.undoHistory.push(createUndoSnapshot(state));
+    state.undoSnapshot = state.undoHistory.at(-1);
+    state.undoAvailable = true;
+    return;
+  }
   state.undoSnapshot = createUndoSnapshot(state);
   state.undoAvailable = true;
 }
@@ -477,6 +498,7 @@ function restoreUndoSnapshot(state, snapshot, now) {
   state.board = snapshot.board.map((row) => [...row]);
   state.current = snapshot.current;
   state.captures = [...snapshot.captures];
+  if (snapshot.scores) state.scores = { ...snapshot.scores };
   state.timeUsed = [...snapshot.timeUsed];
   state.turnStartedAt = now;
   state.scoreRound = snapshot.scoreRound;
