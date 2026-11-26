@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 112" fill="none">
+  <defs>
+    <radialGradient id="bowl-wood" cx=".35" cy=".2" r=".85">
+      <stop stop-color="#e5b777"/><stop offset=".6" stop-color="#b97c40"/><stop offset="1" stop-color="#794721"/>
+    </radialGradient>
+    <radialGradient id="bowl-well" cx=".5" cy=".4" r=".65">
+      <stop stop-color="#55351f"/><stop offset="1" stop-color="#271e17"/>
+    </radialGradient>
+    <radialGradient id="bowl-light" cx=".32" cy=".22" r=".8">
+      <stop stop-color="#fff" stop-opacity=".48"/><stop offset=".4" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#000" stop-opacity=".24"/>
+    </radialGradient>
+    <g id="bowl-pile" stroke="#1b1712" stroke-opacity=".18" stroke-width=".8">
+      <circle cx="66" cy="40" r="9"/><circle cx="83" cy="41" r="9"/>
+      <circle cx="54" cy="54" r="9"/><circle cx="72" cy="55" r="9"/><circle cx="91" cy="55" r="9"/>
+      <circle cx="48" cy="71" r="9"/><circle cx="65" cy="72" r="9"/><circle cx="83" cy="72" r="9"/><circle cx="101" cy="70" r="9"/>
+      <circle cx="57" cy="88" r="9"/><circle cx="75" cy="89" r="9"/><circle cx="93" cy="87" r="9"/>
+      <circle cx="68" cy="39" r="9"/><circle cx="57" cy="57" r="9"/><circle cx="80" cy="56" r="9"/>
+      <circle cx="62" cy="77" r="9"/><circle cx="85" cy="77" r="9"/>
+    </g>
+    <clipPath id="bowl-clip"><circle cx="75" cy="66" r="35"/></clipPath>
+  </defs>
+  <!-- Removed lid, set aside; all rims are circular in the overhead view. -->
+  <circle cx="34" cy="37" r="29" fill="#39291a" opacity=".12" transform="translate(0 3)"/>
+  <circle cx="34" cy="34" r="29" fill="url(#bowl-wood)" stroke="#86562f"/>
+  <circle cx="34" cy="34" r="24" stroke="#f1ce9a" stroke-opacity=".55"/>
+  <path d="M17 21c7-7 19-9 30-2M13 31c10-8 23-9 38-2M15 41c9-6 20-7 33-3M22 49c7-3 13-3 20-2" stroke="#6f4328" stroke-opacity=".15" stroke-linecap="round"/>
+  <circle cx="75" cy="69" r="43" fill="#352315" opacity=".18"/>
+  <circle cx="75" cy="66" r="43" fill="url(#bowl-wood)" stroke="#8b572d" stroke-width="1.3"/>
+  <circle cx="75" cy="66" r="38" fill="#e1af70" stroke="#f6d3a1" stroke-opacity=".65"/>
+  <circle cx="75" cy="66" r="35" fill="url(#bowl-well)"/>
+  <g clip-path="url(#bowl-clip)">
+    <use href="#bowl-pile" fill="currentColor"/>
+    <use href="#bowl-pile" fill="url(#bowl-light)" stroke="none"/>
+  </g>
+  <circle cx="75" cy="66" r="35" stroke="#603c24" stroke-width="2"/>
+  <path d="M42 43a40 40 0 0 1 61-6" stroke="#ffe1ae" stroke-opacity=".55" stroke-linecap="round"/>
+</svg>

@@ -1748,21 +1748,6 @@ body {
   }
 }
 
-@media (width < 900px) and (orientation: portrait) {
-  .action-panel {
-    min-height: 0;
-    flex: 1 1 auto;
-    align-self: stretch;
-  }
-
-  .action-panel .move-log {
-    display: flex;
-    min-height: 112px;
-    flex: 1 1 112px;
-    flex-direction: column;
-  }
-}
-
 @media (width < 600px) and (orientation: portrait) {
   .setup-panel.overlay-dialog--sheet-narrow {
     padding: 0;
@@ -1886,5 +1871,144 @@ body {
   .more-menu,
   .more-menu[data-state="closing"] {
     animation-duration: 1ms;
+  }
+}
+
+.board-space {
+  display: contents;
+}
+
+.stone-bowl,
+.portrait-replay {
+  display: none;
+}
+
+.drag-stone {
+  position: fixed;
+  z-index: 20;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.drag-stone[data-valid="false"] {
+  opacity: .45;
+}
+
+.go-point.is-drag-target {
+  outline: 2px solid #fff7e8;
+  outline-offset: 2px;
+}
+
+@media (width < 900px) and (orientation: portrait) {
+  .go-layout {
+    height: calc(100dvh - 60px);
+    min-height: 0;
+    gap: 12px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .table-layout {
+    min-height: 0;
+    flex: 1;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .board-space {
+    display: grid;
+    min-width: 0;
+    min-height: 0;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-block: 92px;
+    container-type: size;
+    place-items: center;
+  }
+
+  .board-shell {
+    width: min(100cqw, 100cqh);
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .stone-bowl {
+    position: absolute;
+    display: block;
+    width: 104px;
+    height: 88px;
+    padding: 8px;
+    color: #252623;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .stone-bowl[data-color="2"] {
+    color: #f5f2e9;
+  }
+
+  .stone-bowl svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .stone-bowl--opponent {
+    bottom: calc(100% + 4px);
+    left: -8px;
+  }
+
+  .stone-bowl--self {
+    top: calc(100% + 4px);
+    right: -8px;
+    width: 200px;
+    height: 96px;
+  }
+
+  .stone-bowl--self svg {
+    width: 88px;
+    height: 72px;
+    margin-left: auto;
+  }
+
+  .stone-bowl.can-pick-up {
+    cursor: grab;
+  }
+
+  .stone-bowl.is-dragging {
+    cursor: grabbing;
+  }
+
+  .action-panel {
+    min-height: 0;
+    flex: 0 0 auto;
+    align-self: stretch;
+  }
+
+  .action-panel .move-log {
+    display: contents;
+  }
+
+  .move-log-heading,
+  .move-log-list {
+    display: none;
+  }
+
+  .portrait-replay {
+    display: flex;
+  }
+
+  .replay-controls {
+    position: fixed;
+    z-index: 14;
+    top: auto;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    left: 10px;
+    width: calc(100% - 20px);
   }
 }

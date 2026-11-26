@@ -54,10 +54,12 @@ import { createPlayweftClient } from "../../src/playweft-client.js";
 import { initializeGoStorage } from "./storage.js";
 import { createStartScreen } from "./start-screen.js";
 import { createGoResultDialog } from "./result-dialog.js";
+import { createGoStoneDrag } from "./stone-drag.js";
 import "../../src/game-storage.css";
 import "../../src/components/board-stones.css";
 import "./styles.css";
 import tableTextureUrl from "./assets/table-texture-plywood.webp?url";
+import bowlArt from "./assets/stone-bowl.svg?raw";
 
 scheduleTableTexture();
 
@@ -71,6 +73,9 @@ const elements = {
   actionFeedback: document.querySelector("#action-feedback"),
   board: document.querySelector("#board"),
   boardShell: document.querySelector(".board-shell"),
+  selfBowl: document.querySelector("#self-bowl"),
+  opponentBowl: document.querySelector("#opponent-bowl"),
+  dragStone: document.querySelector("#drag-stone"),
   confirmMove: document.querySelector("#confirm-move"),
   table: document.querySelector("#table-layout"),
   actionPanel: document.querySelector(".action-panel"),
@@ -116,6 +121,7 @@ const elements = {
   gameInfoOpen: document.querySelector("#game-info-button"),
   gameInfoClose: document.querySelector("#game-info-close"),
   replayOpen: document.querySelector("#replay-button"),
+  portraitReplay: document.querySelector("#portrait-replay-button"),
   replayControls: document.querySelector("#replay-controls"),
   replayStatus: document.querySelector("#replay-status"),
   replaySliderField: document.querySelector("#replay-slider-field"),
@@ -152,6 +158,9 @@ const elements = {
   ],
   playerTimes: [...document.querySelectorAll("[data-player-time]")],
 };
+for (const bowl of [elements.selfBowl, elements.opponentBowl]) {
+  bowl.innerHTML = bowlArt.replaceAll("bowl-", `${bowl.id}-`);
+}
 const segmentNames = ["a", "b", "c", "d", "e", "f", "g"];
 for (const [id, model] of Object.entries(GO_AI_MODELS)) {
   elements.aiDifficulty.add(new Option(model.difficulty, id));
@@ -435,6 +444,14 @@ const undoDialog = createOverlayDialog({
   returnFocus: elements.more,
   beforeOpen: () => setMoreMenuOpen(false),
 });
+const stoneDrag = createGoStoneDrag({
+  source: elements.selfBowl,
+  board: elements.board,
+  stone: elements.dragStone,
+  getPoint: (row, column) => points[(row - 1) * boardSize + column - 1],
+  onPickup: clearPendingMove,
+  onPlay: point => sendAction({ type: "play", ...point }),
+});
 
 async function handleReady(message) {
   canCreateRoom = message.capabilities?.includes("rooms.create") ?? false;
@@ -449,6 +466,7 @@ async function handleReady(message) {
 }
 
 function renderStartScreen(message = "") {
+  if (menuVisible) stoneDrag.cancel();
   elements.gameScreen.hidden = menuVisible;
   elements.gameBack.hidden = menuVisible || playMode !== "solo";
   elements.gameBackSpacer.hidden = elements.gameBack.hidden;
@@ -928,6 +946,7 @@ elements.help.addEventListener("click", () => setMoreMenuOpen(false));
 elements.replayOpen.addEventListener("click", () =>
   setReplayOpen(!isReplayOpen()),
 );
+elements.portraitReplay.addEventListener("click", () => setReplayOpen(!isReplayOpen()));
 elements.replayControls.addEventListener("animationend", (event) => {
   if (event.target !== elements.replayControls) return;
   if (event.animationName === "replay-controls-in" && isReplayOpen()) {
@@ -977,6 +996,7 @@ elements.historyClear.addEventListener("click", () => {
   renderHistory();
 });
 window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") stoneDrag.cancel();
   if (event.key === "Escape" && isSetupMenu()) {
     event.preventDefault();
     if (startingAi) return;
@@ -1282,6 +1302,8 @@ function renderReplayControls() {
   const moveNumber = frame?.moveNumber ?? 0;
   const replayRatio = latestIndex > 0 ? selectedIndex / latestIndex : 0;
   elements.replayOpen.disabled = replayFrames.length <= 1;
+  elements.portraitReplay.disabled = elements.replayOpen.disabled;
+  elements.portraitReplay.querySelector("span").textContent = isReplayOpen() ? "退出回看" : "回看对局";
   elements.replaySlider.max = String(Math.max(0, latestIndex));
   elements.replaySlider.value = String(Math.max(0, selectedIndex));
   elements.replaySliderField.style.setProperty(
@@ -1430,11 +1452,13 @@ function render(nextState) {
   renderMoveLog(size);
 
   if (isSetup) {
+    stoneDrag.update({ enabled: false });
     elements.undo.disabled = true;
     undoDialog.setOpen(false);
     renderSetup(nextState, ownIndex);
     renderSetupBoard(nextState, size);
     elements.replayOpen.disabled = true;
+    elements.portraitReplay.disabled = true;
     setSetupOpen(!actionPending);
     return;
   }
@@ -1463,6 +1487,16 @@ function render(nextState) {
     (playMode === "solo" || ownIndex >= 0) &&
     !actionPending &&
     !isReviewingPast;
+  const selfColor = playMode === "solo" && nextState.settings?.opponent !== "ai"
+    ? previewColor
+    : ownIndex === blackIndex ? 1 : 2;
+  elements.opponentBowl.dataset.color = String(selfColor === 1 ? 2 : 1);
+  stoneDrag.update({
+    enabled: canAct && !isReplayOpen(),
+    color: selfColor,
+    size,
+    key: `${replayGameKey}:${nextState.moves}:${nextState.current}`,
+  });
 
   const moveNumber = Number(boardState.moves) || 0;
   const moveNumberLabel = isReviewingPast

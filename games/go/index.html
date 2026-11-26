@@ -574,9 +574,13 @@
           </span>
         </aside>
 
-        <section class="board-shell" aria-label="19 × 19 围棋棋盘">
-          <div id="board" class="go-board" role="grid"></div>
-        </section>
+        <div class="board-space">
+          <section class="board-shell" aria-label="19 × 19 围棋棋盘">
+            <div id="opponent-bowl" class="stone-bowl stone-bowl--opponent" data-color="2" aria-hidden="true"></div>
+            <div id="board" class="go-board" role="grid"></div>
+            <div id="self-bowl" class="stone-bowl stone-bowl--self" data-color="1" aria-hidden="true"></div>
+          </section>
+        </div>
       </section>
 
       <aside class="action-panel">
@@ -711,6 +715,9 @@
             <button id="result-button" class="more-menu-item" type="button" role="menuitem" hidden>
               <i data-lucide="flag" aria-hidden="true"></i><span>对局结果</span>
             </button>
+            <button id="portrait-replay-button" class="more-menu-item portrait-replay" type="button" role="menuitem" disabled>
+              <i data-lucide="history" aria-hidden="true"></i><span>回看对局</span>
+            </button>
             <button id="ai-error-button" class="more-menu-item" type="button" role="menuitem" hidden>
               <i data-lucide="bot" aria-hidden="true"></i><span>重试 AI</span>
             </button>
@@ -749,6 +756,7 @@
         </div>
       </aside>
     </main>
+    <span id="drag-stone" class="go-stone drag-stone" aria-hidden="true" hidden></span>
     <dialog id="ai-feedback" class="overlay-dialog" aria-labelledby="ai-error-title" aria-describedby="ai-status">
       <div id="ai-error-dialog" class="overlay-dialog__surface message-dialog" tabindex="-1">
         <header class="overlay-dialog__header">
