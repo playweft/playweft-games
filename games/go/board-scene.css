@@ -84,9 +84,13 @@
   pointer-events: none;
 }
 
+.has-scene .board-shell {
+  top: calc(var(--go-board-size) * -.16);
+}
+
 @media (width >= 900px) {
   .go-layout.has-scene {
-    --go-board-size: clamp(220px, min(calc(100dvh - 112px), calc((100vw - 244px) / 1.9)), 820px);
+    --go-board-size: clamp(220px, min(calc((100dvh - 42px) / 1.85), calc((100vw - 244px) / 1.32)), 820px);
   }
 
   .has-scene .table-layout {
@@ -110,7 +114,8 @@
   }
 
   .has-scene .board-shell {
-    width: min(calc(100cqw - 36px), calc(100cqh / 1.8));
+    --go-board-size: min(calc(100cqw / 1.32), calc(100cqh / 1.85));
+    width: var(--go-board-size);
   }
 
   .has-scene .stone-bowl {
@@ -136,7 +141,8 @@
   }
 
   .has-scene .board-shell {
-    width: min(100%, calc(100dvh - 112px), calc((100vw - 300px) / 1.9));
+    --go-board-size: min(calc((100dvh - 84px) / 1.85), calc((100vw - 300px) / 1.32));
+    width: var(--go-board-size);
     grid-area: board;
     align-self: center;
   }

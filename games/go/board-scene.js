@@ -5,8 +5,9 @@ import { GO_BOARD_TOP, configureSceneCamera, projectScenePoint, projectBounds,
 import { stoneDragPoint } from "./stone-drag.js";
 import { createGoStoneGeometry, STONE_TOP, STONE_BOTTOM, stoneLandingPose } from "./stone-shape.js";
 import { createCourtyard } from "./courtyard.js";
-import { createTableTop, createTableWood } from "./wooden-table.js";
-import { GO_BOWL_SCALE, bowlArea, bowlPosition, bowlStoneLayout } from "./bowl-layout.js";
+import { createTableWood } from "./wooden-table.js";
+import { createGoTable, GO_TABLE_TOP } from "./table-model.js";
+import { GO_BOWL_SCALE, tableBowlPosition, bowlPickupRect, bowlStoneLayout } from "./bowl-layout.js";
 import boardGrainUrl from "./assets/board-grain.webp?url";
 
 function random(seed) {
@@ -84,10 +85,13 @@ function mesh(geometry, material, parent, { shadow = true } = {}) {
 
 function bowlGroup(stoneGeometry, stoneMaterial, wood) {
   const group = new THREE.Group();
+  const cup = new THREE.Group();
+  cup.position.y = -.025;
+  group.add(cup);
   const profile = [[0,.025],[.16,.025],[.30,.07],[.41,.18],[.46,.32],
     [.47,.42],[.46,.45],[.425,.45],[.415,.4],[.385,.28],[.29,.15],[0,.13]];
-  mesh(new THREE.LatheGeometry(profile.map(([x,y]) => new THREE.Vector2(x,y)), 48), wood, group);
-  const rim = mesh(new THREE.TorusGeometry(.443, .014, 8, 48), wood, group);
+  mesh(new THREE.LatheGeometry(profile.map(([x,y]) => new THREE.Vector2(x,y)), 48), wood, cup);
+  const rim = mesh(new THREE.TorusGeometry(.443, .014, 8, 48), wood, cup);
   rim.rotation.x = Math.PI / 2;
   rim.position.y = .44;
   const lid = mesh(new THREE.SphereGeometry(.36, 32, 12), wood, group);
@@ -100,7 +104,7 @@ function bowlGroup(stoneGeometry, stoneMaterial, wood) {
   pile.castShadow = pile.receiveShadow = true;
   pile.count = 0;
   pile.frustumCulled = false;
-  group.add(pile);
+  cup.add(pile);
   return { group, pile, lid, ring };
 }
 
@@ -136,15 +140,8 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
   const textureLoader = new THREE.TextureLoader(assets);
   scene.add(createCourtyard(requestPaint, textureLoader));
   const wood = createTableWood(requestPaint, textureLoader);
-  const table = new THREE.Group();
+  const table = createGoTable(wood);
   scene.add(table);
-  const top = mesh(createTableTop(), wood, table);
-  top.position.y = .05;
-  const tableBounds = new THREE.Box3().setFromObject(top);
-  for (const x of [-.53,.53]) for (const z of [-.48,.48]) {
-    const leg = mesh(new RoundedBoxGeometry(.075, .07, .075, 2, .006), wood, table);
-    leg.position.set(x, .035, z);
-  }
   const boardMaterial = new THREE.MeshStandardMaterial({ color: "#fe9659", roughness: .88 });
   const boardBody = mesh(new RoundedBoxGeometry(1, .026, 1, 3, .007), boardMaterial, table);
   boardBody.position.y = GO_BOARD_TOP - .013;
@@ -152,6 +149,8 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
     new THREE.MeshStandardMaterial({ roughness: .8 }), table, { shadow: false });
   face.rotation.x = -Math.PI / 2;
   face.position.y = GO_BOARD_TOP + .0001;
+  const boardBounds = new THREE.Box3(new THREE.Vector3(-.5,GO_BOARD_TOP,-.5),
+    new THREE.Vector3(.5,GO_BOARD_TOP,.5));
 
   const stoneGeometry = createGoStoneGeometry();
   const stoneMaterials = [
@@ -317,7 +316,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
       point.style.width = `${(edge.x - p.x) * 2}px`;
     }
     const portrait = width < 900 && height >= width;
-    const tableScreen = projectBounds(tableBounds, camera, viewport);
+    const boardScreen = projectBounds(boardBounds, camera, viewport);
     const space = portrait ? root.querySelector(".board-space").getBoundingClientRect() : {
       left: 0, right: root.querySelector(".action-panel").getBoundingClientRect().left,
       top: document.querySelector(".game-header").getBoundingClientRect().bottom, bottom: height,
@@ -342,21 +341,13 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
       }
       const positionKey = `${nextLayoutKey}:${near}`;
       if (layoutChanged || bowl.positionKey !== positionKey) {
-        bowl.lid.position.set(portrait ? (near ? -.94 : .94) : -.12, .044, portrait ? 0 : .9);
+        bowl.lid.position.set(near ? -.94 : .94, .044, 0);
         bowl.ring.position.set(bowl.lid.position.x, .070, bowl.lid.position.z);
-        bowl.group.position.set(0, 0, 0);
-        const bounds = new THREE.Box3().setFromObject(bowl.group);
-        const area = bowlArea({ board: rect, table: tableScreen, space, near, portrait,
-          obstacles: [...root.querySelectorAll(".player-station")].map(element => element.getBoundingClientRect()) });
-        bowl.group.position.copy(bowlPosition(bounds, area, camera, viewport, { near, portrait }));
-        const cup = projectScenePoint(bowl.group.position.x, GO_BOWL_SCALE * .4,
+        bowl.group.position.copy(tableBowlPosition(near));
+        const cup = projectScenePoint(bowl.group.position.x, GO_TABLE_TOP + GO_BOWL_SCALE * .4,
           bowl.group.position.z, camera, viewport);
-        const hitWidth = Math.min(200, area.right - area.left), hitHeight = Math.min(128, area.bottom - area.top);
-        Object.assign(bowl.element.style, {
-          left: `${Math.max(area.left, Math.min(cup.x - hitWidth / 2, area.right - hitWidth))}px`,
-          top: `${Math.max(area.top, Math.min(cup.y - hitHeight / 2, area.bottom - hitHeight))}px`,
-          width: `${hitWidth}px`, height: `${hitHeight}px`,
-        });
+        const hit = bowlPickupRect(cup, boardScreen, space, near);
+        for (const key of ["left","top","width","height"]) bowl.element.style[key] = `${hit[key]}px`;
         bowl.positionKey = positionKey;
       }
       const { x, z } = bowl.group.position;
@@ -365,7 +356,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
       bowl.key = bowlKey;
     }
     // Fit the shadow camera to the actual casters, not the entire courtyard.
-    const extent = 1.8;
+    const extent = 2.4;
     Object.assign(sun.shadow.camera, { left: -extent, right: extent, top: extent, bottom: -extent });
     sun.shadow.camera.updateProjectionMatrix();
     if (shadowsChanged) renderer.shadowMap.needsUpdate = true;

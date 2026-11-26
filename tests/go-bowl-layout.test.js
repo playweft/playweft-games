@@ -1,18 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Box3, Euler, Matrix4, PerspectiveCamera, Quaternion, Vector3 } from "three";
-import { configureSceneCamera, projectBounds, projectScenePoint } from "../games/go/scene-geometry.js";
-import { GO_BOWL_SCALE, bowlArea, bowlPosition, bowlStoneLayout } from "../games/go/bowl-layout.js";
+import { GO_BOARD_TOP, configureSceneCamera, projectBounds, projectScenePoint } from "../games/go/scene-geometry.js";
+import { GO_BOWL_SCALE, tableBowlPosition, bowlPickupRect, bowlStoneLayout } from "../games/go/bowl-layout.js";
+import { GO_TABLE_TOP, GO_TABLE_WIDTH, GO_TABLE_DEPTH } from "../games/go/table-model.js";
 import { createGoStoneGeometry } from "../games/go/stone-shape.js";
 
-function bowlBounds(near, portrait, size = 19, color = 1) {
-  const bounds = new Box3(new Vector3(-.47,.025,-.47),new Vector3(.47,.45,.47));
-  const x = portrait ? (near ? -.94 : .94) : -.12, z = portrait ? 0 : .9;
+function bowlBounds(near, size = 19, color = 1) {
+  const bounds = new Box3(new Vector3(-.47,0,-.47),new Vector3(.47,.425,.47));
+  const x = near ? -.94 : .94, z = 0;
   bounds.union(new Box3(new Vector3(x-.36,.0008,z-.36),new Vector3(x+.36,.0872,z+.36)));
   const geometry = createGoStoneGeometry();
   geometry.computeBoundingBox();
   for (const p of bowlStoneLayout(size, color === 1 ? 233 : 89)) {
-    const matrix = new Matrix4().compose(new Vector3(p.x,p.y,p.z),
+    const matrix = new Matrix4().compose(new Vector3(p.x,p.y-.025,p.z),
       new Quaternion().setFromEuler(new Euler(p.tiltX,p.turn,p.tiltZ)),new Vector3().setScalar(p.radius));
     bounds.union(geometry.boundingBox.clone().applyMatrix4(matrix));
   }
@@ -22,30 +23,15 @@ function bowlBounds(near, portrait, size = 19, color = 1) {
   return bounds;
 }
 
-test("portrait fits the whole scene proportionally, including short floating windows", () => {
-  for (const [width,height] of [[390,844],[534,850],[375,667],[414,560],[360,500]]) {
-    const viewport={width,height}, space={left:10,right:width-10,top:137,bottom:height-68};
-    const side=Math.min(width-56,(space.bottom-space.top)/1.8);
-    const board={left:(width-side)/2,right:(width+side)/2,
-      top:(space.top+space.bottom-side)/2,width:side,height:side};
-    const camera=new PerspectiveCamera(30,1,.1,100);
-    configureSceneCamera(camera,board,viewport);
-    const table=projectBounds(new Box3(new Vector3(-.623,.0475,-.573),
-      new Vector3(.623,.1075,.573)),camera,viewport);
-    for (const near of [false,true]) for (const size of [9,13,19]) for (const color of [1,2]) {
-      const bounds=bowlBounds(near,true,size,color);
-      const area=bowlArea({board,table,space,near,portrait:true});
-      const position=bowlPosition(bounds,area,camera,viewport,{near,portrait:true});
-      const screen=projectBounds(bounds.clone().translate(position),camera,viewport);
-      assert.ok(Math.abs(position.y)<1e-9,"cup and lid stay on the floor");
-      for (const edge of ["left","top"]) assert.ok(screen[edge]>=area[edge]-.1,
-        `${width}x${height}, ${size}, near=${near}: ${edge} ${screen[edge]} >= ${area[edge]}`);
-      for (const edge of ["right","bottom"]) assert.ok(screen[edge]<=area[edge]+.1,
-        `${width}x${height}, ${size}, near=${near}: ${edge} ${screen[edge]} <= ${area[edge]}`);
-      const cup=projectScenePoint(position.x,GO_BOWL_SCALE*.4,position.z,camera,viewport);
-      assert.equal(cup.y>(space.top+space.bottom)/2,near);
-    }
-    if (height<=560) assert.ok(side>=(space.bottom-space.top)*.55,"short windows do not lose fixed-height bands");
+test("fixed bowls and lids rest on the tabletop, inside its edge and clear of the board", () => {
+  for (const near of [false,true]) for (const size of [9,13,19]) for (const color of [1,2]) {
+    const position=tableBowlPosition(near);
+    const bounds=bowlBounds(near,size,color).translate(position);
+    assert.equal(position.y,GO_TABLE_TOP);
+    assert.ok(Math.abs(bounds.min.y-GO_TABLE_TOP)<1e-6);
+    assert.ok(bounds.min.x>-GO_TABLE_WIDTH/2+.02 && bounds.max.x<GO_TABLE_WIDTH/2-.02);
+    assert.ok(bounds.min.z>-GO_TABLE_DEPTH/2+.02 && bounds.max.z<GO_TABLE_DEPTH/2-.02);
+    assert.ok(near ? bounds.min.z>.5 : bounds.max.z<-.5,"no intersection with the board");
   }
 });
 
@@ -65,37 +51,44 @@ test("bowl piles use fixed physical dimensions for each board size", () => {
   }
 });
 
-test("landscape keeps far upper-left and near lower-right; cards only act as obstacles", () => {
-  for (const [width,height,side,centerX,top,panelLeft,desktop] of [
-    [1280,900,545,530,177.5,1060,true],
-    [900,600,345,340,127.5,680,true],
-    [844,390,278,292,86,584,false],
-    [667,375,193,203.5,95.5,407,false],
-  ]) {
-    const viewport={width,height}, camera=new PerspectiveCamera(30,1,.1,100);
-    const board={left:centerX-side/2,right:centerX+side/2,top,width:side,height:side};
+test("elevated tabletop bowls stay visible and pickable across portrait, landscape and floating windows", () => {
+  const fixtures=[];
+  for (const [width,height] of [[390,844],[534,850],[375,667],[414,560],[360,500]]) {
+    const space={left:10,right:width-10,top:137,bottom:height-68};
+    const side=Math.min((width-20)/1.32,(space.bottom-space.top)/1.85);
+    fixtures.push({width,height,side,space,centerX:width/2,centerY:(space.top+space.bottom)/2});
+  }
+  for (const [width,height] of [[1280,900],[900,600]]) {
+    const side=Math.min((height-42)/1.85,(width-244)/1.32);
+    fixtures.push({width,height,side,space:{left:0,right:width-220,top:0,bottom:height},
+      centerX:(width-220)/2,centerY:(height-6)/2});
+  }
+  for (const [width,height] of [[844,390],[667,375]]) {
+    const side=Math.min((height-84)/1.85,(width-300)/1.32);
+    fixtures.push({width,height,side,space:{left:0,right:width-260,top:60,bottom:height},
+      centerX:(width-260)/2,centerY:(60+height)/2});
+  }
+  for (const {width,height,side,space,centerX,centerY} of fixtures) {
+    const viewport={width,height},camera=new PerspectiveCamera(30,1,.1,100);
+    const board={left:centerX-side/2,top:centerY-side*.66,width:side,height:side};
     configureSceneCamera(camera,board,viewport);
-    const table=projectBounds(new Box3(new Vector3(-.623,.0475,-.573),
-      new Vector3(.623,.1075,.573)),camera,viewport);
-    const space={left:0,right:panelLeft,top:desktop?0:60,bottom:height};
-    const obstacles=desktop ? [
-      {left:10,right:200,top:18,bottom:168},
-      {left:panelLeft-200,right:panelLeft-10,top:height-174,bottom:height-24},
-    ] : [
-      {left:panelLeft,right:width,top:72,bottom:140},
-      {left:panelLeft,right:width,top:152,bottom:220},
-    ];
+    const boardScreen=projectBounds(new Box3(new Vector3(-.5,GO_BOARD_TOP,-.5),
+      new Vector3(.5,GO_BOARD_TOP,.5)),camera,viewport);
     for (const near of [false,true]) for (const size of [9,13,19]) for (const color of [1,2]) {
-      const bounds=bowlBounds(near,false,size,color),original=bounds.clone();
-      const area=bowlArea({board,table,space,near,portrait:false,obstacles});
-      const position=bowlPosition(bounds,area,camera,viewport,{near,portrait:false});
-      const screen=projectBounds(bounds.clone().translate(position),camera,viewport);
-      assert.deepEqual(bounds,original,"placing a bowl never changes its dimensions");
-      for (const edge of ["left","top"]) assert.ok(screen[edge]>=area[edge]-.1,`${width}, ${size}, near=${near}: ${edge}`);
-      for (const edge of ["right","bottom"]) assert.ok(screen[edge]<=area[edge]+.1,`${width}, ${size}, near=${near}: ${edge}`);
-      const cup=projectScenePoint(position.x,GO_BOWL_SCALE*.4,position.z,camera,viewport);
+      const position=tableBowlPosition(near),before=position.clone();
+      const screen=projectBounds(bowlBounds(near,size,color).translate(position),camera,viewport);
+      for (const edge of ["left","top"]) assert.ok(screen[edge]>=space[edge]-.1,`${width}x${height}: ${edge}`);
+      for (const edge of ["right","bottom"]) assert.ok(screen[edge]<=space[edge]+.1,`${width}x${height}: ${edge}`);
+      const cup=projectScenePoint(position.x,GO_TABLE_TOP+GO_BOWL_SCALE*.4,position.z,camera,viewport);
       assert.equal(cup.x>centerX,near);
-      assert.equal(cup.y>(table.top+table.bottom)/2,near,"the near cup must not jump to the upper-right");
+      assert.equal(cup.y>centerY-side*.16,near);
+      const hit=bowlPickupRect(cup,boardScreen,space,near);
+      assert.ok(hit.width>0 && hit.height>0);
+      assert.ok(cup.x>=hit.left && cup.x<=hit.left+hit.width && cup.y>=hit.top && cup.y<=hit.top+hit.height,
+        `${width}x${height}: pickup area follows the actual cup`);
+      assert.ok(near ? hit.top>boardScreen.bottom : hit.top+hit.height<boardScreen.top,
+        "expanded pickup areas never intercept board input");
+      assert.deepEqual(position,before,"viewport changes never move the physical bowl");
     }
   }
 });

@@ -1,5 +1,4 @@
-import { CanvasTexture, ExtrudeGeometry, MeshStandardMaterial, Shape, SRGBColorSpace,
-  TextureLoader, Vector2 } from "three";
+import { CanvasTexture, MeshStandardMaterial, SRGBColorSpace, TextureLoader } from "three";
 import woodUrl from "./assets/table-texture-plywood.webp?url";
 import grainUrl from "./assets/board-grain.webp?url";
 
@@ -36,37 +35,4 @@ export function createTableWood(invalidate, loader = new TextureLoader()) {
     invalidate();
   }).catch(error => console.warn("Go wood detail unavailable", error));
   return material;
-}
-
-export function createTableTop() {
-  const width = 1.24, depth = 1.14, r = .025, thickness = .055;
-  const x = -width / 2, y = -depth / 2;
-  const shape = new Shape();
-  shape.moveTo(x + r, y);
-  shape.lineTo(x + width - r, y);
-  shape.quadraticCurveTo(x + width, y, x + width, y + r);
-  shape.lineTo(x + width, y + depth - r);
-  shape.quadraticCurveTo(x + width, y + depth, x + width - r, y + depth);
-  shape.lineTo(x + r, y + depth);
-  shape.quadraticCurveTo(x, y + depth, x, y + depth - r);
-  shape.lineTo(x, y + r);
-  shape.quadraticCurveTo(x, y, x + r, y);
-  const geometry = new ExtrudeGeometry(shape, {
-    depth: thickness, steps: 1, curveSegments: 8,
-    bevelEnabled: true, bevelSize: .003, bevelThickness: .0025, bevelSegments: 2,
-    UVGenerator: {
-      generateTopUV(_, vertices, ...ids) {
-        return ids.map(i => new Vector2(vertices[i * 3] / width + .5,
-          vertices[i * 3 + 1] / depth + .5));
-      },
-      generateSideWallUV(_, vertices, ...ids) {
-        const horizontal = Math.abs(vertices[ids[1] * 3] - vertices[ids[0] * 3]) >
-          Math.abs(vertices[ids[1] * 3 + 1] - vertices[ids[0] * 3 + 1]);
-        return ids.map(i => new Vector2(vertices[i * 3 + (horizontal ? 0 : 1)] /
-          (horizontal ? width : depth) + .5, vertices[i * 3 + 2] / thickness));
-      },
-    },
-  });
-  geometry.rotateX(-Math.PI / 2);
-  return geometry;
 }

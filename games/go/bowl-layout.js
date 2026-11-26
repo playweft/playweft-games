@@ -1,47 +1,25 @@
 import { Vector3 } from "three";
-import { projectBounds, projectScenePoint, screenOnPlane } from "./scene-geometry.js";
+import { GO_TABLE_TOP } from "./table-model.js";
 
 // Bowl diameter is .1692 of the board's width, regardless of the viewport.
 export const GO_BOWL_SCALE = .18;
 
-// Move a rigid cup-and-lid group into the available floor space without resizing
-// it. Reproject after each correction because perspective changes its footprint.
-export function bowlArea({ board, table, space, near, portrait, obstacles = [] }) {
-  const middle = (table.top + table.bottom) / 2;
-  const area = portrait ? {
-    left: near ? space.left + 8 : Math.max(space.left + 8, board.left - 8),
-    right: near ? Math.min(space.right - 8, board.right + 8) : space.right - 8,
-    top: near ? table.bottom + 8 : space.top + 8,
-    bottom: near ? space.bottom - 8 : table.top - 8,
-  } : {
-    left: near ? table.right + 10 : space.left + 10,
-    right: near ? space.right - 10 : table.left - 10,
-    top: near ? space.top + 10 : Math.max(space.top + 10, table.top + 10),
-    bottom: near ? Math.min(space.bottom - 10, table.bottom - 10) : space.bottom - 10,
-  };
-  for (const rect of obstacles) {
-    if (rect.right <= area.left || rect.left >= area.right) continue;
-    if (near && rect.top >= middle) area.bottom = Math.min(area.bottom, rect.top - 12);
-    if (!near && rect.bottom <= middle) area.top = Math.max(area.top, rect.bottom + 12);
-  }
-  return area;
+export function tableBowlPosition(near) {
+  const direction = near ? 1 : -1;
+  return new Vector3(direction * .28, GO_TABLE_TOP, direction * .68);
 }
 
-export function bowlPosition(bounds, area, camera, viewport, { near, portrait }) {
-  const center = bounds.getCenter(new Vector3());
-  const position = screenOnPlane({ x: (area.left + area.right) / 2,
-    y: (area.top + area.bottom) / 2 }, camera, viewport, center.y).sub(center);
-  for (let i = 0; i < 4; i++) {
-    const screen = projectBounds(bounds.clone().translate(position), camera, viewport);
-    const dx = near ? area.right - screen.right : area.left - screen.left;
-    const dy = portrait ? (area.top + area.bottom - screen.top - screen.bottom) / 2
-      : near ? area.bottom - screen.bottom : area.top - screen.top;
-    const anchor = projectScenePoint(center.x + position.x, center.y,
-      center.z + position.z, camera, viewport);
-    position.copy(screenOnPlane({ x: anchor.x + dx, y: anchor.y + dy },
-      camera, viewport, center.y).sub(center));
-  }
-  return position;
+// Enlarge the pickup target into nearby empty space, while excluding the board
+// and the surrounding player cards and controls.
+export function bowlPickupRect(cup, board, space, near) {
+  const top = near ? board.bottom + 4 : space.top;
+  const bottom = near ? space.bottom : board.top - 4;
+  const width = Math.max(0, Math.min(200, space.right - space.left));
+  const height = Math.max(0, Math.min(128, bottom - top));
+  return { width, height,
+    left: Math.max(space.left, Math.min(cup.x - width / 2, space.right - width)),
+    top: Math.max(top, Math.min(cup.y - height / 2, bottom - height)),
+  };
 }
 
 export function bowlStoneLayout(size, seed = 89) {

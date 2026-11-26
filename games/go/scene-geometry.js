@@ -1,7 +1,8 @@
 import { Plane, Raycaster, Vector2, Vector3 } from "three";
+import { GO_TABLE_TOP } from "./table-model.js";
 
-export const GO_VIEW_ANGLE = 20 * Math.PI / 180;
-export const GO_BOARD_TOP = .134;
+export const GO_VIEW_ANGLE = 26 * Math.PI / 180;
+export const GO_BOARD_TOP = GO_TABLE_TOP + .026;
 const CAMERA_DISTANCE = 3.5;
 const ray = new Raycaster();
 const plane = new Plane(new Vector3(0, 1, 0), -GO_BOARD_TOP);
