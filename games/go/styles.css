@@ -12,6 +12,33 @@ body {
   background-size: cover;
 }
 
+.game-back,
+.game-back-spacer {
+  display: none;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.game-back {
+  margin-left: -12px;
+}
+
+.game-back-spacer {
+  margin-right: -12px;
+}
+
+@media (width < 600px) and (orientation: portrait) {
+  .game-header h1 {
+    flex: 1;
+  }
+
+  .game-back,
+  .game-back-spacer {
+    display: grid;
+  }
+}
+
 .sidebar-move-number {
   display: none;
 }

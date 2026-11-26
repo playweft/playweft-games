@@ -22,7 +22,7 @@ import {
   History,
   House,
   Info,
-  Link,
+  Globe,
   NotebookPen,
   Play,
   RotateCcw,
@@ -64,6 +64,8 @@ scheduleTableTexture();
 const elements = {
   startScreen: document.querySelector("#start-screen"),
   gameScreen: document.querySelector("#game-screen"),
+  gameBack: document.querySelector("#game-back"),
+  gameBackSpacer: document.querySelector("#game-back-spacer"),
   setupBack: document.querySelector("#setup-back"),
   home: document.querySelector("#home-button"),
   actionFeedback: document.querySelector("#action-feedback"),
@@ -232,7 +234,7 @@ createIcons({
     History,
     House,
     Info,
-    Link,
+    Globe,
     NotebookPen,
     Play,
     RotateCcw,
@@ -311,7 +313,7 @@ const setupDialog = createOverlayDialog({
   surface: elements.setupForm,
   dismissible: false,
   initialFocus: elements.setupForm,
-  returnFocus: () => isSetupMenu() ? startScreen.advancedButton : undefined,
+  returnFocus: () => (isSetupMenu() ? startScreen.advancedButton : undefined),
 });
 const goAi = createGoAiController({
   onMove: (action) => sendAction(action),
@@ -347,7 +349,13 @@ function renderAiFeedback() {
         ? "AI 正在思考…"
         : "";
   if (isAiMenu()) {
-    startScreen.setStatus(startingAi ? message || "正在准备对局…" : aiStatus.phase === "error" ? message : "");
+    startScreen.setStatus(
+      startingAi
+        ? message || "正在准备对局…"
+        : aiStatus.phase === "error"
+          ? message
+          : "",
+    );
     elements.aiFeedback.hidden = true;
     return;
   }
@@ -410,21 +418,35 @@ async function handleReady(message) {
 
 function renderStartScreen(message = "") {
   elements.gameScreen.hidden = menuVisible;
+  elements.gameBack.hidden = menuVisible || playMode !== "solo";
+  elements.gameBackSpacer.hidden = elements.gameBack.hidden;
   document.querySelector(".game-header").hidden = menuVisible;
-  const record = menuVisible && platformReady ? latestGoResumeRecord(historyStore.load()) : undefined;
+  const record =
+    menuVisible && platformReady
+      ? latestGoResumeRecord(historyStore.load())
+      : undefined;
   startScreen.render({
-    visible: menuVisible, ready: platformReady,
-    busy: creatingRoom || startingAi || Boolean(pendingAction), creatingRoom,
-    room: Boolean(roomState), canCreateRoom, standalone: isStandalone,
-    resumeId: record?.id, resumeLabel: record ? goResumeModeLabel(record) : "",
+    visible: menuVisible,
+    ready: platformReady,
+    busy: creatingRoom || startingAi || Boolean(pendingAction),
+    creatingRoom,
+    room: Boolean(roomState),
+    canCreateRoom,
+    standalone: isStandalone,
+    resumeId: record?.id,
+    resumeLabel: record ? goResumeModeLabel(record) : "",
     starting: startingAi,
-    message: message || (!platformReady ? isStandalone ? "正在读取存档…" : "正在连接平台…" : roomState ? "等待房间开始…" : ""),
+    message: message || (platformReady && roomState ? "等待房间开始…" : ""),
   });
 }
 
-function isSetupMenu() { return menuVisible && startScreen.page !== "home"; }
+function isSetupMenu() {
+  return menuVisible && startScreen.page !== "home";
+}
 
-function isAiMenu() { return menuVisible && startScreen.page === "ai"; }
+function isAiMenu() {
+  return menuVisible && startScreen.page === "ai";
+}
 
 function showStartScreen() {
   pendingRoomStates.length = 0;
@@ -477,7 +499,10 @@ function startLocalGame(opponent) {
     version: localVersion,
     serverTime: Date.now(),
   });
-  if (opponent === "ai") goAi.prepare(initial.state.settings.size, DEFAULT_GO_AI_MODEL_ID).catch(() => {});
+  if (opponent === "ai")
+    goAi
+      .prepare(initial.state.settings.size, DEFAULT_GO_AI_MODEL_ID)
+      .catch(() => {});
 }
 
 function enterRoom(next) {
@@ -531,7 +556,10 @@ async function createOnlineRoom() {
 }
 
 function handleState(message) {
-  menuVisible = startScreen.page !== "home" && playMode === "solo" && message.state.phase === "setup";
+  menuVisible =
+    startScreen.page !== "home" &&
+    playMode === "solo" &&
+    message.state.phase === "setup";
   renderStartScreen();
   clearPendingMove();
   elements.actionFeedback.hidden = true;
@@ -630,7 +658,9 @@ window.addEventListener("pagehide", () => {
   window.clearTimeout(historyClearTimer);
   window.clearTimeout(resignConfirmTimer);
   window.clearTimeout(moreMenuCloseTimer);
-  void Promise.resolve(historyStorage?.flush()).catch(() => {}).finally(() => client?.destroy());
+  void Promise.resolve(historyStorage?.flush())
+    .catch(() => {})
+    .finally(() => client?.destroy());
   goAi.destroy();
 });
 document.addEventListener("visibilitychange", () => {
@@ -645,13 +675,15 @@ elements.setupBack.addEventListener("click", () => {
   if (isSetupMenu()) setSetupOpen(false);
   else showStartScreen();
 });
-elements.setupPanel.addEventListener("click", event => {
-  if (isSetupMenu() && event.target === elements.setupPanel) setSetupOpen(false);
+elements.setupPanel.addEventListener("click", (event) => {
+  if (isSetupMenu() && event.target === elements.setupPanel)
+    setSetupOpen(false);
 });
 elements.setupPanel.addEventListener("cancel", () => {
   if (isSetupMenu()) setSetupOpen(false);
 });
 elements.home.addEventListener("click", showStartScreen);
+elements.gameBack.addEventListener("click", showStartScreen);
 document.addEventListener("pointerdown", (event) => {
   if (
     pendingMove &&
@@ -1576,9 +1608,19 @@ function formatScore(score) {
 
 function renderSetup(nextState, ownIndex) {
   const setupMenu = isSetupMenu();
-  elements.setupPanel.classList.toggle("overlay-dialog--sheet-narrow", setupMenu);
+  elements.setupPanel.classList.toggle(
+    "overlay-dialog--sheet-narrow",
+    setupMenu,
+  );
   elements.setupBack.hidden = playMode !== "solo";
-  elements.setupBack.setAttribute("aria-label", setupMenu ? startScreen.page === "ai" ? "返回人机对战" : "返回本地双人" : "返回启动页");
+  elements.setupBack.setAttribute(
+    "aria-label",
+    setupMenu
+      ? startScreen.page === "ai"
+        ? "返回人机对战"
+        : "返回本地双人"
+      : "返回启动页",
+  );
   elements.setupBack.disabled = startingAi || Boolean(pendingAction);
   const hostId = nextState.hostId ?? nextState.players?.[0];
   const isHost =
@@ -1656,9 +1698,11 @@ function renderSetup(nextState, ownIndex) {
   elements.startLabel.textContent =
     pendingAction || startingAi
       ? "正在开始…"
-      : setupMenu ? "保存设置" : setupSource === "resume"
-        ? "继续对局"
-        : "开始对局";
+      : setupMenu
+        ? "保存设置"
+        : setupSource === "resume"
+          ? "继续对局"
+          : "开始对局";
   updateHandicapControls();
   renderSettingValues();
   if (setupMenu) renderStartScreen();
