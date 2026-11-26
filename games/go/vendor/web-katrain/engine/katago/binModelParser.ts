@@ -104,7 +104,7 @@ export interface ParsedMatBias {
   readonly weights: Float32Array; // [channels]
 }
 
-export type ActivationKind = 'identity' | 'relu' | 'mish';
+export type ActivationKind = 'identity' | 'relu' | 'mish' | 'silu';
 
 export function parseBatchNormV8(p: KataGoBinModelParser): ParsedBatchNorm {
   p.readToken();
@@ -138,6 +138,7 @@ export function parseActivationKind(p: KataGoBinModelParser, modelVersion: numbe
   if (kindTok === 'ACTIVATION_IDENTITY') return 'identity';
   if (kindTok === 'ACTIVATION_RELU') return 'relu';
   if (kindTok === 'ACTIVATION_MISH') return 'mish';
+  if (kindTok === 'ACTIVATION_SILU') return 'silu';
   throw new Error(`Unsupported activation kind token: ${kindTok}`);
 }
 

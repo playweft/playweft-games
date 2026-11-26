@@ -7,6 +7,7 @@ import {
   parseMatMul,
 } from './binModelParser';
 import type { ParsedKataGoModelV8 } from './modelV8';
+import { parseRmsNorm, parseTransformerBlock } from './transformer';
 
 /** KataGo SGFMetadata::METADATA_INPUT_NUM_CHANNELS for meta encoder version 1. */
 export const NUM_INPUT_META_CHANNELS_V1 = 192;
@@ -16,8 +17,8 @@ export function parseKataGoModelV8(data: Uint8Array): ParsedKataGoModelV8 {
 
   const modelName = p.readToken();
   const modelVersion = p.readInt();
-  if (modelVersion < 8 || modelVersion > 16) {
-    throw new Error(`Unsupported modelVersion ${modelVersion}, supported 8..16`);
+  if (modelVersion < 8 || modelVersion > 17) {
+    throw new Error(`Unsupported modelVersion ${modelVersion}, supported 8..17`);
   }
   const numInputChannels = p.readInt();
   const numInputGlobalChannels = p.readInt();
@@ -63,11 +64,10 @@ export function parseKataGoModelV8(data: Uint8Array): ParsedKataGoModelV8 {
   const regularNumChannels = p.readInt();
   p.readInt();
   const gpoolNumChannels = p.readInt();
+  let trunkNormKind = 0;
   if (modelVersion >= 15) {
-    const trunkNormKind = p.readInt();
-    // 0 is KataGo's standard batch-norm trunk; 1 is RMS norm, which this port does
-    // not implement, so refuse rather than reading the weights as the wrong shape.
-    if (trunkNormKind !== 0) throw new Error(`Unsupported trunk norm kind ${trunkNormKind}`);
+    trunkNormKind = p.readInt();
+    if (trunkNormKind !== 0 && trunkNormKind !== 1) throw new Error(`Unsupported trunk norm kind ${trunkNormKind}`);
     for (let i = 0; i < 5; i++) p.readInt(); // Unused trunk params in KataGo v15+.
   }
 
@@ -98,6 +98,10 @@ export function parseKataGoModelV8(data: Uint8Array): ParsedKataGoModelV8 {
 
   function parseResidualBlock(): ParsedKataGoModelV8['trunk']['blocks'][number] {
     const kindTok = p.readToken();
+
+    if (modelVersion >= 17 && (kindTok === 'transformer_attention_block' || kindTok === 'transformer_ffn_block')) {
+      return parseTransformerBlock(p, kindTok);
+    }
 
     if (kindTok === 'ordinary_block') {
       p.readToken(); // block name
@@ -147,11 +151,18 @@ export function parseKataGoModelV8(data: Uint8Array): ParsedKataGoModelV8 {
   const blocks: ParsedKataGoModelV8['trunk']['blocks'] = [];
   for (let i = 0; i < numBlocks; i++) blocks.push(parseResidualBlock());
 
-  const tipBN = parseBatchNormV8(p);
+  const tipBN = trunkNormKind === 0 ? parseBatchNormV8(p) : undefined;
+  const tipRMS = trunkNormKind === 1 ? parseRmsNorm(p, true) : undefined;
   const tipActivation = parseActivationKind(p, modelVersion);
 
   // policy head
   p.readToken(); // policy head name
+  let declaredPolicyChannels;
+  if (modelVersion >= 17) {
+    declaredPolicyChannels = p.readInt();
+    if (declaredPolicyChannels !== 2 && declaredPolicyChannels !== 4) throw new Error('Invalid policy output channels');
+    for (let i = 0; i < 3; i++) if (p.readInt() !== 0) throw new Error('Unsupported policy head option');
+  }
   const p1 = parseConv2d(p);
   const g1 = parseConv2d(p);
   const g1BN = parseBatchNormV8(p);
@@ -167,6 +178,9 @@ export function parseKataGoModelV8(data: Uint8Array): ParsedKataGoModelV8 {
 
   // value head
   p.readToken(); // value head name
+  if (modelVersion >= 17) {
+    for (let i = 0; i < 3; i++) if (p.readInt() !== 0) throw new Error('Unsupported value head option');
+  }
   const v1 = parseConv2d(p);
   const v1BN = parseBatchNormV8(p);
   const v1Activation = parseActivationKind(p, modelVersion);
@@ -178,6 +192,7 @@ export function parseKataGoModelV8(data: Uint8Array): ParsedKataGoModelV8 {
   const sv3 = parseMatMul(p);
   const sv3Bias = parseMatBias(p);
   const ownership = parseConv2d(p);
+  if (declaredPolicyChannels !== undefined && p2.outChannels !== declaredPolicyChannels) throw new Error('Policy head channel mismatch');
 
   return {
     modelName,
@@ -199,6 +214,7 @@ export function parseKataGoModelV8(data: Uint8Array): ParsedKataGoModelV8 {
       ginput,
       blocks,
       tipBN,
+      tipRMS,
       tipActivation,
     },
     policy: {

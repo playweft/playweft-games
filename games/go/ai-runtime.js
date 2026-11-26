@@ -102,8 +102,8 @@ export function createGoAiRuntime({ modelId = DEFAULT_GO_AI_MODEL_ID, backends =
       });
       if (shouldAbort()) return;
       await search.run({
-        visits: 48,
-        maxTimeMs: backend === "webgpu" ? 800 : 500,
+        visits: modelId === "b18" ? 128 : 48,
+        maxTimeMs: modelId === "b18" ? 2000 : backend === "webgpu" ? 800 : 500,
         batchSize: 1, // Bound peak activation memory for the larger network on phones.
         shouldAbort,
       });

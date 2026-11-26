@@ -115,6 +115,9 @@ to enable Go's enhanced AI difficulty (see [.env.example](.env.example)).
 When unset or empty, enhanced difficulty is absent. Lightweight AI uses the bundled b6 model.
 External model hosts must allow CORS GET. This is a public build-time setting;
 restart Vite or rebuild the production site after changing it.
+The URL accepts both older b18 networks and KataGo v17 Transformer networks,
+including the roughly 94 MB b10c512 model. See the [Go engine notes](games/go/vendor/web-katrain/README.md)
+for the tested model and browser limitations.
 
 ```text
 games/<game>/       Game UI, manifest, rules, and help page

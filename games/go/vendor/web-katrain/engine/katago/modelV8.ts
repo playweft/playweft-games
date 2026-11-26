@@ -1,4 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
+import { makeTransformerBlock, makeRmsNorm, rmsNorm, disposeRmsNorm,
+  type ParsedTransformerBlock, type TfTransformerBlock, type ParsedRmsNorm, type TfRmsNorm } from './transformer';
 import type {
   ActivationKind,
   ParsedBatchNorm,
@@ -63,6 +65,7 @@ function makeMatBias(bias: ParsedMatBias): TfMatBias {
 function applyActivation4D(x: tf.Tensor4D, kind: ActivationKind): tf.Tensor4D {
   if (kind === 'identity') return x;
   if (kind === 'relu') return tf.relu(x) as tf.Tensor4D;
+  if (kind === 'silu') return x.mul(x.sigmoid()) as tf.Tensor4D;
   // mish: x * tanh(softplus(x))
   return tf.mul(x, tf.tanh(tf.softplus(x))) as tf.Tensor4D;
 }
@@ -70,6 +73,7 @@ function applyActivation4D(x: tf.Tensor4D, kind: ActivationKind): tf.Tensor4D {
 function applyActivation2D(x: tf.Tensor2D, kind: ActivationKind): tf.Tensor2D {
   if (kind === 'identity') return x;
   if (kind === 'relu') return tf.relu(x) as tf.Tensor2D;
+  if (kind === 'silu') return x.mul(x.sigmoid()) as tf.Tensor2D;
   return tf.mul(x, tf.tanh(tf.softplus(x))) as tf.Tensor2D;
 }
 
@@ -102,6 +106,7 @@ function poolRowsValueHead(x: tf.Tensor4D): tf.Tensor2D {
 }
 
 export type ParsedTrunkBlock =
+  | ParsedTransformerBlock
   | {
       kind: 'ordinary';
       preBN: ParsedBatchNorm;
@@ -174,7 +179,8 @@ export type ParsedKataGoModelV8 = {
     conv1: ParsedConv2d;
     ginput: ParsedMatMul;
     blocks: ParsedTrunkBlock[];
-    tipBN: ParsedBatchNorm;
+    tipBN?: ParsedBatchNorm;
+    tipRMS?: ParsedRmsNorm;
     tipActivation: ActivationKind;
   };
   policy: {
@@ -207,6 +213,7 @@ export type ParsedKataGoModelV8 = {
 };
 
 type TfTrunkBlock =
+  | TfTransformerBlock
   | {
       kind: 'ordinary';
       preBN: TfBn;
@@ -263,7 +270,8 @@ export class KataGoModelV8Tf {
   private readonly trunkConv1: TfConv;
   private readonly trunkGInput: TfMatMul;
   private readonly trunkBlocks: TfTrunkBlock[];
-  private readonly trunkTipBN: TfBn;
+  private readonly trunkTipBN?: TfBn;
+  private readonly trunkTipRMS?: TfRmsNorm;
   private readonly trunkTipActivation: ActivationKind;
 
   private readonly p1: TfConv;
@@ -313,6 +321,7 @@ export class KataGoModelV8Tf {
     this.trunkConv1 = makeConv(parsed.trunk.conv1);
     this.trunkGInput = makeMatMul(parsed.trunk.ginput);
     const toTfBlock = (b: ParsedTrunkBlock): TfTrunkBlock => {
+      if (b.kind === 'transformer_attention' || b.kind === 'transformer_ffn') return makeTransformerBlock(b);
       if (b.kind === 'ordinary') {
         return {
           kind: 'ordinary',
@@ -352,7 +361,8 @@ export class KataGoModelV8Tf {
       };
     };
     this.trunkBlocks = parsed.trunk.blocks.map(toTfBlock);
-    this.trunkTipBN = makeBn(parsed.trunk.tipBN);
+    this.trunkTipBN = parsed.trunk.tipBN ? makeBn(parsed.trunk.tipBN) : undefined;
+    this.trunkTipRMS = parsed.trunk.tipRMS ? makeRmsNorm(parsed.trunk.tipRMS) : undefined;
     this.trunkTipActivation = parsed.trunk.tipActivation;
 
     this.p1 = makeConv(parsed.policy.p1);
@@ -490,7 +500,8 @@ export class KataGoModelV8Tf {
       trunk = trunk.add(metaBias.reshape([metaBias.shape[0], 1, 1, metaBias.shape[1]])) as tf.Tensor4D;
     }
     trunk = this.applyBlockStack(trunk, this.trunkBlocks);
-    return bnAct(trunk, this.trunkTipBN, this.trunkTipActivation);
+    return this.trunkTipRMS ? applyActivation4D(rmsNorm(trunk, this.trunkTipRMS), this.trunkTipActivation)
+      : bnAct(trunk, this.trunkTipBN!, this.trunkTipActivation);
   }
 
   /**
@@ -520,37 +531,41 @@ export class KataGoModelV8Tf {
   }
 
   private applyBlockStack(trunk: tf.Tensor4D, blocks: TfTrunkBlock[]): tf.Tensor4D {
+    const input = trunk;
     for (const block of blocks) {
-      if (block.kind === 'ordinary') {
-        const a = bnAct(trunk, block.preBN, block.preActivation);
-        const b = conv2d(a, block.w1);
-        const c = bnAct(b, block.midBN, block.midActivation);
-        const d = conv2d(c, block.w2);
-        trunk = trunk.add(d) as tf.Tensor4D;
-        continue;
-      }
+      const previous = trunk;
+      trunk = tf.tidy(() => {
+        if (block.kind === 'transformer_attention' || block.kind === 'transformer_ffn') return block.forward(trunk);
+        if (block.kind === 'ordinary') {
+          const a = bnAct(trunk, block.preBN, block.preActivation);
+          const b = conv2d(a, block.w1);
+          const c = bnAct(b, block.midBN, block.midActivation);
+          const d = conv2d(c, block.w2);
+          return trunk.add(d) as tf.Tensor4D;
+        }
 
-      if (block.kind === 'gpool') {
-        const a = bnAct(trunk, block.preBN, block.preActivation);
-        let regularOut = conv2d(a, block.w1a);
-        const gpoolOut = conv2d(a, block.w1b);
-        const gpoolOut2 = bnAct(gpoolOut, block.gpoolBN, block.gpoolActivation);
-        const gpoolConcat = poolRowsGPool(gpoolOut2);
-        const gpoolBias = tf.matMul(gpoolConcat, block.w1r.w) as tf.Tensor2D;
-        regularOut = regularOut.add(gpoolBias.reshape([gpoolBias.shape[0], 1, 1, gpoolBias.shape[1]])) as tf.Tensor4D;
-        const c = bnAct(regularOut, block.midBN, block.midActivation);
-        const d = conv2d(c, block.w2);
-        trunk = trunk.add(d) as tf.Tensor4D;
-        continue;
-      }
+        if (block.kind === 'gpool') {
+          const a = bnAct(trunk, block.preBN, block.preActivation);
+          let regularOut = conv2d(a, block.w1a);
+          const gpoolOut = conv2d(a, block.w1b);
+          const gpoolOut2 = bnAct(gpoolOut, block.gpoolBN, block.gpoolActivation);
+          const gpoolConcat = poolRowsGPool(gpoolOut2);
+          const gpoolBias = tf.matMul(gpoolConcat, block.w1r.w) as tf.Tensor2D;
+          regularOut = regularOut.add(gpoolBias.reshape([gpoolBias.shape[0], 1, 1, gpoolBias.shape[1]])) as tf.Tensor4D;
+          const c = bnAct(regularOut, block.midBN, block.midActivation);
+          const d = conv2d(c, block.w2);
+          return trunk.add(d) as tf.Tensor4D;
+        }
 
-      // nested_bottleneck
-      const a = bnAct(trunk, block.preBN, block.preActivation);
-      let mid = conv2d(a, block.preConv);
-      mid = this.applyBlockStack(mid, block.blocks);
-      const c = bnAct(mid, block.postBN, block.postActivation);
-      const d = conv2d(c, block.postConv);
-      trunk = trunk.add(d) as tf.Tensor4D;
+        // nested_bottleneck
+        const a = bnAct(trunk, block.preBN, block.preActivation);
+        let mid = conv2d(a, block.preConv);
+        mid = this.applyBlockStack(mid, block.blocks);
+        const c = bnAct(mid, block.postBN, block.postActivation);
+        const d = conv2d(c, block.postConv);
+        return trunk.add(d) as tf.Tensor4D;
+      });
+      if (previous !== input) previous.dispose();
     }
     return trunk;
   }
@@ -559,8 +574,7 @@ export class KataGoModelV8Tf {
     const tensors: tf.Tensor[] = [
       this.trunkConv1.filter,
       this.trunkGInput.w,
-      this.trunkTipBN.scale,
-      this.trunkTipBN.bias,
+      ...(this.trunkTipBN ? [this.trunkTipBN.scale, this.trunkTipBN.bias] : []),
       this.p1.filter,
       this.g1.filter,
       this.g1BN.scale,
@@ -585,6 +599,9 @@ export class KataGoModelV8Tf {
     ];
 
     const pushBlockTensors = (block: TfTrunkBlock): void => {
+      if (block.kind === 'transformer_attention' || block.kind === 'transformer_ffn') {
+        block.dispose(); return;
+      }
       tensors.push(block.preBN.scale, block.preBN.bias);
       if (block.kind === 'ordinary') {
         tensors.push(block.w1.filter, block.midBN.scale, block.midBN.bias, block.w2.filter);
@@ -610,6 +627,7 @@ export class KataGoModelV8Tf {
 
     for (const block of this.trunkBlocks) pushBlockTensors(block);
 
+    if (this.trunkTipRMS) disposeRmsNorm(this.trunkTipRMS);
     tf.dispose(tensors);
   }
 }

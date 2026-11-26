@@ -29,6 +29,8 @@ KataGo
 https://github.com/lightvector/KataGo
 Network: kata1-b18c384nbt-s9996604416-d4316597426
 Source: https://katagotraining.org/networks/
+Also supported (externally hosted): b10c512h8nbt3tflrs-fson-silu-rsnh.bin.gz
+Source: https://github.com/lightvector/KataGo/releases/tag/v1.17.0
 Model license: https://katagotraining.org/network_license/
 
 The code in this repository currently relies on several other libraries, parts of libraries,
