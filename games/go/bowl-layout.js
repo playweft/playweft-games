@@ -1,23 +1,30 @@
 import { Vector3 } from "three";
-import { GO_TABLE_TOP } from "./table-model.js";
+import { GO_TABLE_TOP, GO_TABLE_WIDTH } from "./table-model.js";
 
 // Bowl diameter is .1692 of the board's width, regardless of the viewport.
 export const GO_BOWL_SCALE = .18;
 
-export function tableBowlPosition(near) {
+export function tableBowlPosition(near, landscape = false) {
   const direction = near ? 1 : -1;
-  return new Vector3(direction * .28, GO_TABLE_TOP, direction * .68);
+  // In landscape the table's width becomes its front-to-back depth. Leave
+  // about 2 cm between the cup's rim and the player's end of the tabletop.
+  const landscapeEnd = GO_TABLE_WIDTH / 2 - GO_BOWL_SCALE * .47 - .04;
+  return landscape
+    ? new Vector3(direction * .68, GO_TABLE_TOP, direction * landscapeEnd)
+    : new Vector3(direction * .28, GO_TABLE_TOP, direction * .70);
 }
 
 // Enlarge the pickup target into nearby empty space, while excluding the board
 // and the surrounding player cards and controls.
-export function bowlPickupRect(cup, board, space, near) {
-  const top = near ? board.bottom + 4 : space.top;
-  const bottom = near ? space.bottom : board.top - 4;
-  const width = Math.max(0, Math.min(200, space.right - space.left));
+export function bowlPickupRect(cup, board, space, near, landscape = false) {
+  const left = landscape && near ? board.right + 4 : space.left;
+  const right = landscape && !near ? board.left - 4 : space.right;
+  const top = !landscape && near ? board.bottom + 4 : space.top;
+  const bottom = !landscape && !near ? board.top - 4 : space.bottom;
+  const width = Math.max(0, Math.min(200, right - left));
   const height = Math.max(0, Math.min(128, bottom - top));
   return { width, height,
-    left: Math.max(space.left, Math.min(cup.x - width / 2, space.right - width)),
+    left: Math.max(left, Math.min(cup.x - width / 2, right - width)),
     top: Math.max(top, Math.min(cup.y - height / 2, bottom - height)),
   };
 }

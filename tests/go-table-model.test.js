@@ -34,3 +34,19 @@ test("the near feet project below the tabletop silhouette, making its height vis
     assert.ok(foot.y-edge.y>30,"visible leg length comes from real elevation and perspective");
   }
 });
+
+test("turning the furniture swaps its long side without changing height or scale", () => {
+  const material=new MeshStandardMaterial(),table=createGoTable(material);
+  const before=new Box3().setFromObject(table);
+  table.rotation.y=Math.PI/2;
+  const after=new Box3().setFromObject(table);
+  assert.ok(Math.abs((after.max.x-after.min.x)-(before.max.z-before.min.z))<1e-6);
+  assert.ok(Math.abs((after.max.z-after.min.z)-(before.max.x-before.min.x))<1e-6);
+  assert.equal(after.min.y,before.min.y);
+  assert.equal(after.max.y,before.max.y);
+  assert.equal(table.scale.x,1);
+  assert.equal(table.scale.y,1);
+  assert.equal(table.scale.z,1);
+  new Set(table.children.map(part=>part.geometry)).forEach(geometry=>geometry.dispose());
+  material.dispose();
+});

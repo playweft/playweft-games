@@ -140,7 +140,9 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
   const textureLoader = new THREE.TextureLoader(assets);
   scene.add(createCourtyard(requestPaint, textureLoader));
   const wood = createTableWood(requestPaint, textureLoader);
-  const table = createGoTable(wood);
+  const furniture = createGoTable(wood);
+  scene.add(furniture);
+  const table = new THREE.Group();
   scene.add(table);
   const boardMaterial = new THREE.MeshStandardMaterial({ color: "#fe9659", roughness: .88 });
   const boardBody = mesh(new RoundedBoxGeometry(1, .026, 1, 3, .007), boardMaterial, table);
@@ -195,6 +197,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
   let previousPieces = [], animation;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+  const landscape = window.matchMedia("(orientation: landscape)");
   let hoveredPoint;
   const dummy = new THREE.Object3D();
   const rockAxis = new THREE.Vector3(.8, 0, .6);
@@ -232,9 +235,13 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
     }
     const key = [...board.children].map(p => p.dataset.piece || "0").join("") +
       ":" + board.querySelector(".is-last-move")?.getAttribute("aria-label");
-    const nextLayoutKey = `${rect.x}:${rect.y}:${rect.width}:${size}:${width}:${height}`;
+    const isLandscape = landscape.matches;
+    const nextLayoutKey = `${rect.x}:${rect.y}:${rect.width}:${size}:${width}:${height}:${isLandscape}`;
     const layoutChanged = nextLayoutKey !== layoutKey;
-    if (layoutChanged) configureSceneCamera(camera, rect, viewport);
+    if (layoutChanged) {
+      configureSceneCamera(camera, rect, viewport);
+      furniture.rotation.y = isLandscape ? Math.PI / 2 : 0;
+    }
     if (animation && board.dataset.animateMoves === "false") { animation = undefined; boardKey = ""; }
     const rebuild = key !== boardKey || layoutChanged;
     let shadowsChanged = rebuild;
@@ -315,7 +322,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
       point.style.top = `${p.y - rect.top}px`;
       point.style.width = `${(edge.x - p.x) * 2}px`;
     }
-    const portrait = width < 900 && height >= width;
+    const portrait = width < 900 && !isLandscape;
     const boardScreen = projectBounds(boardBounds, camera, viewport);
     const space = portrait ? root.querySelector(".board-space").getBoundingClientRect() : {
       left: 0, right: root.querySelector(".action-panel").getBoundingClientRect().left,
@@ -341,12 +348,13 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
       }
       const positionKey = `${nextLayoutKey}:${near}`;
       if (layoutChanged || bowl.positionKey !== positionKey) {
-        bowl.lid.position.set(near ? -.94 : .94, .044, 0);
+        const lidOffset = near ? -.94 : .94;
+        bowl.lid.position.set(isLandscape ? 0 : lidOffset, .044, isLandscape ? lidOffset : 0);
         bowl.ring.position.set(bowl.lid.position.x, .070, bowl.lid.position.z);
-        bowl.group.position.copy(tableBowlPosition(near));
+        bowl.group.position.copy(tableBowlPosition(near, isLandscape));
         const cup = projectScenePoint(bowl.group.position.x, GO_TABLE_TOP + GO_BOWL_SCALE * .4,
           bowl.group.position.z, camera, viewport);
-        const hit = bowlPickupRect(cup, boardScreen, space, near);
+        const hit = bowlPickupRect(cup, boardScreen, space, near, isLandscape);
         for (const key of ["left","top","width","height"]) bowl.element.style[key] = `${hit[key]}px`;
         bowl.positionKey = positionKey;
       }
@@ -377,6 +385,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
   window.addEventListener("resize", requestPaint);
   window.addEventListener("scroll", requestPaint, { passive: true });
   window.addEventListener("pageshow", requestPaint);
+  landscape.addEventListener("change", requestPaint);
   let resolution;
   function watchResolution() {
     resolution?.removeEventListener("change", watchResolution);
@@ -459,6 +468,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
       window.removeEventListener("resize", requestPaint);
       window.removeEventListener("scroll", requestPaint);
       window.removeEventListener("pageshow", requestPaint);
+      landscape.removeEventListener("change", requestPaint);
       resolution.removeEventListener("change", watchResolution);
       board.removeEventListener("pointermove", hover);
       board.removeEventListener("pointerleave", clearHover);

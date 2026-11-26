@@ -88,6 +88,12 @@
   top: calc(var(--go-board-size) * -.16);
 }
 
+@media (orientation: landscape) {
+  .has-scene .board-shell {
+    top: calc(var(--go-board-size) * -.1);
+  }
+}
+
 @media (width >= 900px) {
   .go-layout.has-scene {
     --go-board-size: clamp(220px, min(calc((100dvh - 42px) / 1.85), calc((100vw - 244px) / 1.32)), 820px);
@@ -100,6 +106,37 @@
 
   .has-scene .board-shell {
     align-self: center;
+  }
+}
+
+@media (width >= 900px) and (orientation: landscape) {
+  .go-layout.has-scene {
+    --go-board-size: clamp(220px, min(calc((100dvh - 42px) / 1.6), calc((100vw - 244px) / 1.8)), 820px);
+  }
+
+  .has-scene .player-station {
+    width: max-content;
+    align-items: center;
+  }
+
+  .has-scene .player-station.is-far {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-self: center;
+  }
+
+  .has-scene .player-station.is-near {
+    grid-column: 1 / -1;
+    flex-direction: row-reverse;
+    justify-self: center;
+  }
+
+  .has-scene .player-card {
+    width: 190px;
+  }
+
+  .has-scene .clock-housing {
+    width: 172px;
   }
 }
 .game-header {
@@ -141,7 +178,7 @@
   }
 
   .has-scene .board-shell {
-    --go-board-size: min(calc((100dvh - 84px) / 1.85), calc((100vw - 300px) / 1.32));
+    --go-board-size: min(calc((100dvh - 84px) / 1.6), calc((100vw - 300px) / 1.8));
     width: var(--go-board-size);
     grid-area: board;
     align-self: center;
