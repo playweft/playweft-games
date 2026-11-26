@@ -1,0 +1,156 @@
+.go-layout {
+  position: relative;
+  isolation: isolate;
+}
+
+.go-scene-loader {
+  display: none;
+}
+
+.scene-loading > :not(.go-scene-loader) {
+  visibility: hidden;
+}
+
+.scene-loading .go-scene-loader {
+  position: fixed;
+  z-index: 2;
+  inset: 0;
+  display: grid;
+  background: #eeece6;
+  place-items: center;
+}
+
+.go-scene-loader span {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #d0c8bc;
+  border-top-color: #906d4d;
+  border-radius: 50%;
+  opacity: 0;
+  animation: go-scene-loader-in 120ms ease 180ms forwards,
+    go-scene-loader-spin 800ms linear infinite;
+}
+
+@keyframes go-scene-loader-in { to { opacity: 1; } }
+@keyframes go-scene-loader-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .go-scene-loader span { animation: none; opacity: 1; }
+}
+
+.go-scene {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  display: none;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.has-scene .go-scene {
+  display: block;
+}
+
+.has-scene .go-board {
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.has-scene .go-board::before,
+.has-scene .go-board::after,
+.has-scene .go-point::before,
+.has-scene .go-point.is-last-move::after {
+  display: none;
+}
+
+.has-scene .go-point.is-star {
+  background: transparent;
+}
+
+.has-scene .stone-bowl svg {
+  visibility: hidden;
+}
+
+.has-scene .stone-bowl {
+  position: fixed;
+  display: block;
+  right: auto;
+  bottom: auto;
+  padding: 0;
+  pointer-events: none;
+}
+
+@media (width >= 900px) {
+  .go-layout.has-scene {
+    --go-board-size: clamp(220px, min(calc(100dvh - 112px), calc((100vw - 244px) / 1.9)), 820px);
+  }
+
+  .has-scene .table-layout {
+    grid-template-columns: minmax(110px, 1fr) minmax(220px, var(--go-board-size)) minmax(110px, 1fr);
+    align-content: stretch;
+  }
+
+  .has-scene .board-shell {
+    align-self: center;
+  }
+}
+.game-header {
+  position: relative;
+  z-index: 1;
+}
+
+
+@media (width < 900px) and (orientation: portrait) {
+  .has-scene .board-space {
+    padding: 0;
+  }
+
+  .has-scene .board-shell {
+    width: min(calc(100cqw - 36px), calc(100cqh / 1.8));
+  }
+
+  .has-scene .stone-bowl {
+    pointer-events: auto;
+  }
+}
+
+@media (width < 900px) and (orientation: landscape) {
+  .go-layout.has-scene {
+    display: grid;
+    width: 100%;
+    height: calc(100dvh - 60px);
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) 240px;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas: "board far" "board near" "board actions";
+    gap: 12px 20px;
+    padding: 12px 20px;
+  }
+
+  .has-scene .table-layout {
+    display: contents;
+  }
+
+  .has-scene .board-shell {
+    width: min(100%, calc(100dvh - 112px), calc((100vw - 300px) / 1.9));
+    grid-area: board;
+    align-self: center;
+  }
+
+  .has-scene .player-station.is-far {
+    grid-area: far;
+  }
+
+  .has-scene .player-station.is-near {
+    grid-area: near;
+  }
+
+  .has-scene .action-panel {
+    grid-area: actions;
+    align-self: end;
+  }
+}

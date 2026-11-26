@@ -55,13 +55,12 @@ import { initializeGoStorage } from "./storage.js";
 import { createStartScreen } from "./start-screen.js";
 import { createGoResultDialog } from "./result-dialog.js";
 import { createGoStoneDrag } from "./stone-drag.js";
+import { createGoSceneView } from "./scene-view.js";
+import { goTableView } from "./table-view.js";
 import "../../src/game-storage.css";
 import "../../src/components/board-stones.css";
 import "./styles.css";
-import tableTextureUrl from "./assets/table-texture-plywood.webp?url";
 import bowlArt from "./assets/stone-bowl.svg?raw";
-
-scheduleTableTexture();
 
 const elements = {
   startScreen: document.querySelector("#start-screen"),
@@ -73,8 +72,7 @@ const elements = {
   actionFeedback: document.querySelector("#action-feedback"),
   board: document.querySelector("#board"),
   boardShell: document.querySelector(".board-shell"),
-  selfBowl: document.querySelector("#self-bowl"),
-  opponentBowl: document.querySelector("#opponent-bowl"),
+  bowls: [document.querySelector("#black-bowl"), document.querySelector("#white-bowl")],
   dragStone: document.querySelector("#drag-stone"),
   confirmMove: document.querySelector("#confirm-move"),
   table: document.querySelector("#table-layout"),
@@ -158,7 +156,7 @@ const elements = {
   ],
   playerTimes: [...document.querySelectorAll("[data-player-time]")],
 };
-for (const bowl of [elements.selfBowl, elements.opponentBowl]) {
+for (const bowl of elements.bowls) {
   bowl.innerHTML = bowlArt.replaceAll("bowl-", `${bowl.id}-`);
 }
 const segmentNames = ["a", "b", "c", "d", "e", "f", "g"];
@@ -178,28 +176,6 @@ const digitSegments = [
   "abcdefg",
   "abcdfg",
 ];
-
-function scheduleTableTexture() {
-  const applyTexture = () => {
-    document.body.style.setProperty(
-      "--table-texture-image",
-      `url("${tableTextureUrl}")`,
-    );
-  };
-  const scheduleWhenIdle = () => {
-    if ("requestIdleCallback" in window) {
-      window.requestIdleCallback(applyTexture, { timeout: 1500 });
-      return;
-    }
-    window.setTimeout(applyTexture, 0);
-  };
-
-  if (document.readyState === "complete") {
-    scheduleWhenIdle();
-  } else {
-    window.addEventListener("load", scheduleWhenIdle, { once: true });
-  }
-}
 
 let playerId;
 let state;
@@ -445,12 +421,17 @@ const undoDialog = createOverlayDialog({
   beforeOpen: () => setMoreMenuOpen(false),
 });
 const stoneDrag = createGoStoneDrag({
-  source: elements.selfBowl,
+  sources: elements.bowls,
   board: elements.board,
   stone: elements.dragStone,
   getPoint: (row, column) => points[(row - 1) * boardSize + column - 1],
+  getIntersection: (position, rect, size) => sceneView.getIntersection(position, rect, size),
   onPickup: clearPendingMove,
   onPlay: point => sendAction({ type: "play", ...point }),
+});
+const sceneView = createGoSceneView({ root: elements.gameScreen, board: elements.board,
+  bowls: elements.bowls,
+  onUnavailable: () => stoneDrag.cancel(),
 });
 
 async function handleReady(message) {
@@ -468,6 +449,7 @@ async function handleReady(message) {
 function renderStartScreen(message = "") {
   if (menuVisible) stoneDrag.cancel();
   elements.gameScreen.hidden = menuVisible;
+  sceneView.setVisible(!menuVisible);
   elements.gameBack.hidden = menuVisible || playMode !== "solo";
   elements.gameBackSpacer.hidden = elements.gameBack.hidden;
   document.querySelector(".game-header").hidden = menuVisible;
@@ -1415,7 +1397,6 @@ function render(nextState) {
   const actionPending = Boolean(pendingAction);
   const currentIndex = Number(nextState.current) - 1;
   const blackIndex = Math.max(0, Number(nextState.blackIndex) - 1);
-  const whiteIndex = blackIndex === 0 ? 1 : 0;
   const ended = Boolean(nextState.ended);
   const isScoring = nextState.phase === "scoring";
   elements.resultOpen.hidden = !ended && !isScoring;
@@ -1426,10 +1407,12 @@ function render(nextState) {
     busy: actionPending,
   });
   if (elements.gameInfoPanel.open) renderGameInfo(nextState);
-  const colorPlayers = [
-    { playerIndex: blackIndex, label: "黑方", color: 1 },
-    { playerIndex: whiteIndex, label: "白方", color: 2 },
-  ];
+  const tableView = goTableView(nextState, { mode: playMode, playerId });
+  for (const bowl of elements.bowls) {
+    const near = Number(bowl.dataset.color) === tableView.nearColor;
+    bowl.classList.toggle("stone-bowl--near", near);
+    bowl.classList.toggle("stone-bowl--far", !near);
+  }
   const size =
     Number(nextState.settings?.size) || nextState.board?.length || 19;
   if (boardSize !== size) buildBoard(size);
@@ -1448,7 +1431,8 @@ function render(nextState) {
         lastEvent: selectedReplayFrame.lastEvent,
       }
     : nextState;
-  renderPlayerCards(nextState, ownIndex, currentIndex, ended, colorPlayers);
+  elements.board.dataset.animateMoves = String(!isReplayOpen() && nextState.phase === "playing");
+  renderPlayerCards(nextState, currentIndex, ended, tableView.players);
   renderMoveLog(size);
 
   if (isSetup) {
@@ -1469,7 +1453,7 @@ function render(nextState) {
   const hasUndoRequest = Boolean(undoRequest);
   const undoRequesterIndex = Number(undoRequest?.requesterIndex) - 1;
   const isUndoRequester = hasUndoRequest && undoRequesterIndex === ownIndex;
-  const previewColor = currentIndex === blackIndex ? 1 : 2;
+  const previewColor = tableView.currentColor;
   const canAct =
     Boolean(state) &&
     !ended &&
@@ -1487,13 +1471,9 @@ function render(nextState) {
     (playMode === "solo" || ownIndex >= 0) &&
     !actionPending &&
     !isReviewingPast;
-  const selfColor = playMode === "solo" && nextState.settings?.opponent !== "ai"
-    ? previewColor
-    : ownIndex === blackIndex ? 1 : 2;
-  elements.opponentBowl.dataset.color = String(selfColor === 1 ? 2 : 1);
   stoneDrag.update({
     enabled: canAct && !isReplayOpen(),
-    color: selfColor,
+    currentColor: tableView.currentColor,
     size,
     key: `${replayGameKey}:${nextState.moves}:${nextState.current}`,
   });
@@ -1566,21 +1546,12 @@ function render(nextState) {
 
 function renderPlayerCards(
   nextState,
-  ownIndex,
   currentIndex,
   ended,
   colorPlayers,
 ) {
-  colorPlayers.forEach(({ playerIndex, label, color }, panelIndex) => {
+  colorPlayers.forEach(({ playerIndex, label, color, near }, panelIndex) => {
     const panel = elements.players[panelIndex];
-    const isSelf =
-      playMode === "solo"
-        ? nextState.settings?.opponent === "ai"
-          ? playerIndex === 0
-          : color === 1
-        : ownIndex >= 0
-          ? playerIndex === ownIndex
-          : color === 1;
     const savedName =
       playMode === "solo" && nextState.settings?.opponent === "ai"
         ? playerIndex === 0
@@ -1595,8 +1566,8 @@ function renderPlayerCards(
         ? savedName.trim()
         : label;
     panel.querySelector("[data-player-name]").textContent = name;
-    panel.classList.toggle("is-self", isSelf);
-    panel.classList.toggle("is-opponent", !isSelf);
+    panel.classList.toggle("is-near", near);
+    panel.classList.toggle("is-far", !near);
     const detail = panel.querySelector("[data-player-detail]");
     if (ended && nextState.lastEvent?.kind === "resigned") {
       detail.textContent =

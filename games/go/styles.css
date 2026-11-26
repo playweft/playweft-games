@@ -3,14 +3,10 @@
 @import "../../src/components/game-header.css";
 @import "./start-screen.css";
 @import "./result-dialog.css";
+@import "./board-scene.css";
 
 body {
-  background-color: #f1f1ed;
-  background-image: var(--table-texture-image, none);
-  background-blend-mode: overlay;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
+  background: #eeece6;
 }
 
 .game-back,
@@ -23,6 +19,11 @@ body {
 
 .game-back {
   margin-left: -12px;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline-color: #526c7b;
 }
 
 .game-back-spacer {
@@ -903,8 +904,11 @@ body {
   padding: 0 20px;
   border: 0;
   border-radius: 999px;
-  background: rgba(32, 34, 41, 0.78);
-  color: #fff;
+  background: #405663;
+  color: #fbf9f5;
+  box-shadow:
+    inset 1px 1px 0 rgb(255 255 255 / 14%),
+    2px 4px 12px rgb(47 42 35 / 20%);
   cursor: pointer;
   font: inherit;
   font-size: 1rem;
@@ -975,57 +979,72 @@ body {
 .pass-action {
   min-height: 44px;
   padding: 0 16px;
-  border-radius: 7px;
+  border-radius: 14px;
   cursor: pointer;
-  font-weight: 800;
+  font-weight: 600;
 }
 
-.undo-action {
-  border: 1px solid #8d9089;
-  background: #fff;
-  color: #555851;
-  box-shadow: none;
+.undo-action,
+.pass-action,
+.more-action,
+.game-back {
+  border: 0;
+  background: rgb(245 242 236 / 96%);
+  color: #45433e;
+  box-shadow:
+    inset 1px 1px 0 rgb(255 255 255 / 80%),
+    1px 2px 4px rgb(60 52 43 / 9%),
+    3px 6px 14px rgb(60 52 43 / 10%);
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    translate 140ms ease;
 }
 
 .pass-action {
-  border: 1px solid #9c6732;
-  background: #fff;
-  color: #68431f;
-  box-shadow: none;
+  color: #405663;
+}
+
+.turn-actions .icon-button-content svg {
+  stroke-width: 1.9;
 }
 
 .more-action {
   --round-button-icon-size: 21px;
-  --round-button-hover-background: rgba(89, 92, 86, 0.1);
-  --round-button-active-background: rgba(89, 92, 86, 0.18);
   min-height: 44px;
-  color: #666961;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .undo-action:hover:not(:disabled) {
-    border-color: #5f625d;
-    background: rgba(89, 92, 86, 0.08);
-    color: #363936;
+  .undo-action:hover:not(:disabled),
+  .pass-action:hover:not(:disabled),
+  .more-action:hover:not(:disabled),
+  .game-back:hover:not(:disabled) {
+    background: #fcfaf7;
+    box-shadow:
+      inset 1px 1px 0 rgb(255 255 255 / 90%),
+      2px 3px 5px rgb(60 52 43 / 10%),
+      4px 8px 18px rgb(60 52 43 / 14%);
   }
 
-  .undo-action:active:not(:disabled) {
-    background: rgba(89, 92, 86, 0.16);
+  .confirm-move:hover {
+    background: #4c6573;
   }
+}
 
-  .pass-action:hover:not(:disabled) {
-    border-color: #84501f;
-    background: rgba(174, 111, 47, 0.1);
-    color: #4e3117;
-  }
+.undo-action:active:not(:disabled),
+.pass-action:active:not(:disabled),
+.more-action:active:not(:disabled),
+.game-back:active:not(:disabled) {
+  background: #e9e4dc;
+  box-shadow:
+    inset 0 1px 2px rgb(60 52 43 / 8%),
+    1px 2px 4px rgb(60 52 43 / 10%);
+  translate: 0 1px;
+}
 
-  .pass-action:active:not(:disabled) {
-    background: rgba(174, 111, 47, 0.2);
-  }
-
-  .more-action:hover {
-    color: #363936;
-  }
+.confirm-move:active {
+  background: #314754;
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 14%);
 }
 
 .undo-action:disabled,
@@ -1043,10 +1062,12 @@ body {
   display: grid;
   width: min(220px, 100%);
   padding: 5px;
-  border: 1px solid #d5d2ca;
-  border-radius: 9px;
-  background: #fff;
-  box-shadow: 0 12px 30px rgba(45, 39, 31, 0.2);
+  border: 0;
+  border-radius: 14px;
+  background: #f5f2ec;
+  box-shadow:
+    inset 1px 1px 0 rgb(255 255 255 / 80%),
+    4px 8px 24px rgb(45 39 31 / 18%);
   transform-origin: right bottom;
   animation: more-menu-in 150ms cubic-bezier(0.2, 0.82, 0.25, 1);
 }
@@ -1069,7 +1090,7 @@ body {
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: #444741;
+  color: #45433e;
   cursor: pointer;
   font: inherit;
   font-size: 0.76rem;
@@ -1346,6 +1367,13 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .undo-action,
+  .pass-action,
+  .more-action,
+  .game-back {
+    transition: none;
+  }
+
   .replay-controls[data-state="opening"],
   .replay-controls[data-state="closing"] {
     animation-duration: 1ms;
@@ -1505,14 +1533,14 @@ body {
     width: min(190px, 100%);
   }
 
-  .player-station.is-opponent {
+  .player-station.is-far {
     grid-column: 1;
     grid-row: 1;
     align-self: start;
     justify-self: end;
   }
 
-  .player-station.is-self {
+  .player-station.is-near {
     grid-column: 3;
     grid-row: 1;
     align-self: end;
@@ -1660,16 +1688,6 @@ body {
     transition:
       border-color 150ms ease,
       box-shadow 150ms ease;
-  }
-
-  #black-player {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  #white-player {
-    grid-column: 2;
-    grid-row: 1;
   }
 
   .player-card {
@@ -1902,6 +1920,16 @@ body {
 }
 
 @media (width < 900px) and (orientation: portrait) {
+  .player-station.is-far {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .player-station.is-near {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
   .go-layout {
     height: calc(100dvh - 60px);
     min-height: 0;
@@ -1936,8 +1964,8 @@ body {
   .stone-bowl {
     position: absolute;
     display: block;
-    width: 104px;
-    height: 88px;
+    width: 200px;
+    height: 96px;
     padding: 8px;
     color: #252623;
     touch-action: none;
@@ -1952,27 +1980,23 @@ body {
 
   .stone-bowl svg {
     display: block;
-    width: 100%;
-    height: 100%;
+    width: 88px;
+    height: 72px;
     overflow: visible;
     pointer-events: none;
   }
 
-  .stone-bowl--opponent {
+  .stone-bowl--far {
     bottom: calc(100% + 4px);
     left: -8px;
   }
 
-  .stone-bowl--self {
+  .stone-bowl--near {
     top: calc(100% + 4px);
     right: -8px;
-    width: 200px;
-    height: 96px;
   }
 
-  .stone-bowl--self svg {
-    width: 88px;
-    height: 72px;
+  .stone-bowl--near svg {
     margin-left: auto;
   }
 

@@ -6,8 +6,8 @@ import { createGoStoneDrag, projectStoneDrag, stoneDragPoint } from "../games/go
 function harness() {
   const browser = new Window();
   const document = browser.document;
-  document.body.innerHTML = '<div id="source"></div><div id="board"></div><span id="stone" hidden></span>';
-  const source = document.querySelector("#source"), board = document.querySelector("#board"), stone = document.querySelector("#stone");
+  document.body.innerHTML = '<div id="source" data-color="1"></div><div id="white" data-color="2"></div><div id="board"></div><span id="stone" hidden></span>';
+  const source = document.querySelector("#source"), whiteSource = document.querySelector("#white"), board = document.querySelector("#board"), stone = document.querySelector("#stone");
   const media = new browser.EventTarget();
   media.matches = true;
   let timer, sequence = 0, pickups = 0;
@@ -31,9 +31,9 @@ function harness() {
     cancelAnimationFrame(id) { frames.delete(id); },
     addEventListener: browser.addEventListener.bind(browser),
   };
-  const drag = createGoStoneDrag({ source, board, stone, view, getPoint,
+  const drag = createGoStoneDrag({ sources: [source, whiteSource], board, stone, view, getPoint,
     onPickup: () => pickups++, onPlay: point => plays.push(point) });
-  const context = { enabled: true, color: 1, size: 19, key: "round1:0:black" };
+  const context = { enabled: true, currentColor: 1, size: 19, key: "round1:0:black" };
   drag.update(context);
   function pointer(type, x = 300, y = 500, id = 1, target = source) {
     target.dispatchEvent(new browser.PointerEvent(type, {
@@ -41,7 +41,7 @@ function harness() {
       clientX: x, clientY: y, bubbles: true, cancelable: true,
     }));
   }
-  return { browser, document, source, stone, drag, plays, context, media, points, getPoint,
+  return { browser, document, source, whiteSource, stone, drag, plays, context, media, points, getPoint,
     pointer, get pickups() { return pickups; },
     hold() { const callback = timer; timer = undefined; callback?.(); },
     frame() { const callbacks = [...frames.values()]; frames.clear(); callbacks.forEach(callback => callback()); },
@@ -71,6 +71,7 @@ test("quick taps never pick up or place; holding shows a stone and release place
     h.pointer("pointerdown"); h.hold();
     assert.equal(h.pickups, 1);
     assert.equal(h.stone.hidden, false);
+    assert.equal(h.stone.classList.contains("go-stone--black"),true);
     h.pointer("pointermove", 210, 400);
     // Release must use its final position even when the next frame has not run.
     h.pointer("pointerup", 210, 400);
@@ -99,10 +100,10 @@ test("turn changes and rotation cancel a drag; same-turn renders keep it; white 
   try {
     h.pointer("pointerdown"); h.hold(); h.drag.update({ ...h.context });
     assert.equal(h.stone.hidden, false);
-    h.drag.update({ ...h.context, key: "round1:1:white", color: 2 });
+    h.drag.update({ ...h.context, key: "round1:1:white", currentColor: 2 });
     h.pointer("pointerup", 210, 400);
     assert.deepEqual(h.plays, []);
-    h.pointer("pointerdown"); h.hold();
+    h.pointer("pointerdown", 300, 500, 1, h.whiteSource); h.hold();
     assert.equal(h.stone.classList.contains("go-stone--white"), true);
     h.media.matches = false;
     h.media.dispatchEvent(new h.browser.Event("change"));
@@ -127,5 +128,29 @@ test("system cancellation, a second finger, scrolling and disabled play never dr
     }
     h.pointer("pointerdown"); h.hold(); h.pointer("pointerup", 210, 400);
     assert.deepEqual(h.plays, []);
+  } finally { await h.close(); }
+});
+
+test("both fixed-color bowls support pickup, but only the permitted current color can start", async () => {
+  const h=harness();
+  try {
+    h.pointer("pointerdown",300,500,1,h.whiteSource); h.hold();
+    assert.equal(h.pickups,0);
+    assert.ok(h.source.classList.contains("can-pick-up"));
+    assert.equal(h.whiteSource.classList.contains("can-pick-up"),false);
+    h.drag.update({...h.context,currentColor:2,key:"round1:1:white"});
+    h.pointer("pointerdown"); h.hold();
+    assert.equal(h.pickups,0);
+    h.pointer("pointerdown",300,500,1,h.whiteSource); h.hold();
+    assert.equal(h.pickups,1);
+    h.pointer("pointerup",210,400);
+    assert.deepEqual(h.plays,[{row:8,column:6}]);
+    assert.equal(h.source.dataset.color,"1");
+    assert.equal(h.whiteSource.dataset.color,"2");
+    h.drag.update({...h.context,enabled:false});
+    h.pointer("pointerdown"); h.hold();
+    h.pointer("pointerdown",300,500,1,h.whiteSource); h.hold();
+    assert.equal(h.pickups,1);
+    assert.equal(h.document.querySelector(".can-pick-up"),null);
   } finally { await h.close(); }
 });

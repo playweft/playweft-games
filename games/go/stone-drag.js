@@ -18,9 +18,9 @@ export function stoneDragPoint(position, rect, size) {
   };
 }
 
-export function createGoStoneDrag({ source, board, stone, getPoint, onPlay, onPickup,
-  view = source.ownerDocument.defaultView }) {
-  const document = source.ownerDocument;
+export function createGoStoneDrag({ sources, board, stone, getPoint, onPlay, onPickup, getIntersection,
+  view = board.ownerDocument.defaultView }) {
+  const document = board.ownerDocument;
   const portrait = view.matchMedia("(width < 900px) and (orientation: portrait)");
   let context = { enabled: false }, gesture, frame;
 
@@ -31,7 +31,7 @@ export function createGoStoneDrag({ source, board, stone, getPoint, onPlay, onPi
 
   function cancel() {
     if (!gesture) return;
-    const id = gesture.id;
+    const { id, source } = gesture;
     view.clearTimeout(gesture.timer);
     view.cancelAnimationFrame(frame);
     frame = undefined;
@@ -46,7 +46,9 @@ export function createGoStoneDrag({ source, board, stone, getPoint, onPlay, onPi
     frame = undefined;
     if (!gesture?.active) return;
     const position = projectStoneDrag(gesture.anchor, gesture.pointer);
-    const point = stoneDragPoint(position, gesture.rect, context.size);
+    const point = getIntersection
+      ? getIntersection(position, gesture.rect, context.size)
+      : stoneDragPoint(position, gesture.rect, context.size);
     const target = point && getPoint(point.row, point.column);
     const valid = Boolean(target && !target.disabled && target.dataset.piece === "0");
     if (gesture.target !== (valid ? target : undefined)) {
@@ -70,18 +72,21 @@ export function createGoStoneDrag({ source, board, stone, getPoint, onPlay, onPi
     const diameter = Math.max(18, gesture.rect.width / context.size * .84);
     gesture.radius = diameter / 2;
     stone.style.width = `${diameter}px`;
-    stone.classList.toggle("go-stone--black", context.color === 1);
-    stone.classList.toggle("go-stone--white", context.color === 2);
+    stone.classList.toggle("go-stone--black", gesture.color === 1);
+    stone.classList.toggle("go-stone--white", gesture.color === 2);
     stone.hidden = false;
-    source.classList.add("is-dragging");
+    gesture.source.classList.add("is-dragging");
     paint();
   }
 
   function start(event) {
+    const source = event.currentTarget;
+    const color = Number(source.dataset.color);
     if (gesture || !portrait.matches || !context.enabled || event.isPrimary === false ||
+        color !== context.currentColor ||
         (event.pointerType === "mouse" && event.button !== 0) || document.querySelector("dialog[open]")) return;
     event.preventDefault();
-    gesture = { id: event.pointerId, pointer: { x: event.clientX, y: event.clientY } };
+    gesture = { id: event.pointerId, source, color, pointer: { x: event.clientX, y: event.clientY } };
     gesture.timer = view.setTimeout(activate, STONE_PICKUP_DELAY);
     // Document listeners also cover capture loss in older or embedded browsers.
     try { source.setPointerCapture(event.pointerId); } catch {}
@@ -105,10 +110,12 @@ export function createGoStoneDrag({ source, board, stone, getPoint, onPlay, onPi
     if (point && context.enabled && portrait.matches && !document.hidden) onPlay(point);
   }
 
-  source.addEventListener("pointerdown", start);
-  source.addEventListener("contextmenu", event => event.preventDefault());
-  source.addEventListener("lostpointercapture", cancel);
-  source.addEventListener("dragstart", event => event.preventDefault());
+  for (const source of sources) {
+    source.addEventListener("pointerdown", start);
+    source.addEventListener("contextmenu", event => event.preventDefault());
+    source.addEventListener("lostpointercapture", cancel);
+    source.addEventListener("dragstart", event => event.preventDefault());
+  }
   document.addEventListener("pointermove", move, { passive: false });
   document.addEventListener("pointerup", finish);
   document.addEventListener("pointercancel", cancel);
@@ -126,10 +133,11 @@ export function createGoStoneDrag({ source, board, stone, getPoint, onPlay, onPi
   return {
     cancel,
     update(next) {
-      if (!next.enabled || next.key !== context.key || next.color !== context.color || next.size !== context.size) cancel();
+      if (!next.enabled || next.key !== context.key || next.currentColor !== context.currentColor || next.size !== context.size) cancel();
       context = next;
-      source.dataset.color = String(next.color);
-      source.classList.toggle("can-pick-up", Boolean(next.enabled));
+      for (const source of sources) {
+        source.classList.toggle("can-pick-up", Boolean(next.enabled) && Number(source.dataset.color) === next.currentColor);
+      }
     },
   };
 }
