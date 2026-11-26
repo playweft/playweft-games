@@ -1,7 +1,7 @@
 import { goAiPlayerName, goTieBreakLabel } from "./rules.js";
 import { applySoloGoAction, createSoloGoState } from "./solo.js";
 
-const STORAGE_KEY = "playweft:go-history:v1";
+export const GO_HISTORY_KEY = "playweft:go-history:v1";
 const ARCHIVE_FORMAT = "playweft-go-history";
 const ARCHIVE_VERSION = 1;
 const RECORD_FORMAT = "playweft-go-record";
@@ -15,7 +15,7 @@ export function createGoHistoryStore(getStorage = () => window.localStorage) {
     load() {
       try {
         const storage = getStorage();
-        const value = storage.getItem(STORAGE_KEY);
+        const value = storage.getItem(GO_HISTORY_KEY);
         if (value) {
           const parsed = JSON.parse(value);
           const sourceRecords =
@@ -60,7 +60,7 @@ function nonEmptyHistoryRecords(records) {
 
 function writeArchive(storage, records) {
   storage.setItem(
-    STORAGE_KEY,
+    GO_HISTORY_KEY,
     JSON.stringify({
       format: ARCHIVE_FORMAT,
       formatVersion: ARCHIVE_VERSION,
@@ -306,6 +306,20 @@ export function canResumeGoRecord(record) {
       record.resume?.state &&
       !record.resume.state.ended,
   );
+}
+
+export function latestGoResumeRecord(records) {
+  return records.reduce((latest, record) => {
+    if (!canResumeGoRecord(record) || record.result ||
+        !["playing", "scoring"].includes(record.resume.state.phase)) return latest;
+    return !latest || (Number(record.updatedAt) || 0) > (Number(latest.updatedAt) || 0) ? record : latest;
+  }, undefined);
+}
+
+export function goResumeModeLabel(record) {
+  const settings = record.resume.state.settings;
+  return settings.opponent !== "ai" ? "本地双人"
+    : settings.aiModel === "b18" ? "困难人机" : "普通人机";
 }
 
 function createResumeSnapshot(state, savedAt) {

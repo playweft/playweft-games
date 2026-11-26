@@ -24,6 +24,7 @@ import {
   Info,
   Link,
   NotebookPen,
+  Play,
   RotateCcw,
   Settings2,
   Trash2,
@@ -38,6 +39,8 @@ import {
   goRecordToReplayFrames,
   goRecordToSgf,
   historyResultLabel,
+  latestGoResumeRecord,
+  goResumeModeLabel,
   restoreGoResumeState,
   updateGoResumeSnapshot,
   updateGoHistory,
@@ -49,6 +52,9 @@ import {
   createSoloGoState,
 } from "./solo.js";
 import { createPlayweftClient } from "../../src/playweft-client.js";
+import { initializeGoStorage } from "./storage.js";
+import { createStartScreen } from "./start-screen.js";
+import "../../src/game-storage.css";
 import "../../src/components/board-stones.css";
 import "./styles.css";
 import tableTextureUrl from "./assets/table-texture-plywood.webp?url";
@@ -58,11 +64,6 @@ scheduleTableTexture();
 const elements = {
   startScreen: document.querySelector("#start-screen"),
   gameScreen: document.querySelector("#game-screen"),
-  startStatus: document.querySelector("#start-status"),
-  playAi: document.querySelector("#play-ai"),
-  playLocal: document.querySelector("#play-local"),
-  playOnline: document.querySelector("#play-online"),
-  playOnlineLabel: document.querySelector("#play-online-label"),
   setupBack: document.querySelector("#setup-back"),
   home: document.querySelector("#home-button"),
   actionFeedback: document.querySelector("#action-feedback"),
@@ -215,6 +216,8 @@ let platformReady = false;
 let canCreateRoom = false;
 let creatingRoom = false;
 let roomState;
+let historyStorage;
+const pendingRoomStates = [];
 
 createIcons({
   icons: {
@@ -231,6 +234,7 @@ createIcons({
     Info,
     Link,
     NotebookPen,
+    Play,
     RotateCcw,
     Settings2,
     Trash2,
@@ -240,7 +244,24 @@ createIcons({
   },
 });
 const clockTimer = window.setInterval(renderClocks, 1000);
-const historyStore = createGoHistoryStore();
+const historyStore = createGoHistoryStore(() => historyStorage);
+const startScreen = createStartScreen({
+  root: elements.startScreen,
+  models: GO_AI_MODELS,
+  difficulty: DEFAULT_GO_AI_MODEL_ID,
+  onAi: () => startLocalGame("ai"),
+  onLocal: () => startLocalGame("local"),
+  onOnline: createOnlineRoom,
+  onResume: resumeHistoryRecord,
+  onBack: showStartScreen,
+  onAdvanced: () => setSetupOpen(true),
+  onStart: startConfiguredGame,
+  onDifficulty(id) {
+    elements.aiDifficulty.value = id;
+    syncSetupSettings();
+    goAi.prepare(Number(elements.sizeSetting.value), id).catch(() => {});
+  },
+});
 elements.playerTimes.forEach((element) => renderClockDigits(element, "00:00"));
 
 const preview = {
@@ -272,7 +293,9 @@ const client = isStandalone
   : createPlayweftClient({
       onReady: handleReady,
       onState: (message) => {
-        if (playMode === "room") handleState(message);
+        if (playMode !== "room") return;
+        if (!platformReady) pendingRoomStates.push(message);
+        else handleState(message);
       },
       onContext: (context) => {
         roomState = context.room;
@@ -288,6 +311,7 @@ const setupDialog = createOverlayDialog({
   surface: elements.setupForm,
   dismissible: false,
   initialFocus: elements.setupForm,
+  returnFocus: () => isSetupMenu() ? startScreen.advancedButton : undefined,
 });
 const goAi = createGoAiController({
   onMove: (action) => sendAction(action),
@@ -322,6 +346,15 @@ function renderAiFeedback() {
       : aiStatus.phase === "thinking"
         ? "AI 正在思考…"
         : "";
+  if (isAiMenu()) {
+    startScreen.setStatus(startingAi ? message || "正在准备对局…" : aiStatus.phase === "error" ? message : "");
+    elements.aiFeedback.hidden = true;
+    return;
+  }
+  if (menuVisible && startingAi) {
+    startScreen.setStatus(message || "正在准备对局…");
+    return;
+  }
   elements.aiFeedback.hidden = !enabled || !message;
   elements.aiStatus.textContent = enabled ? message : "";
   elements.aiRetry.hidden = aiStatus.phase !== "error";
@@ -363,37 +396,43 @@ const gameInfoDialog = createOverlayDialog({
   beforeOpen: () => renderGameInfo(state ?? preview),
 });
 
-function handleReady(message) {
-  platformReady = true;
+async function handleReady(message) {
   canCreateRoom = message.capabilities?.includes("rooms.create") ?? false;
   playMode = message.mode ?? "room";
   playerId = message.playerId;
+  renderStartScreen();
+  historyStorage = await initializeGoStorage(client);
+  platformReady = true;
   if (roomState) enterRoom(roomState);
   renderStartScreen();
+  for (const update of pendingRoomStates.splice(0)) handleState(update);
 }
 
 function renderStartScreen(message = "") {
-  elements.startScreen.hidden = !menuVisible;
   elements.gameScreen.hidden = menuVisible;
   document.querySelector(".game-header").hidden = menuVisible;
-  elements.playAi.disabled = elements.playLocal.disabled =
-    !platformReady || creatingRoom || Boolean(roomState);
-  elements.playOnline.disabled =
-    creatingRoom ||
-    Boolean(roomState) ||
-    (!isStandalone && (!platformReady || !canCreateRoom));
-  elements.playOnlineLabel.textContent = creatingRoom
-    ? "正在创建房间…"
-    : "好友联机";
-  elements.startStatus.textContent =
-    message ||
-    (!platformReady ? "正在连接平台…" : roomState ? "等待房间开始…" : "");
+  const record = menuVisible && platformReady ? latestGoResumeRecord(historyStore.load()) : undefined;
+  startScreen.render({
+    visible: menuVisible, ready: platformReady,
+    busy: creatingRoom || startingAi || Boolean(pendingAction), creatingRoom,
+    room: Boolean(roomState), canCreateRoom, standalone: isStandalone,
+    resumeId: record?.id, resumeLabel: record ? goResumeModeLabel(record) : "",
+    starting: startingAi,
+    message: message || (!platformReady ? isStandalone ? "正在读取存档…" : "正在连接平台…" : roomState ? "等待房间开始…" : ""),
+  });
 }
 
+function isSetupMenu() { return menuVisible && startScreen.page !== "home"; }
+
+function isAiMenu() { return menuVisible && startScreen.page === "ai"; }
+
 function showStartScreen() {
+  pendingRoomStates.length = 0;
   persistSoloResumeSnapshot();
-  goAi.cancel();
+  if (isAiMenu()) goAi.destroy();
+  else goAi.cancel();
   menuVisible = true;
+  startScreen.show("home");
   playMode = "solo";
   state = undefined;
   roomState = undefined;
@@ -417,7 +456,8 @@ function showStartScreen() {
 function startLocalGame(opponent) {
   if (!platformReady || creatingRoom || roomState) return;
   playMode = "solo";
-  menuVisible = false;
+  menuVisible = true;
+  startScreen.show(opponent);
   setupSource = "new";
   playerId = "solo-player-1";
   localMatchId = `solo-${crypto.randomUUID()}`;
@@ -437,6 +477,7 @@ function startLocalGame(opponent) {
     version: localVersion,
     serverTime: Date.now(),
   });
+  if (opponent === "ai") goAi.prepare(initial.state.settings.size, DEFAULT_GO_AI_MODEL_ID).catch(() => {});
 }
 
 function enterRoom(next) {
@@ -473,6 +514,7 @@ async function createOnlineRoom() {
   renderStartScreen();
   let errorMessage = "";
   try {
+    await historyStorage.flush();
     enterRoom(
       await client.createRoom({
         minPlayers: 2,
@@ -489,7 +531,7 @@ async function createOnlineRoom() {
 }
 
 function handleState(message) {
-  menuVisible = false;
+  menuVisible = startScreen.page !== "home" && playMode === "solo" && message.state.phase === "setup";
   renderStartScreen();
   clearPendingMove();
   elements.actionFeedback.hidden = true;
@@ -588,7 +630,7 @@ window.addEventListener("pagehide", () => {
   window.clearTimeout(historyClearTimer);
   window.clearTimeout(resignConfirmTimer);
   window.clearTimeout(moreMenuCloseTimer);
-  client?.destroy();
+  void Promise.resolve(historyStorage?.flush()).catch(() => {}).finally(() => client?.destroy());
   goAi.destroy();
 });
 document.addEventListener("visibilitychange", () => {
@@ -599,10 +641,16 @@ elements.aiRetry.addEventListener("click", () => {
   goAi.retry();
   updateAiTurn();
 });
-elements.playAi.addEventListener("click", () => startLocalGame("ai"));
-elements.playLocal.addEventListener("click", () => startLocalGame("local"));
-elements.playOnline.addEventListener("click", createOnlineRoom);
-elements.setupBack.addEventListener("click", showStartScreen);
+elements.setupBack.addEventListener("click", () => {
+  if (isSetupMenu()) setSetupOpen(false);
+  else showStartScreen();
+});
+elements.setupPanel.addEventListener("click", event => {
+  if (isSetupMenu() && event.target === elements.setupPanel) setSetupOpen(false);
+});
+elements.setupPanel.addEventListener("cancel", () => {
+  if (isSetupMenu()) setSetupOpen(false);
+});
 elements.home.addEventListener("click", showStartScreen);
 document.addEventListener("pointerdown", (event) => {
   if (
@@ -635,9 +683,21 @@ elements.confirmMove.addEventListener("animationend", (event) => {
   elements.confirmMove.hidden = true;
   elements.confirmMove.classList.remove("is-exiting");
 });
-elements.setupForm.addEventListener("submit", async (event) => {
+elements.setupForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (isSetupMenu()) {
+    syncSetupSettings();
+    setSetupOpen(false);
+  } else startConfiguredGame();
+});
+
+async function startConfiguredGame() {
   if (startingAi || pendingAction) return;
+  if (!elements.setupForm.checkValidity()) {
+    setSetupOpen(true);
+    elements.setupForm.reportValidity();
+    return;
+  }
   clearSetupFeedback();
   if (setupSource === "resume") {
     if (playMode === "solo" && selectedResumeRecordId) {
@@ -677,7 +737,7 @@ elements.setupForm.addEventListener("submit", async (event) => {
   }
   showSetupFeedback("正在创建对局…", "pending");
   setSetupOpen(false);
-});
+}
 elements.setupForm.addEventListener("input", (event) => {
   if (event.target.name === "setupSource") {
     setupSource = event.target.value;
@@ -848,6 +908,13 @@ elements.historyClear.addEventListener("click", () => {
   renderHistory();
 });
 window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && isSetupMenu()) {
+    event.preventDefault();
+    if (startingAi) return;
+    if (setupDialog.isOpen) setSetupOpen(false);
+    else showStartScreen();
+    return;
+  }
   if (event.key === "Escape" && !elements.moreMenu.hidden) {
     setMoreMenuOpen(false);
     elements.more.focus();
@@ -1246,7 +1313,10 @@ function formatMoveCoordinate(move, size) {
 }
 
 function render(nextState) {
-  if (menuVisible) return;
+  if (menuVisible) {
+    if (isSetupMenu() && nextState.phase === "setup") renderSetup(nextState);
+    return;
+  }
   elements.home.hidden = playMode !== "solo";
   const players = Array.isArray(nextState.players) ? nextState.players : [];
   const ownIndex = players.indexOf(playerId);
@@ -1505,7 +1575,10 @@ function formatScore(score) {
 }
 
 function renderSetup(nextState, ownIndex) {
+  const setupMenu = isSetupMenu();
+  elements.setupPanel.classList.toggle("overlay-dialog--sheet-narrow", setupMenu);
   elements.setupBack.hidden = playMode !== "solo";
+  elements.setupBack.setAttribute("aria-label", setupMenu ? startScreen.page === "ai" ? "返回人机对战" : "返回本地双人" : "返回启动页");
   elements.setupBack.disabled = startingAi || Boolean(pendingAction);
   const hostId = nextState.hostId ?? nextState.players?.[0];
   const isHost =
@@ -1534,13 +1607,15 @@ function renderSetup(nextState, ownIndex) {
     setupSource === "resume" && selectedRecord
       ? selectedRecord.settings
       : (isHost && draftSettings) || nextState.settings || preview.settings;
-  elements.opponentSettings.hidden = playMode !== "solo";
+  elements.opponentSettings.hidden = playMode !== "solo" || setupMenu;
+  elements.sourceSetting.closest(".settings-list").hidden = setupMenu;
   elements.opponentSetting.value = settings.opponent ?? "local";
   elements.opponentSetting.disabled = !canConfigure || setupSource === "resume";
   const aiMatch = playMode === "solo" && settings.opponent === "ai";
   elements.aiDifficultyField.hidden = elements.aiDifficultyDivider.hidden =
     !aiMatch;
   elements.aiDifficulty.value = resolveGoAiModelId(settings.aiModel);
+  startScreen.setDifficulty(elements.aiDifficulty.value);
   elements.aiDifficulty.disabled = !canConfigure || setupSource === "resume";
   elements.blackSetting.querySelector('[value="player1"]').textContent = aiMatch
     ? "我执黑"
@@ -1581,11 +1656,12 @@ function renderSetup(nextState, ownIndex) {
   elements.startLabel.textContent =
     pendingAction || startingAi
       ? "正在开始…"
-      : setupSource === "resume"
+      : setupMenu ? "保存设置" : setupSource === "resume"
         ? "继续对局"
         : "开始对局";
   updateHandicapControls();
   renderSettingValues();
+  if (setupMenu) renderStartScreen();
   renderAiFeedback();
 }
 
@@ -1823,11 +1899,13 @@ async function resumeHistoryRecord(recordId) {
   const resumedAt = Date.now();
   const resumedState = restoreGoResumeState(record, resumedAt);
   if (!record?.matchId || !resumedState) {
+    if (menuVisible) renderStartScreen();
     renderHistory();
     return;
   }
   if (resumedState.settings.opponent === "ai") {
     startingAi = true;
+    if (menuVisible) renderStartScreen();
     goAi.cancel();
     try {
       resumedState.settings.aiModel = resolveGoAiModelId(
@@ -1840,6 +1918,10 @@ async function resumeHistoryRecord(recordId) {
       );
     } catch {
       startingAi = false;
+      if (menuVisible) {
+        renderStartScreen("AI 加载失败，请重试继续对局");
+        return;
+      }
       renderAiFeedback();
       showActionError("AI 加载失败，请重试继续对局");
       return;
@@ -1904,7 +1986,7 @@ function clearSetupFeedback() {
   elements.setupFeedback.hidden = true;
   elements.setupFeedback.removeAttribute("data-mode");
   elements.setupFeedback.textContent = "";
-  elements.startLabel.textContent = "开始对局";
+  elements.startLabel.textContent = isSetupMenu() ? "保存设置" : "开始对局";
 }
 
 function updateHandicapControls() {

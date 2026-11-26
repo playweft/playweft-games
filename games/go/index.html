@@ -18,20 +18,46 @@
   <main id="start-screen" class="start-screen" aria-labelledby="start-title">
     <h1 id="start-title" class="start-title"><img src="./assets/launch-title.svg" alt="围棋" width="380" height="360" /></h1>
     <div class="start-controls">
-      <div class="start-menu" aria-label="选择对战方式">
+      <div class="start-menu-stack">
+      <div id="home-menu" class="start-menu start-menu-page start-menu-page--home" aria-label="选择对战方式" aria-hidden="false">
       <button id="play-ai" class="start-menu-button" type="button" disabled><i
-          data-lucide="bot" aria-hidden="true"></i>人机对战<i data-lucide="chevron-right" aria-hidden="true"></i></button>
+          data-lucide="bot" aria-hidden="true"></i><span class="start-ai-label">人机对战</span><i data-lucide="chevron-right" aria-hidden="true"></i></button>
       <button id="play-local" class="start-menu-button" type="button" disabled><i data-lucide="users"
-          aria-hidden="true"></i>本地双人<i data-lucide="chevron-right" aria-hidden="true"></i></button>
+          aria-hidden="true"></i><span class="start-local-label">本地双人</span><i data-lucide="chevron-right" aria-hidden="true"></i></button>
       <button id="play-online" class="start-menu-button" type="button" disabled><i data-lucide="link"
           aria-hidden="true"></i><span id="play-online-label">好友联机</span><i data-lucide="chevron-right"
           aria-hidden="true"></i></button>
+        <div id="resume-entry" class="start-resume" aria-hidden="true">
+          <button id="play-resume" class="start-menu-button start-menu-button--primary" type="button" aria-labelledby="resume-label" aria-describedby="resume-caption" disabled>
+            <i data-lucide="play" aria-hidden="true"></i>
+            <span class="start-menu-text">
+              <span id="resume-label">继续对局</span>
+              <span id="resume-caption" class="start-resume-caption"></span>
+            </span>
+            <i data-lucide="chevron-right" aria-hidden="true"></i>
+          </button>
+        </div>
       </div>
-      <p id="start-status" class="start-status" role="status" aria-live="polite"></p>
+      <section id="match-menu" class="start-menu-page start-menu-page--setup" aria-labelledby="match-menu-title" aria-hidden="true" inert>
+        <header class="start-menu-heading">
+          <button id="match-menu-back" class="round-icon-button" type="button" aria-label="返回首页"><i data-lucide="chevron-left" aria-hidden="true"></i></button>
+          <h2 id="match-menu-title" tabindex="-1">人机对战</h2>
+        </header>
+        <div class="start-menu">
+          <div class="start-menu-button start-difficulty">
+            <i data-lucide="bot" aria-hidden="true"></i><span id="quick-difficulty-label">难度</span><i data-lucide="chevron-right" aria-hidden="true"></i>
+            <select id="quick-ai-difficulty" aria-labelledby="quick-difficulty-label"></select>
+          </div>
+          <button id="match-advanced" class="start-menu-button" type="button"><i data-lucide="settings-2" aria-hidden="true"></i>高级设置<i data-lucide="chevron-right" aria-hidden="true"></i></button>
+          <button id="match-start" class="start-menu-button start-menu-button--primary" type="button"><i data-lucide="play" aria-hidden="true"></i><span id="match-start-label">开始对局</span><i data-lucide="chevron-right" aria-hidden="true"></i></button>
+        </div>
+      </section>
+      </div>
     </div>
   </main>
 
-  <main id="game-screen" class="go-layout" hidden>
+  <p id="start-status" class="start-status" role="status" aria-live="polite" aria-atomic="true"></p>
+
     <dialog id="setup-panel" class="overlay-dialog setup-panel" aria-labelledby="setup-title">
       <form id="setup-form" class="overlay-dialog__surface setup-form" tabindex="-1">
         <header class="setup-heading">
@@ -179,6 +205,7 @@
       </form>
     </dialog>
 
+  <main id="game-screen" class="go-layout" hidden>
     <dialog id="history-panel" class="overlay-dialog history-panel" aria-labelledby="history-title">
       <div id="history-dialog" class="overlay-dialog__surface history-dialog" tabindex="-1">
         <header class="overlay-dialog__header">

@@ -1,7 +1,7 @@
 import "./overlay-dialog.css";
 import { animate } from "motion/mini";
 
-const SHEET_QUERY = "(max-width: 520px) and (orientation: portrait)";
+const SHEET_QUERY = "(width < 600px) and (orientation: portrait)";
 const ENTER_DURATION = 0.225;
 const EXIT_DURATION = 0.195;
 const ENTER_EASING = [0, 0, 0.2, 1];

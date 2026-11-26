@@ -4,9 +4,9 @@ import { loadGameStorageCache } from "./game-storage-cache.js";
 /** Block startup on failed reads; retain the latest in-memory writes for retry. */
 export async function initializeGameStorage(
   bridge,
-  { gameId, keys, validate },
+  { gameId, keys, validate, backend: providedBackend },
 ) {
-  const backend = createGameStorage(bridge, {
+  const backend = providedBackend ?? createGameStorage(bridge, {
     legacyKeys: keys,
     migrationKey: `playweft:${gameId}:storage-migrated:v1`,
   });

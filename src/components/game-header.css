@@ -16,7 +16,7 @@
   text-align: center;
 }
 
-@media (min-width: 901px) {
+@media (min-width: 900px) {
   .game-header {
     display: none;
   }

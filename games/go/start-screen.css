@@ -1,0 +1,316 @@
+/* Keep the title and controls separate from the decorative artwork. */
+.start-screen {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 32px clamp(32px, 14.4vw, 56px);
+  padding-block: max(32px, env(safe-area-inset-top))
+    max(32px, env(safe-area-inset-bottom));
+  background: #f3f2f2 url("./assets/launch-background.svg") center bottom /
+    cover no-repeat;
+}
+
+.start-title {
+  width: 260px;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  line-height: 0;
+}
+
+.start-title img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.start-controls {
+  width: min(360px, 100%);
+  text-align: center;
+}
+
+.start-menu {
+  display: grid;
+  gap: 16px;
+}
+
+.start-menu-stack {
+  position: relative;
+  display: grid;
+}
+
+.start-menu-page {
+  grid-area: 1 / 1;
+  align-self: center;
+  min-width: 0;
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 180ms ease-in-out, transform 180ms ease-in-out, visibility 180ms;
+}
+
+.start-menu-page[aria-hidden="true"] {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.start-menu-page--home { transition-delay: 60ms; }
+.start-menu-page--home[aria-hidden="true"] {
+  transform: translateX(-24px);
+  transition-delay: 0ms;
+}
+.start-menu-page--setup {
+  display: grid;
+  align-self: start;
+  gap: 16px;
+}
+
+.start-menu-page--setup > .start-menu {
+  transition: opacity 180ms ease-in-out 60ms, transform 180ms ease-in-out 60ms;
+}
+
+.start-menu-page--setup[aria-hidden="true"] { transition-delay: 60ms; }
+
+.start-menu-page--setup[aria-hidden="true"] > .start-menu {
+  opacity: 0;
+  transform: translateX(24px);
+  transition-delay: 0ms;
+}
+
+.start-moving-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.start-screen[data-moving-title] #match-menu-title,
+.start-screen[data-moving-title="ai"] .start-ai-label,
+.start-screen[data-moving-title="local"] .start-local-label {
+  opacity: 0;
+}
+
+.start-menu-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.start-menu-heading h2 {
+  margin: 0;
+  outline: 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.start-difficulty {
+  position: relative;
+  cursor: pointer;
+}
+
+.start-difficulty select {
+  position: absolute;
+  inset: 0 54px 0 auto;
+  width: 64px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  appearance: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  cursor: pointer;
+}
+
+.start-difficulty:has(select:disabled) {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.start-resume[aria-hidden="true"] {
+  visibility: hidden;
+}
+
+.start-menu-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.25;
+}
+
+.start-resume-caption {
+  min-height: 1.5em;
+  color: rgb(255 255 255 / 72%);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.start-menu-button {
+  display: grid;
+  width: 100%;
+  min-height: 64px;
+  grid-template-columns: 32px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 26px;
+  border: 0;
+  border-radius: 22px;
+  background: rgb(246 242 237 / 82%);
+  color: #393834;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: left;
+  box-shadow:
+    0 0 24px 2px rgb(60 52 46 / 12%),
+    0 12px 24px rgb(60 52 46 / 12%);
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.start-menu-button > svg:first-child {
+  width: 30px;
+  height: 30px;
+  color: #5b5954;
+  stroke-width: 1.8;
+}
+
+.start-menu-button > svg:last-child {
+  width: 20px;
+  height: 20px;
+  color: #a6a39e;
+}
+
+.start-difficulty > svg:last-of-type {
+  width: 20px;
+  height: 20px;
+  color: #a6a39e;
+}
+
+.start-menu-button--primary {
+  background: linear-gradient(135deg, #435866, #3e505e);
+  color: #fbfcfc;
+}
+
+.start-menu-button--primary > svg:first-child,
+.start-menu-button--primary > svg:last-child {
+  color: inherit;
+}
+
+.start-menu-button:disabled {
+  opacity: 0.55;
+}
+
+.start-menu-button:focus-visible,
+.start-screen.is-keyboard-navigation .start-difficulty:has(select:focus-visible) {
+  outline: none;
+  background-color: #e4dcd3;
+}
+
+.start-menu-button--primary:focus-visible {
+  background: #526c7b;
+}
+
+.start-status {
+  position: fixed;
+  inset-inline: 16px;
+  bottom: max(12dvh, calc(env(safe-area-inset-bottom) + 24px));
+  z-index: 20;
+  width: fit-content;
+  max-width: min(360px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: rgb(0 0 0 / 76%);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+  overflow-wrap: anywhere;
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.start-status.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .start-menu-button:hover:not(:disabled) {
+    background-color: #eee9e3;
+  }
+  .start-menu-button:active:not(:disabled) {
+    background-color: #e4dcd3;
+    box-shadow:
+      0 0 12px rgb(60 52 46 / 10%),
+      0 5px 14px rgb(60 52 46 / 12%);
+    transform: translateY(1px);
+  }
+  .start-menu-button--primary:hover:not(:disabled) {
+    background: #4c6573;
+  }
+  .start-menu-button--primary:active:not(:disabled) {
+    background: #314754;
+  }
+}
+
+@media (orientation: landscape) {
+  .start-screen {
+    flex-direction: row;
+    gap: 48px;
+    background-image: url("./assets/launch-background-wide.svg");
+    background-position: center;
+  }
+  .start-title {
+    width: 320px;
+  }
+  .start-controls {
+    width: min(380px, 40vw);
+  }
+}
+
+@media (max-height: 700px) {
+  .start-screen {
+    gap: 20px;
+  }
+  .start-title {
+    width: 180px;
+  }
+  .start-menu {
+    gap: 12px;
+  }
+  .start-menu-button {
+    min-height: 48px;
+    padding-inline: 20px;
+  }
+  .start-menu-button > svg:first-child {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .start-menu-button,
+  .start-menu-page,
+  .start-menu-page--setup > .start-menu,
+  .start-status {
+    transition: none;
+  }
+}
+

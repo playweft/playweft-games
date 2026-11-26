@@ -7,6 +7,8 @@ import {
   goRecordToReplayFrames,
   goRecordToSgf,
   historyResultLabel,
+  latestGoResumeRecord,
+  goResumeModeLabel,
   restoreGoResumeState,
   updateGoResumeSnapshot,
   updateGoHistory,
@@ -36,6 +38,25 @@ function gameState(overrides = {}) {
     ...overrides,
   };
 }
+
+test("home resume chooses the newest unfinished local game and labels only its mode", () => {
+  const local = settings => updateGoHistory([], {
+    matchId: settings.aiModel ?? settings.opponent, mode: "solo", version: 1,
+    state: gameState({ moves: 1, settings: { ...gameState().settings, ...settings } }),
+  }, 100)[0];
+  const ordinary = local({ opponent: "ai", aiModel: "b6" });
+  const hard = local({ opponent: "ai", aiModel: "b18" });
+  const twoPlayers = local({ opponent: "local" });
+  assert.equal(goResumeModeLabel(ordinary), "普通人机");
+  assert.equal(goResumeModeLabel(hard), "困难人机");
+  assert.equal(goResumeModeLabel(twoPlayers), "本地双人");
+  hard.updatedAt = 200;
+  const room = { ...twoPlayers, mode: "room", updatedAt: 999 };
+  const ended = { ...ordinary, result: { winnerColor: "B" }, updatedAt: 1000 };
+  assert.equal(latestGoResumeRecord([room, ordinary, ended, hard, twoPlayers]), hard);
+  assert.equal(latestGoResumeRecord([room, ended, { ...hard, resume: null }]), undefined);
+  assert.equal(latestGoResumeRecord([]), undefined);
+});
 
 test("Go history records moves once and exports SGF", () => {
   let records = updateGoHistory([], {
