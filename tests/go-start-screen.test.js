@@ -88,12 +88,12 @@ test("Go start menus preserve their DOM, focus and independent callbacks when na
 
     const status = browser.document.querySelector("#start-status");
     assert.equal(root.contains(status), false, "toast must survive the start screen being hidden");
-    screen.setStatus("正在加载 AI 引擎…");
+    screen.setStatus("正在准备 AI…");
     assert.equal(status.classList.contains("is-visible"), true);
     screen.render({ ...props, visible: false });
     assert.equal(root.hidden, true);
     assert.equal(status.classList.contains("is-visible"), false);
-    assert.equal(status.textContent, "正在加载 AI 引擎…", "retain the message during fade-out");
+    assert.equal(status.textContent, "正在准备 AI…", "retain the message during fade-out");
     const fadeEnd = new browser.Event("transitionend");
     Object.defineProperty(fadeEnd, "propertyName", { value: "opacity" });
     screen.setStatus("加载失败，请重试");

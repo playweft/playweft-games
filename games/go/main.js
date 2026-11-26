@@ -374,7 +374,7 @@ function renderAiFeedback() {
       aiStatus.phase === "loading" || aiStatus.phase === "error"
         ? aiStatus.message
         : aiStatus.phase === "ready"
-          ? "AI 已就绪 · 本地运行"
+          ? "AI 已准备好"
           : "";
     if (message)
       showSetupFeedback(
@@ -1666,11 +1666,11 @@ function renderSetup(nextState, ownIndex) {
     ? "AI 执黑"
     : "玩家 2 执黑";
   elements.setupNote.textContent = startingAi
-    ? "正在准备本地 AI…"
+    ? "正在准备 AI…"
     : canConfigure
       ? playMode === "solo"
         ? aiMatch
-          ? "浏览器本地 AI · 首次使用需加载模型"
+          ? "首次使用需下载 AI 资源，请稍候"
           : "本机控制黑白双方轮流落子"
         : "调整会立即同步给另一方，确认后开始"
       : "设置会随房主调整实时更新";
@@ -1963,11 +1963,11 @@ async function resumeHistoryRecord(recordId) {
     } catch {
       startingAi = false;
       if (menuVisible) {
-        renderStartScreen("AI 加载失败，请重试继续对局");
+        renderStartScreen("AI 准备失败，请再次点击“继续对局”重试");
         return;
       }
       renderAiFeedback();
-      showActionError("AI 加载失败，请重试继续对局");
+      showActionError("AI 准备失败，请再次点击“继续对局”重试");
       return;
     }
     startingAi = false;

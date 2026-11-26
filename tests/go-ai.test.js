@@ -250,9 +250,10 @@ test("worker construction failure is reported, and prewarming can be retried", a
     onMove() {}, onStatus: status => statuses.push(status),
     createWorker() { throw new Error("Worker unavailable"); },
   });
-  await assert.rejects(controller.prepare(9), /Worker unavailable/);
+  await assert.rejects(controller.prepare(9), error =>
+    error.message === "AI 暂时不可用，请更新浏览器后重试" && error.cause.message === "Worker unavailable");
   assert.equal(statuses.at(-1).phase, "error");
-  await assert.rejects(controller.prepare(9), /Worker unavailable/);
+  await assert.rejects(controller.prepare(9), /AI 暂时不可用/);
 });
 
 test("changing difficulty cancels the old download and ignores its initialization result", async () => {

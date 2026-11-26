@@ -20,7 +20,12 @@ self.onmessage = ({ data }) => {
         if (!cancelled.has(id)) postMessage({ id, type: "move", ...result });
       }
     } catch (error) {
-      if (!cancelled.has(id)) postMessage({ id, type: "error", message: error.message || String(error) });
+      if (!cancelled.has(id)) {
+        console.error("Go AI request failed", error);
+        postMessage({ id, type: "error", message: type === "init"
+          ? "AI 准备失败，请检查网络后重试，或换用其他浏览器"
+          : "AI 暂时无法落子，请重试" });
+      }
     } finally {
       cancelled.delete(id);
     }

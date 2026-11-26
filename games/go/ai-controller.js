@@ -18,7 +18,7 @@ export function createGoAiController({ onMove, onStatus, createWorker = () =>
       else request.resolve(data);
     };
     worker.onerror = () => {
-      const error = new Error("AI 引擎加载失败，请重试");
+      const error = new Error("AI 暂时不可用，请重试");
       for (const request of requests.values()) request.reject(error);
       requests.clear();
       worker.terminate();
@@ -28,9 +28,15 @@ export function createGoAiController({ onMove, onStatus, createWorker = () =>
   function request(message) {
     const id = ++sequence;
     const promise = new Promise((resolve, reject) => {
-      ensureWorker();
-      requests.set(id, { resolve, reject });
-      worker.postMessage({ ...message, id });
+      try {
+        ensureWorker();
+        requests.set(id, { resolve, reject });
+        worker.postMessage({ ...message, id });
+      } catch (error) {
+        console.error("Go AI worker unavailable", error);
+        requests.delete(id);
+        reject(new Error("AI 暂时不可用，请更新浏览器后重试", { cause: error }));
+      }
     });
     return { id, promise };
   }
@@ -61,9 +67,9 @@ export function createGoAiController({ onMove, onStatus, createWorker = () =>
       selectModel(modelId);
       if (!ready) {
         const currentGeneration = generation;
-        onStatus({ phase: "loading", message: "正在加载 AI 引擎…" });
+        onStatus({ phase: "loading", message: "正在准备 AI…" });
         ready = request({ type: "init", size, modelId }).promise.then(result => {
-          if (result.cancelled || currentGeneration !== generation) throw new Error("AI 加载已取消");
+          if (result.cancelled || currentGeneration !== generation) throw new Error("AI 准备已取消");
           onStatus({ phase: "ready", backend: result.backend });
           return result;
         }).catch(error => {
@@ -88,7 +94,7 @@ export function createGoAiController({ onMove, onStatus, createWorker = () =>
       job.promise.then(result => {
         if (turn !== current || result.cancelled) return;
         const move = result.moves.find(action => applySoloGoAction(state, action).accepted);
-        if (!move) throw new Error("AI 返回的着法无效，请重试");
+        if (!move) throw new Error("AI 暂时无法落子，请重试");
         turn = undefined;
         onStatus({ phase: "ready", backend: result.backend, visits: result.visits });
         onMove(move);

@@ -29,7 +29,7 @@ export function createGoAiRuntime({ modelId = DEFAULT_GO_AI_MODEL_ID, backends =
   async function loadModel(size, status) {
     if (model) return tf.getBackend();
     if (!parsed) {
-      status(`正在加载 ${selectedModel.label} 模型…`);
+      status(`正在下载${selectedModel.difficulty} AI 资源…`);
       let reported = 0;
       const bytes = await downloadGoAiModel(selectedModel.url, {
         onProgress(loaded, total) {
@@ -37,10 +37,10 @@ export function createGoAiRuntime({ modelId = DEFAULT_GO_AI_MODEL_ID, backends =
           if (megabytes === reported) return;
           reported = megabytes;
           const progress = total > 0 ? `${megabytes} / ${Math.ceil(total / 1_000_000)} MB` : `${megabytes} MB`;
-          status(`正在加载 ${selectedModel.label} 模型 · ${progress}…`);
+          status(`正在下载${selectedModel.difficulty} AI 资源 · ${progress}…`);
         },
       });
-      status(`正在解析 ${selectedModel.label} 模型…`);
+      status(`正在准备${selectedModel.difficulty} AI…`);
       parsed = parseKataGoModelV8(bytes);
     }
     if (!model) {
@@ -48,7 +48,7 @@ export function createGoAiRuntime({ modelId = DEFAULT_GO_AI_MODEL_ID, backends =
         let candidate;
         try {
           if (backend === "webgpu" && !navigator.gpu) continue;
-          status(`正在初始化 ${backend === "webgpu" ? "WebGPU" : backend === "wasm" ? "WASM" : "CPU"}…`);
+          status(`正在准备${selectedModel.difficulty} AI…`);
           if (!await tf.setBackend(backend)) continue;
           await tf.ready();
           candidate = new KataGoModelV8Tf(parsed);
