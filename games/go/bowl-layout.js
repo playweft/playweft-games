@@ -1,5 +1,6 @@
 import { Vector3 } from "three";
 import { GO_TABLE_TOP, GO_TABLE_WIDTH, GO_TABLE_DEPTH } from "./table-model.js";
+import piles from "./assets/bowl-piles.js";
 
 // Bowl diameter is .329 of the board's width (about 15 cm on a 45 cm board).
 export const GO_BOWL_SCALE = .35;
@@ -29,31 +30,18 @@ export function bowlPickupRect(cup, board, space, near, landscape = false) {
   };
 }
 
+const pileCache = new Map();
+
+// Contact settling is baked offline; resizing or changing turns only reuses it.
 export function bowlStoneLayout(size, seed = 89) {
-  const radius = .435 / size / GO_BOWL_SCALE;
-  const random = () => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
-  const points = [], limit = Math.max(0, .425 - radius * .95);
-  const count = Math.min(64, Math.max(1, Math.round((.425 / radius) ** 2 * .65)));
-  const layers = radius < .1 ? 3 : 2;
-  const base = .31 - (layers - 2) * radius * .72;
-  for (let layer = 0; layer < layers; layer++) {
-    const group = [];
-    for (let attempt = 0; attempt < count * 150 && group.length < count; attempt++) {
-      const r = group.length ? limit * Math.sqrt(random()) : Math.min(limit, radius * .2) * random();
-      const angle = random() * Math.PI * 2;
-      const x = Math.cos(angle) * r, z = Math.sin(angle) * r;
-      const y = base + radius * (.32 + layer * .72 + random() * .55);
-      // Respect the lens's flatter vertical profile, allowing natural overlap in
-      // projection when stones sit at different heights, without a visible grid.
-      if (group.some(p => ((x-p.x)**2+(z-p.z)**2)/(radius*1.7)**2 +
-        (y-p.y)**2/(radius*.6)**2 < 1)) continue;
-      group.push({ x,z,y,radius,tiltX:(random()-.5)*.5,
-        tiltZ:(random()-.5)*.5,turn:random()*Math.PI*2 });
-    }
-    points.push(...group);
+  const key = `${size}:${seed}`;
+  if (!pileCache.has(key)) {
+    const radius = .435 / size / GO_BOWL_SCALE;
+    const coordinates = piles[key];
+    if (!coordinates) throw new RangeError("Unsupported Go bowl layout");
+    pileCache.set(key, Object.freeze(coordinates.map(([x, y, z, tiltX, turn, tiltZ, contacts = []]) =>
+      Object.freeze({ x, y, z, radius, tiltX, turn, tiltZ,
+        contacts: Object.freeze(contacts.map(point => Object.freeze(point))) }))));
   }
-  return points;
+  return pileCache.get(key);
 }

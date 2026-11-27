@@ -4,7 +4,7 @@ import { Box3, Euler, Matrix4, PerspectiveCamera, Quaternion, Vector3 } from "th
 import { GO_BOARD_TOP, configureSceneCamera, projectBounds, projectScenePoint } from "../games/go/scene-geometry.js";
 import { GO_BOWL_SCALE, tableBowlPosition, bowlPickupRect, bowlStoneLayout } from "../games/go/bowl-layout.js";
 import { GO_TABLE_TOP, GO_TABLE_WIDTH, GO_TABLE_DEPTH } from "../games/go/table-model.js";
-import { createGoStoneGeometry } from "../games/go/stone-shape.js";
+import { createGoStoneGeometry, STONE_TOP, STONE_BOTTOM } from "../games/go/stone-shape.js";
 
 function bowlBounds(near, size = 19, color = 1, landscape = false) {
   const bounds = new Box3(new Vector3(-.47,0,-.47),new Vector3(.47,.425,.47));
@@ -72,7 +72,7 @@ test("landscape cups sit near each player's table edge with room for their full 
   }
 });
 
-test("bowls retain visible pickup space when portrait framing crops the furniture", () => {
+test("bowls retain visible pickup space when closer framing crops the furniture", () => {
   const fixtures=[];
   for (const [width,height] of [[390,844],[534,850],[375,667],[414,560],[360,500]]) {
     const space={left:10,right:width-10,top:137,bottom:height-68};
@@ -80,13 +80,13 @@ test("bowls retain visible pickup space when portrait framing crops the furnitur
     fixtures.push({width,height,side,space,centerX:width/2,centerY:(space.top+space.bottom)/2});
   }
   for (const [width,height] of [[1280,900],[900,600],[1000,1200]]) {
-    const side=width>height ? Math.min((height-42)/1.6,(width-244)/2.2)
+    const side=width>height ? Math.min((height-42)/1.3,(width-244)/2)
       : Math.min((height-42)/2.2,(width-244)/1.5);
     fixtures.push({width,height,side,space:{left:0,right:width-220,top:0,bottom:height},
       centerX:(width-220)/2,centerY:(height-6)/2});
   }
   for (const [width,height] of [[844,390],[667,375]]) {
-    const side=Math.min((height-84)/1.6,(width-300)/2.2);
+    const side=Math.min((height-84)/1.2,(width-300)/2);
     fixtures.push({width,height,side,space:{left:0,right:width-260,top:60,bottom:height},
       centerX:(width-260)/2,centerY:(60+height)/2});
   }
@@ -97,11 +97,13 @@ test("bowls retain visible pickup space when portrait framing crops the furnitur
     configureSceneCamera(camera,board,viewport);
     const boardScreen=projectBounds(new Box3(new Vector3(-.5,GO_BOARD_TOP,-.5),
       new Vector3(.5,GO_BOARD_TOP,.5)),camera,viewport);
+    for (const edge of ["left","top"]) assert.ok(boardScreen[edge]>=space[edge],`${width}x${height}: board ${edge}`);
+    for (const edge of ["right","bottom"]) assert.ok(boardScreen[edge]<=space[edge],`${width}x${height}: board ${edge}`);
     for (const near of [false,true]) for (const size of [9,13,19]) for (const color of [1,2]) {
       const position=tableBowlPosition(near,landscape),before=position.clone();
       const screen=projectBounds(bowlBounds(near,size,color,landscape).translate(position),camera,viewport);
       const mobilePortrait=width<900 && !landscape;
-      if (mobilePortrait) {
+      if (mobilePortrait || landscape) {
         const visibleWidth=Math.min(screen.right,space.right)-Math.max(screen.left,space.left);
         const visibleHeight=Math.min(screen.bottom,space.bottom)-Math.max(screen.top,space.top);
         assert.ok(visibleWidth>=48 && visibleHeight>=32,`${width}x${height}: enough bowl remains visible to locate pickup`);
@@ -131,4 +133,45 @@ test("piles have varied heights and tilts, staying stable between renders and di
   assert.notDeepEqual(a,b);
   assert.ok(new Set(a.map(p=>p.y)).size>a.length/2);
   assert.ok(new Set(a.map(p=>p.tiltX)).size>a.length/2);
+});
+
+test("baked piles separate tilted lenses across layers, with local contact shading rather than whole-stone tints", () => {
+  const geometry = createGoStoneGeometry(), vertices = geometry.getAttribute("position");
+  const cap = (r, h) => {
+    const sphere = (1 + h * h) / (2 * h);
+    return h - sphere + Math.sqrt(sphere * sphere - r * r);
+  };
+  for (const size of [9, 13, 19]) for (const seed of [89, 233]) {
+    const points = bowlStoneLayout(size, seed);
+    assert.equal(points, bowlStoneLayout(size, seed), "reuse fixed data without running a solver");
+    const poses = points.map(p => {
+      const rotation = new Quaternion().setFromEuler(new Euler(p.tiltX, p.turn, p.tiltZ));
+      const center = new Vector3(p.x, p.y, p.z);
+      const surface = [];
+      for (let i = 0; i < vertices.count; i += 3) surface.push(new Vector3().fromBufferAttribute(vertices, i)
+        .multiplyScalar(p.radius).applyQuaternion(rotation).add(center));
+      return { center, inverse: rotation.invert(), surface, radius: p.radius };
+    });
+    const inside = (world, pose) => {
+      const p = world.clone().sub(pose.center).applyQuaternion(pose.inverse).divideScalar(pose.radius);
+      const r = Math.hypot(p.x, p.z);
+      return r < .98 && p.y > -cap(r, STONE_BOTTOM) + .004 && p.y < cap(r, STONE_TOP) - .004;
+    };
+    for (let i = 0; i < poses.length; i++) for (let j = 0; j < i; j++) {
+      if (poses[i].center.distanceTo(poses[j].center) > points[i].radius * 2.002) continue;
+      assert.equal(poses[i].surface.some(v => inside(v, poses[j])) ||
+        poses[j].surface.some(v => inside(v, poses[i])), false, `${size}/${seed}: stones ${i} and ${j} penetrate`);
+    }
+    if (seed === 89) assert.ok(points.reduce((count, p) => count + p.contacts.length, 0) > points.length,
+      "white piles have actual local contact patches");
+    for (const p of points) {
+      assert.ok(p.contacts.length <= 3);
+      for (const contact of p.contacts) {
+        assert.equal(contact.length, 3);
+        assert.ok(contact.every(Number.isFinite));
+        assert.ok(Math.hypot(...contact) <= 1.001, "contact patches stay on the stone surface");
+      }
+    }
+  }
+  geometry.dispose();
 });

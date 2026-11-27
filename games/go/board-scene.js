@@ -83,7 +83,7 @@ function mesh(geometry, material, parent, { shadow = true } = {}) {
   return item;
 }
 
-function bowlGroup(stoneGeometry, stoneMaterial, wood) {
+function bowlGroup(stoneGeometry, stoneMaterial, wood, color) {
   const group = new THREE.Group();
   const cup = new THREE.Group();
   cup.position.y = -.025;
@@ -100,7 +100,34 @@ function bowlGroup(stoneGeometry, stoneMaterial, wood) {
   const ring = mesh(new THREE.TorusGeometry(.39, .006, 5, 48), wood, group);
   ring.rotation.x = Math.PI / 2;
   ring.position.set(-1.03, .087, 0);
-  const pile = new THREE.InstancedMesh(stoneGeometry, stoneMaterial, 128);
+  // Share the board's base finish; only the bowl's contact shading differs.
+  const pileMaterial = color === 2 ? stoneMaterial.clone() : stoneMaterial;
+  const pileGeometry = color === 2 ? stoneGeometry.clone() : stoneGeometry;
+  if (color === 2) {
+    for (let i = 0; i < 3; i++) {
+      pileGeometry.setAttribute(`goContact${i}`, new THREE.InstancedBufferAttribute(new Float32Array(128 * 3), 3));
+    }
+    // Bake contact positions, not grey stone colours. Only nearby surface
+    // patches lose some indirect light; sunlight and highlights stay intact.
+    pileMaterial.onBeforeCompile = shader => {
+      shader.vertexShader = shader.vertexShader.replace("#include <common>", `#include <common>
+        attribute vec3 goContact0;
+        attribute vec3 goContact1;
+        attribute vec3 goContact2;
+        varying float goCavity;`);
+      shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", `#include <begin_vertex>
+        goCavity = max(max(
+          1.0 - smoothstep(0.08, 0.38, distance(position, goContact0)),
+          1.0 - smoothstep(0.08, 0.38, distance(position, goContact1))),
+          1.0 - smoothstep(0.08, 0.38, distance(position, goContact2)));`);
+      shader.fragmentShader = shader.fragmentShader.replace("#include <common>",
+        "#include <common>\nvarying float goCavity;");
+      shader.fragmentShader = shader.fragmentShader.replace("#include <aomap_fragment>",
+        "#include <aomap_fragment>\nreflectedLight.indirectDiffuse *= 1.0 - 0.45 * goCavity;");
+    };
+    pileMaterial.customProgramCacheKey = () => "go-bowl-contact-v1";
+  }
+  const pile = new THREE.InstancedMesh(pileGeometry, pileMaterial, 128);
   pile.castShadow = pile.receiveShadow = true;
   pile.count = 0;
   pile.frustumCulled = false;
@@ -128,7 +155,8 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
   sun.position.set(-7, 12, -8);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.radius = 2;
+  sun.shadow.radius = 4;
+  sun.shadow.intensity = .75;
   sun.shadow.bias = -.00003;
   sun.shadow.normalBias = .0004;
   sun.shadow.camera.near = 10;
@@ -157,7 +185,8 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
   const stoneGeometry = createGoStoneGeometry();
   const stoneMaterials = [
     new THREE.MeshPhongMaterial({ color: "#282b2d", specular: "#343a3d", shininess: 45 }),
-    new THREE.MeshPhongMaterial({ color: "#f4f0e5", specular: "#c6c3b5", shininess: 40 }),
+    new THREE.MeshPhysicalMaterial({ color: "#f4f0e5", roughness: .28,
+      clearcoat: .15, clearcoatRoughness: .32 }),
   ];
   const previewMaterials = stoneMaterials.map((material, i) => {
     const preview = material.clone();
@@ -185,7 +214,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
   marker.visible = false;
   const bowls = bowlElements.map(element => {
     const color = Number(element.dataset.color);
-    const result = bowlGroup(stoneGeometry, stoneMaterials[color - 1], wood);
+    const result = bowlGroup(stoneGeometry, stoneMaterials[color - 1], wood, color);
     result.group.scale.setScalar(GO_BOWL_SCALE);
     scene.add(result.group);
     return { ...result, element, color };
@@ -344,9 +373,16 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
           dummy.scale.setScalar(p.radius);
           dummy.updateMatrix();
           bowl.pile.setMatrixAt(i, dummy.matrix);
+          if (bowl.color === 2) for (let j = 0; j < 3; j++) {
+            const contact = p.contacts[j] ?? [4, 4, 4];
+            bowl.pile.geometry.getAttribute(`goContact${j}`).setXYZ(i, ...contact);
+          }
         }
         bowl.pile.count = placements.length;
         bowl.pile.instanceMatrix.needsUpdate = true;
+        if (bowl.color === 2) for (let j = 0; j < 3; j++) {
+          bowl.pile.geometry.getAttribute(`goContact${j}`).needsUpdate = true;
+        }
         bowl.pile.computeBoundingBox();
         bowl.size = size;
         shadowsChanged = true;

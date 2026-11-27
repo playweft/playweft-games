@@ -111,7 +111,7 @@
 
 @media (width >= 900px) and (orientation: landscape) {
   .go-layout.has-scene {
-    --go-board-size: clamp(220px, min(calc((100dvh - 42px) / 1.6), calc((100vw - 244px) / 2.2)), 820px);
+    --go-board-size: clamp(220px, min(calc((100dvh - 42px) / 1.3), calc((100vw - 244px) / 2)), 820px);
   }
 
   .has-scene .player-station {
@@ -179,7 +179,7 @@
   }
 
   .has-scene .board-shell {
-    --go-board-size: min(calc((100dvh - 84px) / 1.6), calc((100vw - 300px) / 2.2));
+    --go-board-size: min(calc((100dvh - 84px) / 1.2), calc((100vw - 300px) / 2));
     width: var(--go-board-size);
     grid-area: board;
     align-self: center;
