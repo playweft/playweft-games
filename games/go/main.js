@@ -377,7 +377,7 @@ const historyDialog = createOverlayDialog({
   surface: elements.historyDialog,
   closeButtons: [elements.historyClose],
   initialFocus: elements.historyDialog,
-  returnFocus: elements.more,
+  returnFocus: () => menuVisible ? elements.historyOpen : elements.more,
   beforeOpen: renderHistory,
   beforeClose: resetHistoryClear,
 });
@@ -919,7 +919,6 @@ elements.settings.addEventListener("click", () => {
   sendAction({ type: "configure" });
 });
 elements.historyOpen.addEventListener("click", () => {
-  setMoreMenuOpen(false);
   setHistoryOpen(true);
 });
 elements.gameInfoOpen.addEventListener("click", () => {

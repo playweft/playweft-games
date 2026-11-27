@@ -33,6 +33,18 @@
     </header>
 
     <main id="start-screen" class="start-screen" aria-labelledby="start-title">
+      <button
+        id="history-button"
+        class="round-icon-button start-history"
+        type="button"
+        aria-label="本地棋谱"
+        aria-haspopup="dialog"
+        aria-controls="history-panel"
+        disabled
+      >
+        <i data-lucide="notebook-pen" aria-hidden="true"></i>
+        <span>棋谱</span>
+      </button>
       <h1 id="start-title" class="start-title">
         <img
           src="./assets/launch-title.svg"
@@ -444,37 +456,38 @@
       </form>
     </dialog>
 
-    <main id="game-screen" class="go-layout" hidden>
-      <dialog
-        id="history-panel"
-        class="overlay-dialog history-panel"
-        aria-labelledby="history-title"
+    <dialog
+      id="history-panel"
+      class="overlay-dialog history-panel"
+      aria-labelledby="history-title"
+    >
+      <div
+        id="history-dialog"
+        class="overlay-dialog__surface history-dialog"
+        tabindex="-1"
       >
-        <div
-          id="history-dialog"
-          class="overlay-dialog__surface history-dialog"
-          tabindex="-1"
-        >
-          <header class="overlay-dialog__header">
-            <h2 id="history-title">本地棋谱</h2>
-            <button
-              id="history-close"
-              class="overlay-dialog__close"
-              type="button"
-              aria-label="关闭棋谱"
-            >
-              <i data-lucide="x"></i>
-            </button>
-          </header>
-          <ul id="history-list" class="history-list"></ul>
-          <footer class="history-footer">
-            <button id="history-clear" class="history-clear" type="button">
-              <i data-lucide="trash-2"></i>
-              <span id="history-clear-label">清空全部</span>
-            </button>
-          </footer>
-        </div>
-      </dialog>
+        <header class="overlay-dialog__header">
+          <h2 id="history-title">本地棋谱</h2>
+          <button
+            id="history-close"
+            class="overlay-dialog__close"
+            type="button"
+            aria-label="关闭棋谱"
+          >
+            <i data-lucide="x"></i>
+          </button>
+        </header>
+        <ul id="history-list" class="history-list"></ul>
+        <footer class="history-footer">
+          <button id="history-clear" class="history-clear" type="button">
+            <i data-lucide="trash-2"></i>
+            <span id="history-clear-label">清空全部</span>
+          </button>
+        </footer>
+      </div>
+    </dialog>
+
+    <main id="game-screen" class="go-layout" hidden>
 
       <dialog
         id="game-info-panel"
@@ -703,14 +716,6 @@
               role="menuitem"
             >
               <i data-lucide="info"></i><span>对局信息</span>
-            </button>
-            <button
-              id="history-button"
-              class="more-menu-item"
-              type="button"
-              role="menuitem"
-            >
-              <i data-lucide="notebook-pen"></i><span>本地棋谱</span>
             </button>
             <button id="result-button" class="more-menu-item" type="button" role="menuitem" hidden>
               <i data-lucide="flag" aria-hidden="true"></i><span>对局结果</span>

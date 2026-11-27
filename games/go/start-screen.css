@@ -21,6 +21,30 @@
   line-height: 0;
 }
 
+.start-history {
+  position: fixed;
+  z-index: 1;
+  top: 30%;
+  right: max(8px, env(safe-area-inset-right));
+  height: 64px;
+  align-content: center;
+  gap: 6px;
+  border-radius: 16px;
+  color: #5b5954;
+  font-size: .75rem;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.start-history:focus-visible {
+  outline: none;
+  background-color: rgb(32 34 41 / 8%);
+}
+
+.start-history:disabled {
+  opacity: .55;
+}
+
 .start-title img {
   display: block;
   width: 100%;

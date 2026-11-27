@@ -4,6 +4,7 @@ export function createStartScreen({ root, models, difficulty, onAi, onLocal, onO
   const home = find("#home-menu"), match = find("#match-menu");
   const playAi = find("#play-ai"), local = find("#play-local"), online = find("#play-online");
   const resume = find("#play-resume"), resumeEntry = find("#resume-entry");
+  const history = find("#history-button");
   const back = find("#match-menu-back"), advanced = find("#match-advanced"), start = find("#match-start");
   const select = find("#quick-ai-difficulty");
   const status = root.ownerDocument.querySelector("#start-status");
@@ -106,6 +107,7 @@ export function createStartScreen({ root, models, difficulty, onAi, onLocal, onO
       }
       clearTitleMotion();
       page = next;
+      history.hidden = page !== "home";
       if (page !== "home") {
         lastOpponent = page;
         title.textContent = page === "ai" ? "人机对战" : "本地双人";
@@ -144,7 +146,7 @@ export function createStartScreen({ root, models, difficulty, onAi, onLocal, onO
       if (!visible) clearTitleMotion();
       resumeId = nextResumeId;
       const blocked = !ready || busy || room;
-      for (const control of [playAi, local, select, advanced, start, back]) control.disabled = blocked;
+      for (const control of [playAi, local, select, advanced, start, back, history]) control.disabled = blocked;
       resume.disabled = blocked || !resumeId;
       online.disabled = blocked || (!standalone && !canCreateRoom);
       find("#play-online-label").textContent = creatingRoom ? "正在创建房间…" : "好友联机";
