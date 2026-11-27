@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
-import { GO_BOARD_TOP, configureSceneCamera, projectScenePoint, projectBounds,
+import { GO_BOARD_TOP, GO_VIEW_ANGLE, configureSceneCamera, projectScenePoint, projectBounds,
   sceneIntersection, boardIntersection } from "./scene-geometry.js";
 import { stoneDragPoint } from "./stone-drag.js";
 import { createGoStoneGeometry, STONE_TOP, STONE_BOTTOM, stoneLandingPose } from "./stone-shape.js";
@@ -9,6 +9,7 @@ import { createTableWood } from "./wooden-table.js";
 import { createGoTable, GO_TABLE_TOP } from "./table-model.js";
 import { GO_BOWL_SCALE, tableBowlPosition, bowlPickupRect, bowlStoneLayout } from "./bowl-layout.js";
 import { createStoneEnvironment } from "./stone-environment.js";
+import { createGoViewGesture } from "./view-gesture.js";
 import boardGrainUrl from "./assets/board-grain.webp?url";
 
 function random(seed) {
@@ -143,7 +144,7 @@ function bowlGroup(stoneGeometry, stoneMaterial, wood) {
   return { group, pile, lid, ring };
 }
 
-export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavailable, onReady }) {
+export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavailable, onReady, onViewChange }) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false,
     powerPreference: "low-power" });
   renderer.shadowMap.enabled = true;
@@ -233,6 +234,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
   let visible = !root.hidden, frame, disposed = false, lost = false, size = 0;
   let width = 0, height = 0, boardKey = "", layoutKey = "";
   let viewport;
+  let viewAngle = GO_VIEW_ANGLE;
   let grainImage, grainDirty = false;
   let previousPieces = [], animation;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -245,6 +247,27 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
   new THREE.ImageLoader(assets).load(boardGrainUrl, image => {
     grainImage = image; grainDirty = true; requestPaint();
   });
+  const viewGesture = createGoViewGesture({ root, surface: root.querySelector(".board-space"),
+    getEnabled: () => visible && presented && !lost && !root.hidden && !document.hidden,
+    getAngle: () => viewAngle,
+    onStart() { hoveredPoint = undefined; resetAnimation(); onViewChange?.(); },
+    onChange(angle) { viewAngle = angle; requestPaint(); },
+  });
+
+  function boardFitArea() {
+    let area = root.querySelector(".board-space").getBoundingClientRect();
+    if (area.width < 1 || area.height < 1) {
+      const tableRect = root.querySelector(".table-layout").getBoundingClientRect();
+      const far = root.querySelector(".player-station.is-far").getBoundingClientRect();
+      const near = root.querySelector(".player-station.is-near").getBoundingClientRect();
+      const separateRows = near.top >= far.bottom + 48;
+      const top = Math.max(tableRect.top, (separateRows ? far.bottom : Math.max(far.bottom, near.bottom)) + 8);
+      const bottom = separateRows ? near.top - 8 : tableRect.bottom;
+      area = { left: tableRect.left, top, width: tableRect.width, height: bottom - top };
+    }
+    return { left: area.left + 8, top: area.top + 8,
+      width: Math.max(1, area.width - 16), height: Math.max(1, area.height - 16) };
+  }
 
   function requestPaint() {
     if (frame !== undefined || !visible || disposed || lost || document.hidden) return;
@@ -277,18 +300,22 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
       ":" + board.querySelector(".is-last-move")?.getAttribute("aria-label");
     const isLandscape = landscape.matches;
     const reviewing = root.classList.contains("is-record-review");
-    const spaceRect = reviewing ? root.querySelector(".board-space").getBoundingClientRect() : rect;
-    const cameraRect = reviewing ? { left: spaceRect.left + 8, top: spaceRect.top + 8,
-      width: Math.max(1, spaceRect.width - 16), height: Math.max(1, spaceRect.height - 16) } : rect;
+    const baseFit = width >= 600 ? .35 : 0;
+    const boardFit = reviewing ? 1 : baseFit + (1 - baseFit) * (1 - viewAngle / GO_VIEW_ANGLE);
+    const fitRect = boardFit > 0 ? boardFitArea() : rect;
+    const cameraRect = reviewing ? fitRect : rect;
     const nextLayoutKey = `${rect.x}:${rect.y}:${rect.width}:${size}:${width}:${height}:${isLandscape}:${reviewing}:` +
-      `${cameraRect.left}:${cameraRect.top}:${cameraRect.width}:${cameraRect.height}`;
+      `${cameraRect.left}:${cameraRect.top}:${cameraRect.width}:${cameraRect.height}:${viewAngle}:` +
+      `${fitRect.left}:${fitRect.top}:${fitRect.width}:${fitRect.height}`;
     const layoutChanged = nextLayoutKey !== layoutKey;
     if (layoutChanged) {
-      configureSceneCamera(camera, cameraRect, viewport, { fitBoard: reviewing });
+      configureSceneCamera(camera, cameraRect, viewport, { boardFit, viewAngle, fitRect });
       furniture.rotation.y = isLandscape ? Math.PI / 2 : 0;
     }
     if (animation && board.dataset.animateMoves === "false") { animation = undefined; boardKey = ""; }
-    const rebuild = key !== boardKey || layoutChanged;
+    // Camera gestures only update projection and hit targets. Stationary stone
+    // buffers and the sun's shadow map remain reusable throughout the gesture.
+    const rebuild = key !== boardKey;
     let shadowsChanged = rebuild;
     if (rebuild) {
       const pieces = [...board.children].map(point => Number(point.dataset.piece) || 0);
@@ -327,7 +354,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
         batch.instanceMatrix.needsUpdate = true;
       });
       previousPieces = pieces;
-      boardKey = key; layoutKey = nextLayoutKey;
+      boardKey = key;
     }
     if (animation) {
       const { color, instanceIndex, radius, position, started } = animation;
@@ -420,6 +447,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
     Object.assign(sun.shadow.camera, { left: -extent, right: extent, top: extent, bottom: -extent });
     sun.shadow.camera.updateProjectionMatrix();
     if (shadowsChanged) renderer.shadowMap.needsUpdate = true;
+    layoutKey = nextLayoutKey;
     renderer.render(scene, camera);
     if (!presented) { presented = true; onReady?.(); }
     if (animation) requestPaint();
@@ -476,6 +504,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
     lost = true;
     presented = false;
     animation = undefined;
+    viewGesture.cancel();
     onUnavailable?.();
     cancelAnimationFrame(frame); frame = undefined;
     root.classList.remove("has-scene");
@@ -512,11 +541,13 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
         hoveredPoint = undefined;
       }
       visible = next;
+      if (!visible) viewGesture.cancel();
       if (visible) requestPaint();
       else { cancelAnimationFrame(frame); frame = undefined; }
     },
     dispose() {
       disposed = true;
+      viewGesture.dispose();
       cancelAnimationFrame(frame);
       observer.disconnect(); resize.disconnect();
       window.removeEventListener("resize", requestPaint);

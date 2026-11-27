@@ -62,7 +62,7 @@ test("review fits the complete projected board into the available area without c
     const viewport={width,height}, camera=new PerspectiveCamera(30,1,.1,100);
     configureSceneCamera(camera,rect,viewport);
     const position=camera.position.clone(), rotation=camera.quaternion.clone();
-    configureSceneCamera(camera,rect,viewport,{fitBoard:true});
+    configureSceneCamera(camera,rect,viewport,{boardFit:1});
     const bounds=projectBounds(board,camera,viewport);
     assert.ok(bounds.left>=rect.left-1e-6 && bounds.right<=rect.left+rect.width+1e-6);
     assert.ok(bounds.top>=rect.top-1e-6 && bounds.bottom<=rect.top+rect.height+1e-6);
@@ -78,4 +78,54 @@ test("review fits the complete projected board into the available area without c
         {row:row+1,column:column+1});
     }
   }
+});
+
+test("every tilt, including exact overhead, preserves board fitting and touch intersections on phones and tablets", () => {
+  const board = new Box3(new Vector3(-.5, GO_TABLE_TOP, -.5), new Vector3(.5, GO_BOARD_TOP, .5));
+  for (const [width, height] of [[390, 844], [844, 390], [768, 1024], [1024, 768],
+    [820, 1180], [1180, 820], [1024, 1366], [1366, 1024]]) {
+    const viewport = { width, height };
+    const rect = { left: 20, top: 100, width: width < height ? width - 40 : width - 320, height: height - 200 };
+    for (const degrees of [0, .01, 6, 13, 20, 26]) {
+      const camera = new PerspectiveCamera(30, 1, .1, 100);
+      configureSceneCamera(camera, rect, viewport, { boardFit: 1, viewAngle: degrees * Math.PI / 180 });
+      const bounds = projectBounds(board, camera, viewport);
+      assert.ok(bounds.left >= rect.left - 1e-6 && bounds.right <= rect.left + rect.width + 1e-6);
+      assert.ok(bounds.top >= rect.top - 1e-6 && bounds.bottom <= rect.top + rect.height + 1e-6);
+      assert.ok(camera.projectionMatrix.elements.every(Number.isFinite), "no singular overhead camera");
+      for (const size of [9, 13, 19]) for (const row of [0, Math.floor(size / 2), size - 1]) {
+        for (const column of [0, Math.floor(size / 2), size - 1]) {
+          const local = boardIntersection(row, column, size);
+          const point = projectScenePoint(local.x, GO_BOARD_TOP, local.z, camera, viewport);
+          assert.deepEqual(sceneIntersection(point, camera, viewport, size), { row: row + 1, column: column + 1 });
+        }
+      }
+      if (degrees === 0) {
+        const topLeft = projectScenePoint(-.5, GO_BOARD_TOP, -.5, camera, viewport);
+        const topRight = projectScenePoint(.5, GO_BOARD_TOP, -.5, camera, viewport);
+        const bottomLeft = projectScenePoint(-.5, GO_BOARD_TOP, .5, camera, viewport);
+        assert.ok(topLeft.x < topRight.x && topLeft.y < bottomLeft.y, "keep the board upright");
+        assert.ok(Math.abs(topRight.x - topLeft.x - (bottomLeft.y - topLeft.y)) < 1e-6, "overhead is square");
+      }
+    }
+  }
+});
+
+test("framing blends continuously from the existing view to a board-only crop", () => {
+  const camera = new PerspectiveCamera(30, 1, .1, 100), viewport = { width: 390, height: 844 };
+  const rect = { left: 34, top: 290, width: 322, height: 322 };
+  const fitRect = { left: 18, top: 137, width: 354, height: 630 };
+  const board = new Box3(new Vector3(-.5, GO_TABLE_TOP, -.5), new Vector3(.5, GO_BOARD_TOP, .5));
+  let previous;
+  for (let step = 0; step <= 100; step++) {
+    const boardFit = step / 100, viewAngle = (1 - boardFit) * 26 * Math.PI / 180;
+    configureSceneCamera(camera, rect, viewport, { boardFit, viewAngle, fitRect });
+    const bounds = projectBounds(board, camera, viewport);
+    if (previous) for (const edge of ["left", "right", "top", "bottom"]) {
+      assert.ok(Math.abs(bounds[edge] - previous[edge]) < 2, "no crop jump on the first gesture frame");
+    }
+    previous = bounds;
+  }
+  assert.ok(Math.abs(previous.left - fitRect.left) < 1e-6);
+  assert.ok(Math.abs(previous.right - fitRect.left - fitRect.width) < 1e-6);
 });

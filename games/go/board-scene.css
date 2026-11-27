@@ -88,6 +88,11 @@
   top: calc(var(--go-board-size) * -.16);
 }
 
+.has-scene .board-space,
+.has-scene .board-shell {
+  touch-action: none;
+}
+
 @media (orientation: landscape) {
   .has-scene .board-shell {
     top: calc(var(--go-board-size) * -.1);
@@ -178,10 +183,18 @@
     display: contents;
   }
 
+  .has-scene .board-space {
+    display: grid;
+    grid-area: board;
+    min-width: 0;
+    min-height: 0;
+    place-items: center;
+  }
+
   .has-scene .board-shell {
     --go-board-size: min(calc((100dvh - 84px) / 1.2), calc((100vw - 300px) / 2));
     width: var(--go-board-size);
-    grid-area: board;
+    grid-area: auto;
     align-self: center;
   }
 

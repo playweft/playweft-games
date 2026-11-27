@@ -7,13 +7,18 @@ const CAMERA_DISTANCE = 3.5;
 const ray = new Raycaster();
 const plane = new Plane(new Vector3(0, 1, 0), -GO_BOARD_TOP);
 
-export function configureSceneCamera(camera, rect, viewport, { fitBoard = false } = {}) {
+export function configureSceneCamera(camera, rect, viewport,
+  { boardFit = 0, viewAngle = GO_VIEW_ANGLE, fitRect = rect } = {}) {
+  const angle = Math.max(0, Math.min(GO_VIEW_ANGLE, viewAngle));
+  const fit = Math.max(0, Math.min(1, boardFit));
   // Keep perspective consistent across portrait and landscape, fitting the board
   // at its center rather than changing the camera's physical distance.
   camera.fov = 2 * Math.atan(viewport.height / (2 * CAMERA_DISTANCE * rect.width)) * 180 / Math.PI;
   camera.aspect = viewport.width / viewport.height;
-  camera.position.set(0, GO_BOARD_TOP + CAMERA_DISTANCE * Math.cos(GO_VIEW_ANGLE),
-    CAMERA_DISTANCE * Math.sin(GO_VIEW_ANGLE));
+  camera.position.set(0, GO_BOARD_TOP + CAMERA_DISTANCE * Math.cos(angle),
+    CAMERA_DISTANCE * Math.sin(angle));
+  // A stable screen-up direction also works at exactly zero pitch.
+  camera.up.set(0, 0, -1);
   camera.lookAt(0, GO_BOARD_TOP, 0);
   camera.setViewOffset(viewport.width, viewport.height,
     viewport.width / 2 - rect.left - rect.width / 2,
@@ -21,17 +26,17 @@ export function configureSceneCamera(camera, rect, viewport, { fitBoard = false 
     viewport.width, viewport.height);
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld();
-  if (fitBoard) {
+  if (fit > 0) {
     const board = new Box3(new Vector3(-.5, GO_TABLE_TOP, -.5), new Vector3(.5, GO_BOARD_TOP, .5));
     let bounds = projectBounds(board, camera, viewport);
-    const scale = Math.min(rect.width / (bounds.right - bounds.left), rect.height / (bounds.bottom - bounds.top));
-    camera.fov = 2 * Math.atan(Math.tan(camera.fov * Math.PI / 360) / scale) * 180 / Math.PI;
+    const scale = Math.min(fitRect.width / (bounds.right - bounds.left), fitRect.height / (bounds.bottom - bounds.top));
+    camera.fov = 2 * Math.atan(Math.tan(camera.fov * Math.PI / 360) / (1 + (scale - 1) * fit)) * 180 / Math.PI;
     camera.updateProjectionMatrix();
     bounds = projectBounds(board, camera, viewport);
     // Center the projected board, including its thickness, without changing the viewing angle.
     camera.setViewOffset(viewport.width, viewport.height,
-      camera.view.offsetX + (bounds.left + bounds.right - rect.left * 2 - rect.width) / 2,
-      camera.view.offsetY + (bounds.top + bounds.bottom - rect.top * 2 - rect.height) / 2,
+      camera.view.offsetX + (bounds.left + bounds.right - fitRect.left * 2 - fitRect.width) / 2 * fit,
+      camera.view.offsetY + (bounds.top + bounds.bottom - fitRect.top * 2 - fitRect.height) / 2 * fit,
       viewport.width, viewport.height);
   }
 }

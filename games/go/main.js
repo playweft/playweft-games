@@ -453,6 +453,7 @@ const stoneDrag = createGoStoneDrag({
 const sceneView = createGoSceneView({ root: elements.gameScreen, board: elements.board,
   bowls: elements.bowls,
   onUnavailable: () => stoneDrag.cancel(),
+  onViewChange() { stoneDrag.cancel(); clearPendingMove(); },
 });
 
 async function handleReady(message) {
