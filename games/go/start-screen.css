@@ -1,4 +1,12 @@
 /* Keep the title and controls separate from the decorative artwork. */
+@font-face {
+  font-family: "Go Menu Calligraphy";
+  src: url("./assets/fonts/ma-shan-zheng-menu.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 .start-screen {
   display: flex;
   min-height: 100dvh;
@@ -53,6 +61,8 @@
 
 .start-controls {
   width: min(360px, 100%);
+  font-family: "Go Menu Calligraphy", serif;
+  font-synthesis: none;
   text-align: center;
 }
 
@@ -110,7 +120,7 @@
   left: 0;
   z-index: 1;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 400;
   text-align: left;
   white-space: nowrap;
   pointer-events: none;
@@ -132,7 +142,7 @@
   margin: 0;
   outline: 0;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .start-difficulty {
@@ -177,6 +187,7 @@
   min-height: 1.5em;
   color: rgb(255 255 255 / 72%);
   font-size: 0.75rem;
+  font-family: system-ui, sans-serif;
   font-weight: 400;
   line-height: 1.5;
 }
@@ -194,7 +205,7 @@
   background: rgb(246 242 237 / 82%);
   color: #393834;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 400;
   text-align: left;
   box-shadow:
     0 0 24px 2px rgb(60 52 46 / 12%),
