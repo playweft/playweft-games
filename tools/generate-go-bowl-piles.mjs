@@ -107,7 +107,7 @@ function contactPoints(points) {
 const piles = {};
 for (const size of [9, 13, 19]) for (const seed of [89, 233]) {
   const points = generatePile(size, seed);
-  const contacts = seed === 89 ? contactPoints(points) : points.map(() => []);
+  const contacts = contactPoints(points);
   piles[`${size}:${seed}`] = points.map((p, i) => [
     ...[p.x, p.y, p.z, p.tiltX, p.turn, p.tiltZ].map(value => Number(value.toFixed(6))), contacts[i],
   ]);

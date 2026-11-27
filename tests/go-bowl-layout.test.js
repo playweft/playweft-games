@@ -164,6 +164,7 @@ test("baked piles separate tilted lenses across layers, with local contact shadi
     }
     if (seed === 89) assert.ok(points.reduce((count, p) => count + p.contacts.length, 0) > points.length,
       "white piles have actual local contact patches");
+    else assert.ok(points.some(p => p.contacts.length > 0), "black piles also retain contact patches");
     for (const p of points) {
       assert.ok(p.contacts.length <= 3);
       for (const contact of p.contacts) {

@@ -8,6 +8,7 @@ import { createCourtyard } from "./courtyard.js";
 import { createTableWood } from "./wooden-table.js";
 import { createGoTable, GO_TABLE_TOP } from "./table-model.js";
 import { GO_BOWL_SCALE, tableBowlPosition, bowlPickupRect, bowlStoneLayout } from "./bowl-layout.js";
+import { createStoneEnvironment } from "./stone-environment.js";
 import boardGrainUrl from "./assets/board-grain.webp?url";
 
 function random(seed) {
@@ -83,7 +84,7 @@ function mesh(geometry, material, parent, { shadow = true } = {}) {
   return item;
 }
 
-function bowlGroup(stoneGeometry, stoneMaterial, wood, color) {
+function bowlGroup(stoneGeometry, stoneMaterial, wood) {
   const group = new THREE.Group();
   const cup = new THREE.Group();
   cup.position.y = -.025;
@@ -101,32 +102,39 @@ function bowlGroup(stoneGeometry, stoneMaterial, wood, color) {
   ring.rotation.x = Math.PI / 2;
   ring.position.set(-1.03, .087, 0);
   // Share the board's base finish; only the bowl's contact shading differs.
-  const pileMaterial = color === 2 ? stoneMaterial.clone() : stoneMaterial;
-  const pileGeometry = color === 2 ? stoneGeometry.clone() : stoneGeometry;
-  if (color === 2) {
-    for (let i = 0; i < 3; i++) {
-      pileGeometry.setAttribute(`goContact${i}`, new THREE.InstancedBufferAttribute(new Float32Array(128 * 3), 3));
-    }
-    // Bake contact positions, not grey stone colours. Only nearby surface
-    // patches lose some indirect light; sunlight and highlights stay intact.
-    pileMaterial.onBeforeCompile = shader => {
-      shader.vertexShader = shader.vertexShader.replace("#include <common>", `#include <common>
-        attribute vec3 goContact0;
-        attribute vec3 goContact1;
-        attribute vec3 goContact2;
-        varying float goCavity;`);
-      shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", `#include <begin_vertex>
-        goCavity = max(max(
-          1.0 - smoothstep(0.08, 0.38, distance(position, goContact0)),
-          1.0 - smoothstep(0.08, 0.38, distance(position, goContact1))),
-          1.0 - smoothstep(0.08, 0.38, distance(position, goContact2)));`);
-      shader.fragmentShader = shader.fragmentShader.replace("#include <common>",
-        "#include <common>\nvarying float goCavity;");
-      shader.fragmentShader = shader.fragmentShader.replace("#include <aomap_fragment>",
-        "#include <aomap_fragment>\nreflectedLight.indirectDiffuse *= 1.0 - 0.45 * goCavity;");
-    };
-    pileMaterial.customProgramCacheKey = () => "go-bowl-contact-v1";
+  const pileMaterial = stoneMaterial.clone();
+  const pileGeometry = stoneGeometry.clone();
+  for (let i = 0; i < 3; i++) {
+    pileGeometry.setAttribute(`goContact${i}`, new THREE.InstancedBufferAttribute(new Float32Array(128 * 3), 3));
   }
+  // Bake contact positions, not grey stone colours. Only nearby surface
+  // patches lose some indirect light; sunlight and highlights stay intact.
+  pileMaterial.onBeforeCompile = shader => {
+    shader.vertexShader = shader.vertexShader.replace("#include <common>", `#include <common>
+      attribute vec3 goContact0;
+      attribute vec3 goContact1;
+      attribute vec3 goContact2;
+      varying float goCavity;`);
+    shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", `#include <begin_vertex>
+      goCavity = max(max(
+        1.0 - smoothstep(0.08, 0.38, distance(position, goContact0)),
+        1.0 - smoothstep(0.08, 0.38, distance(position, goContact1))),
+        1.0 - smoothstep(0.08, 0.38, distance(position, goContact2)));`);
+    shader.fragmentShader = shader.fragmentShader.replace("#include <common>",
+      "#include <common>\nvarying float goCavity;");
+    shader.fragmentShader = shader.fragmentShader.replace("#include <aomap_fragment>",
+      `#include <aomap_fragment>
+      float goOcclusion = 1.0 - 0.45 * goCavity;
+      reflectedLight.indirectDiffuse *= goOcclusion;
+      #ifdef USE_ENVMAP
+        reflectedLight.indirectSpecular *= computeSpecularOcclusion(
+          saturate(dot(geometryNormal, geometryViewDir)), goOcclusion, material.roughness);
+        #ifdef USE_CLEARCOAT
+          clearcoatSpecularIndirect *= goOcclusion;
+        #endif
+      #endif`);
+  };
+  pileMaterial.customProgramCacheKey = () => "go-bowl-contact-v2";
   const pile = new THREE.InstancedMesh(pileGeometry, pileMaterial, 128);
   pile.castShadow = pile.receiveShadow = true;
   pile.count = 0;
@@ -183,8 +191,11 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
     new THREE.Vector3(.5,GO_BOARD_TOP,.5));
 
   const stoneGeometry = createGoStoneGeometry();
+  const stoneEnvironment = createStoneEnvironment(renderer);
   const stoneMaterials = [
-    new THREE.MeshPhongMaterial({ color: "#282b2d", specular: "#343a3d", shininess: 45 }),
+    new THREE.MeshPhysicalMaterial({ color: "#282a2a", roughness: .38,
+      specularIntensity: .7, clearcoat: .08, clearcoatRoughness: .42,
+      ...(stoneEnvironment ? { envMap: stoneEnvironment.texture, envMapIntensity: .3 } : {}) }),
     new THREE.MeshPhysicalMaterial({ color: "#f4f0e5", roughness: .28,
       clearcoat: .15, clearcoatRoughness: .32 }),
   ];
@@ -214,7 +225,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
   marker.visible = false;
   const bowls = bowlElements.map(element => {
     const color = Number(element.dataset.color);
-    const result = bowlGroup(stoneGeometry, stoneMaterials[color - 1], wood, color);
+    const result = bowlGroup(stoneGeometry, stoneMaterials[color - 1], wood);
     result.group.scale.setScalar(GO_BOWL_SCALE);
     scene.add(result.group);
     return { ...result, element, color };
@@ -373,14 +384,14 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
           dummy.scale.setScalar(p.radius);
           dummy.updateMatrix();
           bowl.pile.setMatrixAt(i, dummy.matrix);
-          if (bowl.color === 2) for (let j = 0; j < 3; j++) {
+          for (let j = 0; j < 3; j++) {
             const contact = p.contacts[j] ?? [4, 4, 4];
             bowl.pile.geometry.getAttribute(`goContact${j}`).setXYZ(i, ...contact);
           }
         }
         bowl.pile.count = placements.length;
         bowl.pile.instanceMatrix.needsUpdate = true;
-        if (bowl.color === 2) for (let j = 0; j < 3; j++) {
+        for (let j = 0; j < 3; j++) {
           bowl.pile.geometry.getAttribute(`goContact${j}`).needsUpdate = true;
         }
         bowl.pile.computeBoundingBox();
@@ -471,6 +482,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
     restoreHitGrid();
   });
   canvas.addEventListener("webglcontextrestored", () => {
+    stoneEnvironment?.refresh();
     lost = false; boardKey = layoutKey = "";
     requestPaint();
   });
@@ -533,6 +545,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
       geometries.forEach(item => item.dispose());
       materials.forEach(item => item.dispose()); maps.forEach(item => item.dispose());
       previewMaterials.forEach(item => { if (!materials.has(item)) item.dispose(); });
+      stoneEnvironment?.dispose();
       sun.shadow.dispose(); renderer.dispose(); canvas.remove();
       root.classList.remove("has-scene"); restoreHitGrid();
     },
