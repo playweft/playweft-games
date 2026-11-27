@@ -49,17 +49,10 @@ body.has-overlay-dialog {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  transition: opacity 180ms ease;
 }
 
 .overlay-dialog[data-state="open"] .overlay-dialog__surface {
   opacity: 1;
-}
-
-@starting-style {
-  .overlay-dialog[data-state="open"] .overlay-dialog__surface {
-    opacity: 0;
-  }
 }
 
 .overlay-dialog__header {
@@ -124,12 +117,5 @@ body.has-overlay-dialog {
     transform: translateY(0);
     transition: none;
     will-change: transform;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .overlay-dialog,
-  .overlay-dialog__surface {
-    transition-duration: 1ms;
   }
 }

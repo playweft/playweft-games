@@ -89,6 +89,7 @@ test("first and second recommendations retain ranking, pass and Black-perspectiv
     "preserve engine ranking rather than sorting by Black win rate on White's turn");
   const restored = harness();
   restored.analysis.select("white-to-move", 1, restored.position, JSON.parse(JSON.stringify(first.saves[0])));
+  assert.deepEqual(restored.updates.at(-1).recommendations,[candidates[0]],"show the engine's first choice, including a pass");
   assert.equal(restored.updates.at(-1).complete, true);
   restored.analysis.start();
   assert.equal(restored.workers.length, 0);

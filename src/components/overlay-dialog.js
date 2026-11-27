@@ -6,6 +6,8 @@ const ENTER_DURATION = 0.225;
 const EXIT_DURATION = 0.195;
 const ENTER_EASING = [0, 0, 0.2, 1];
 const EXIT_EASING = [0.4, 0, 1, 1];
+const DIALOG_EASING = [0.4, 0, 0.6, 1];
+const CLOSED_TRANSFORM = "scale(0.98)";
 
 function syncPageLock() {
   document.body.classList.toggle(
@@ -62,20 +64,28 @@ export function createOverlayDialog({
     stopMotion();
     const id = ++motionId;
     const duration = reducedMotion() ? 0 : ENTER_DURATION;
+    const sheet = isBottomSheet();
+    const ease = sheet ? ENTER_EASING : DIALOG_EASING;
     if (initial) {
-      if (isBottomSheet())
+      if (sheet)
         surface.style.transform = `translateY(${sheetOffset()}px)`;
-      else surface.style.opacity = "0";
+      else {
+        surface.style.opacity = "0";
+        surface.style.transform = CLOSED_TRANSFORM;
+      }
       root.style.backgroundColor = "rgba(0, 0, 0, 0)";
       root.style.backdropFilter = "blur(0px)";
     }
-    surfaceMotion = isBottomSheet()
+    surfaceMotion = sheet
       ? animate(
           surface,
           { transform: "translateY(0px)" },
-          { duration, ease: ENTER_EASING },
+          { duration, ease },
         )
-      : animate(surface, { opacity: 1 }, { duration, ease: ENTER_EASING });
+      : animate(surface, {
+          opacity: initial ? [0, 1] : 1,
+          transform: initial ? [CLOSED_TRANSFORM, "scale(1)"] : "scale(1)",
+        }, { duration, ease });
     backdropMotion = animate(
       root,
       {
@@ -88,7 +98,7 @@ export function createOverlayDialog({
           "blur(0px)",
         ),
       },
-      { duration, ease: ENTER_EASING },
+      { duration, ease },
     );
     Promise.all([surfaceMotion, backdropMotion]).then(() => {
       if (id === motionId && root.dataset.state === "open") {
@@ -101,18 +111,20 @@ export function createOverlayDialog({
   function playExit() {
     stopMotion();
     const id = ++motionId;
-    const duration = reducedMotion() ? 0 : EXIT_DURATION;
-    surfaceMotion = isBottomSheet()
+    const sheet = isBottomSheet();
+    const duration = reducedMotion() ? 0 : sheet ? EXIT_DURATION : ENTER_DURATION;
+    const ease = sheet ? EXIT_EASING : DIALOG_EASING;
+    surfaceMotion = sheet
       ? animate(
           surface,
           { transform: `translateY(${sheetOffset()}px)` },
-          { duration, ease: EXIT_EASING },
+          { duration, ease },
         )
-      : animate(surface, { opacity: 0 }, { duration, ease: EXIT_EASING });
+      : animate(surface, { opacity: 0, transform: CLOSED_TRANSFORM }, { duration, ease });
     backdropMotion = animate(
       root,
       { backgroundColor: "rgba(0, 0, 0, 0)", backdropFilter: "blur(0px)" },
-      { duration, ease: EXIT_EASING },
+      { duration, ease },
     );
     Promise.all([surfaceMotion, backdropMotion]).then(() => {
       if (id === motionId && root.open && root.dataset.state === "closing") {

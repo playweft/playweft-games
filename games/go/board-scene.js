@@ -10,6 +10,7 @@ import { createGoTable, GO_TABLE_TOP } from "./table-model.js";
 import { GO_BOWL_SCALE, tableBowlPosition, bowlPickupRect, bowlStoneLayout } from "./bowl-layout.js";
 import { createStoneEnvironment } from "./stone-environment.js";
 import { createGoViewGesture } from "./view-gesture.js";
+import { createGoRecommendationMarker, updateGoRecommendationMarker } from "./recommendation-marker.js";
 import boardGrainUrl from "./assets/board-grain.webp?url";
 
 function random(seed) {
@@ -193,6 +194,8 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
 
   const stoneGeometry = createGoStoneGeometry();
   const stoneEnvironment = createStoneEnvironment(renderer);
+  const recommendationMarker=createGoRecommendationMarker(stoneEnvironment?.texture);
+  table.add(recommendationMarker);
   const stoneMaterials = [
     new THREE.MeshPhysicalMaterial({ color: "#282a2a", roughness: .38,
       specularIntensity: .7, clearcoat: .08, clearcoatRoughness: .42,
@@ -373,6 +376,9 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
       shadowsChanged = true;
       if (pose.settled) animation = undefined;
     }
+    const recommendedPoint=reviewing ? board.querySelector(".is-ai-first") : null;
+    const recommendedIndex=recommendedPoint?.dataset.piece==="0" ? [...board.children].indexOf(recommendedPoint) : -1;
+    updateGoRecommendationMarker(recommendationMarker,recommendedIndex,size);
     const previewPoint = board.querySelector(".is-pending-move") ||
       board.querySelector(".go-point:focus-visible") || hoveredPoint;
     previewStone.visible = Boolean(previewPoint?.parentElement === board &&

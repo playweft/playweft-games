@@ -28,7 +28,7 @@ function harness(enabled = true) {
     selections.push(index); review.select(index);
   } });
   return { view, root, find, review, selections, timers,
-    open(count = 4, saved) { review.open("record", count, () => ({ board: [[0]] }), saved); },
+    open(count = 4, saved, position = () => ({ board: [[0]] })) { review.open("record", count, position, saved); },
     setPortrait(value) { portrait.matches=value; portrait.dispatchEvent(new view.Event("change")); },
     setHeaderBack(value) { headerBack.matches=value; headerBack.dispatchEvent(new view.Event("change")); },
     tick() { for (const callback of [...timers.values()]) callback(); },
@@ -110,6 +110,51 @@ test("portrait analysis expands above playback; wider layouts move the same pane
     h.setPortrait(false); h.open();
     assert.equal(panel.parentElement,h.root.querySelector(".action-panel"));
     assert.equal(toggle.getAttribute("aria-expanded"),"false");
+  } finally { await h.close(); }
+});
+
+test("only the current position's first recommendation appears while analysis is expanded", async () => {
+  const h=harness();
+  try {
+    const board=h.find("board");
+    for(let i=0;i<361;i++) {
+      const point=h.view.document.createElement("button");point.dataset.piece="0";board.append(point);
+    }
+    const candidate=(row,column)=>({type:"play",row,column,blackWinRate:.6,scoreLead:2,visits:20});
+    const first=candidate(4,16), second=candidate(10,10), next=candidate(16,4);
+    const saved={formatVersion:1,key:"record",results:[
+      {blackWinRate:.6,candidates:[first,second]},
+      {blackWinRate:.5,candidates:[next]},
+      {blackWinRate:.4,candidates:[{type:"pass",blackWinRate:.4,scoreLead:-2,visits:20}]},
+      {blackWinRate:.3},
+    ]};
+    const position={board:Array.from({length:19},()=>Array(19).fill(null))};
+    h.open(4,saved,()=>position);
+    h.review.select(0);
+    assert.equal(board.querySelector(".is-ai-first"),null,"analysis is opt-in even with saved recommendations");
+    const toggle=h.find("record-winrate-toggle");toggle.click();
+    assert.equal(board.querySelectorAll(".is-ai-first").length,1);
+    assert.ok(board.children[3*19+15].classList.contains("is-ai-first"));
+    assert.equal(board.children[3*19+15].getAttribute("aria-description"),"AI 一选：Q16");
+    assert.match(h.find("record-winrate-status").textContent,/一选：Q16/);
+    h.review.select(1);
+    assert.ok(board.children[15*19+3].classList.contains("is-ai-first"));
+    assert.equal(board.children[3*19+15].hasAttribute("aria-description"),false);
+    h.review.select(2);
+    assert.equal(board.querySelector(".is-ai-first"),null,"a pass never falls back to a different move");
+    assert.match(h.find("record-winrate-status").textContent,/一选：停一手/);
+    h.review.select(3);
+    assert.equal(board.querySelector(".is-ai-first"),null,"old win-rate-only analysis has no invented recommendation");
+    h.review.select(0);toggle.click();
+    assert.equal(board.querySelector(".is-ai-first"),null);
+    toggle.click();
+    assert.equal(board.querySelectorAll(".is-ai-first").length,1);
+    position.board[3][15]="black";h.review.select(0);
+    assert.equal(board.querySelector(".is-ai-first"),null,"occupied recommendations are ignored");
+    position.board=Array.from({length:9},()=>Array(9).fill(null));h.review.select(0);
+    assert.equal(board.querySelector(".is-ai-first"),null,"19x19 recommendations cannot leak onto smaller boards");
+    h.review.close();
+    assert.equal(board.querySelector(".is-ai-first"),null);
   } finally { await h.close(); }
 });
 

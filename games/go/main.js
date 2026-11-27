@@ -115,6 +115,7 @@ const elements = {
   setupFeedback: document.querySelector("#setup-feedback"),
   historyPanel: document.querySelector("#history-panel"),
   historyDialog: document.querySelector("#history-dialog"),
+  historyBack: document.querySelector("#history-back"),
   historyList: document.querySelector("#history-list"),
   historyOpen: document.querySelector("#history-button"),
   help: document.querySelector("#help-link"),
@@ -394,7 +395,7 @@ function renderAiFeedback() {
 const historyDialog = createOverlayDialog({
   root: elements.historyPanel,
   surface: elements.historyDialog,
-  closeButtons: [elements.historyClose],
+  closeButtons: [elements.historyClose, elements.historyBack],
   initialFocus: elements.historyDialog,
   returnFocus: () => reviewingRecord ? elements.replaySlider : menuVisible ? elements.historyOpen : elements.more,
   beforeOpen: renderHistory,

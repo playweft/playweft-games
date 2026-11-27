@@ -78,6 +78,8 @@ a:focus-visible {
   overflow: hidden;
 }
 
+.history-back { display: none; }
+
 .game-info-dialog {
   width: min(420px, 100%);
 }
@@ -2041,4 +2043,48 @@ a:focus-visible {
   .game-back-spacer { display: none; }
   .game-header .game-back { display: grid; margin: 0; }
   .go-layout { min-height: 100dvh; }
+}
+
+@media (width < 600px) and (orientation: portrait) {
+  .history-panel {
+    height: 100dvh;
+    padding: 0;
+  }
+
+  .history-panel .history-dialog {
+    height: 100%;
+    max-height: none;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+      env(safe-area-inset-bottom) env(safe-area-inset-left);
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .history-dialog > .overlay-dialog__header,
+  .history-dialog > .history-footer {
+    flex-shrink: 0;
+  }
+
+  .history-dialog > .overlay-dialog__header {
+    justify-content: flex-start;
+    gap: 12px;
+  }
+
+  .history-dialog .history-back {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    margin-left: -8px;
+    flex-shrink: 0;
+  }
+
+  .history-dialog .overlay-dialog__close { display: none; }
+
+  .history-dialog .history-list {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .history-dialog .history-empty { flex: 1; }
 }

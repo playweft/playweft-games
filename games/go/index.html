@@ -34,18 +34,20 @@
     </header>
 
     <main id="start-screen" class="start-screen" aria-labelledby="start-title">
-      <button
-        id="history-button"
-        class="round-icon-button start-history"
-        type="button"
-        aria-label="本地棋谱"
-        aria-haspopup="dialog"
-        aria-controls="history-panel"
-        disabled
-      >
-        <i data-lucide="notebook-pen" aria-hidden="true"></i>
-        <span>棋谱</span>
-      </button>
+      <div class="start-floating-actions" role="group" aria-label="快捷操作">
+        <button
+          id="history-button"
+          class="start-floating-button"
+          type="button"
+          aria-label="本地棋谱"
+          aria-haspopup="dialog"
+          aria-controls="history-panel"
+          disabled
+        >
+          <i data-lucide="notebook-pen" aria-hidden="true"></i>
+          <span>棋谱</span>
+        </button>
+      </div>
       <h1 id="start-title" class="start-title">
         <img
           src="./assets/launch-title.svg"
@@ -468,6 +470,9 @@
         tabindex="-1"
       >
         <header class="overlay-dialog__header">
+          <button id="history-back" class="round-icon-button history-back" type="button" aria-label="返回">
+            <i data-lucide="chevron-left" aria-hidden="true"></i>
+          </button>
           <h2 id="history-title">本地棋谱</h2>
           <button
             id="history-close"

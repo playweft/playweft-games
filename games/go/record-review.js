@@ -13,7 +13,9 @@ export function createGoRecordReview({ root, enabled, onSelect, beforeAnalysis, 
   const headerBack=view.matchMedia("(orientation: landscape), (width < 600px)");
   const output=find("record-winrate-value"), status=find("record-winrate-status");
   const chart=find("record-winrate-chart"), line=find("record-winrate-line"), cursor=find("record-winrate-cursor");
+  const board=find("board");
   let selected=0, values=[], running=false, total=0, complete=false;
+  let recommendations=[], getPosition, analysisMessage="";
   let playTimer;
   let reviewing=false;
   function placeBack() {
@@ -32,6 +34,7 @@ export function createGoRecordReview({ root, enabled, onSelect, beforeAnalysis, 
     panel.inert=!open;
     panel.setAttribute("aria-hidden",String(!open));
     if (!open) analysis.pause();
+    renderRecommendation();
   }
   portrait.addEventListener("change",()=>{ if (reviewing) placeAnalysis(); });
   headerBack.addEventListener("change",()=>{ if (reviewing) placeBack(); });
@@ -60,6 +63,27 @@ export function createGoRecordReview({ root, enabled, onSelect, beforeAnalysis, 
   root.addEventListener("click",event=>{
     if (event.target.closest("#move-log-list [data-move-number]")) stopPlayback();
   });
+  function renderRecommendation() {
+    const best=reviewing && enabled && toggle.getAttribute("aria-expanded")==="true" ? recommendations[selected] : null;
+    let point, label="";
+    if (best?.type==="pass") label="停一手";
+    else if (best?.type==="play") {
+      const position=getPosition(selected), size=position.board.length;
+      const {row,column}=best;
+      if ([9,13,19].includes(size) && row>=1 && row<=size && column>=1 && column<=size &&
+          (position.board[row-1]?.[column-1]==null || position.board[row-1]?.[column-1]===0) && board.children.length===size*size) {
+        point=board.children[(row-1)*size+column-1];
+        label=`${"ABCDEFGHJKLMNOPQRST"[column-1]}${size-row+1}`;
+      }
+    }
+    const previous=board.querySelector(".is-ai-first");
+    if (previous!==point) {
+      previous?.classList.remove("is-ai-first"); previous?.removeAttribute("aria-description");
+      point?.classList.add("is-ai-first");
+      point?.setAttribute("aria-description",`AI 一选：${label}`);
+    }
+    status.textContent=label ? `一选：${label} · ${analysisMessage}` : analysisMessage;
+  }
   function draw() {
     const rect=chart.getBoundingClientRect(), width=rect.width||320, height=rect.height||120;
     const span=width-24, bottom=height-10;
@@ -80,10 +104,11 @@ export function createGoRecordReview({ root, enabled, onSelect, beforeAnalysis, 
     output.textContent=value==null ? "尚未分析" : `黑 ${(value*100).toFixed(1)}% · 白 ${((1-value)*100).toFixed(1)}%`;
     start.disabled=complete;
     start.textContent=running ? "暂停" : complete ? "已完成" : values.some(value=>value!==null) ? "继续分析" : "开始分析";
+    renderRecommendation();
   }
   const analysis=createGoRecordAnalysis({onSave,onUpdate(update) {
-    ({values,running,total,complete}=update);
-    status.textContent=update.message;
+    ({values,recommendations,running,total,complete}=update);
+    analysisMessage=update.message;
     draw();
   }});
   const chartResize=new view.ResizeObserver(draw);
@@ -103,11 +128,12 @@ export function createGoRecordReview({ root, enabled, onSelect, beforeAnalysis, 
     onSelect(Math.max(0,Math.min(total-1,Math.round(ratio*(total-1)))));
   });
   return {
-    open(key,count,getPosition,saved) {
+    open(key,count,position,saved) {
       stopPlayback(); root.append(controls); reviewing=true; placeAnalysis(); placeBack();
       play.hidden=false; play.disabled=count<2; toggle.hidden=!enabled;
       selected=count-1; expandAnalysis(false); panel.hidden=!enabled;
-      analysis.select(key,count,getPosition,saved);
+      getPosition=position;
+      analysis.select(key,count,position,saved);
     },
     select(index) { selected=index; if (selected>=total-1) stopPlayback(); draw(); },
     pause() { stopPlayback(); analysis.pause(); },

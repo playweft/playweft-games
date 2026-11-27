@@ -4,6 +4,16 @@
   align-items: center;
 }
 .record-review-panel .game-back { display: grid; margin: 0; }
+.is-record-review .go-point.is-ai-first:not(.has-stone)::after {
+  position: absolute;
+  inset: 16%;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #f3d98b, #c99122 55%, #ad7d24);
+  box-shadow: inset 0 1px 0 #fff0bc, 0 1px 1px rgb(91 61 16 / 25%);
+  content: "";
+  pointer-events: none;
+}
+.has-scene .go-point.is-ai-first::after { display: none; }
 .record-winrate button {
   min-height: 44px;
   padding: 6px 10px;

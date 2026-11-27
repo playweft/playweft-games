@@ -5,6 +5,7 @@ export function createStartScreen({ root, models, difficulty, onAi, onLocal, onO
   const playAi = find("#play-ai"), local = find("#play-local"), online = find("#play-online");
   const resume = find("#play-resume"), resumeEntry = find("#resume-entry");
   const history = find("#history-button");
+  const floatingActions = find(".start-floating-actions");
   const back = find("#match-menu-back"), advanced = find("#match-advanced"), start = find("#match-start");
   const select = find("#quick-ai-difficulty");
   const status = root.ownerDocument.querySelector("#start-status");
@@ -107,7 +108,7 @@ export function createStartScreen({ root, models, difficulty, onAi, onLocal, onO
       }
       clearTitleMotion();
       page = next;
-      history.hidden = page !== "home";
+      floatingActions.hidden = page !== "home";
       if (page !== "home") {
         lastOpponent = page;
         title.textContent = page === "ai" ? "人机对战" : "本地双人";

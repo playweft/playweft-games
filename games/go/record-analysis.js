@@ -5,7 +5,8 @@ export function createGoRecordAnalysis({ onUpdate, onSave = () => {}, createWork
   let worker, key, results = [], getPosition, total = 0, sequence = 0;
   let pending, running = false, message = "";
   function notify() {
-    onUpdate({ values: results.map(result => result?.blackWinRate ?? null), running, message, total,
+    onUpdate({ values: results.map(result => result?.blackWinRate ?? null),
+      recommendations: results.map(result => result?.candidates?.[0] ?? null), running, message, total,
       complete: total > 0 && results.every(isComplete) });
   }
   function stop() {
