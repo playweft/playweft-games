@@ -236,10 +236,15 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
     const key = [...board.children].map(p => p.dataset.piece || "0").join("") +
       ":" + board.querySelector(".is-last-move")?.getAttribute("aria-label");
     const isLandscape = landscape.matches;
-    const nextLayoutKey = `${rect.x}:${rect.y}:${rect.width}:${size}:${width}:${height}:${isLandscape}`;
+    const reviewing = root.classList.contains("is-record-review");
+    const spaceRect = reviewing ? root.querySelector(".board-space").getBoundingClientRect() : rect;
+    const cameraRect = reviewing ? { left: spaceRect.left + 8, top: spaceRect.top + 8,
+      width: Math.max(1, spaceRect.width - 16), height: Math.max(1, spaceRect.height - 16) } : rect;
+    const nextLayoutKey = `${rect.x}:${rect.y}:${rect.width}:${size}:${width}:${height}:${isLandscape}:${reviewing}:` +
+      `${cameraRect.left}:${cameraRect.top}:${cameraRect.width}:${cameraRect.height}`;
     const layoutChanged = nextLayoutKey !== layoutKey;
     if (layoutChanged) {
-      configureSceneCamera(camera, rect, viewport);
+      configureSceneCamera(camera, cameraRect, viewport, { fitBoard: reviewing });
       furniture.rotation.y = isLandscape ? Math.PI / 2 : 0;
     }
     if (animation && board.dataset.animateMoves === "false") { animation = undefined; boardKey = ""; }
@@ -381,6 +386,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
   }
   const resize = new ResizeObserver(requestPaint);
   resize.observe(board);
+  resize.observe(root.querySelector(".board-space"));
   resize.observe(root);
   window.addEventListener("resize", requestPaint);
   window.addEventListener("scroll", requestPaint, { passive: true });

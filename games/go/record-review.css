@@ -41,7 +41,31 @@
 .is-record-review .replay-scrubber button { width: 32px; height: 32px; }
 .is-record-review .replay-slider-field { min-width: 0; }
 .is-record-review #replay-button { display: none; }
+.is-record-review .board-space {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  container-type: size;
+  place-items: center;
+}
+.is-record-review .board-shell {
+  --go-board-size: min(100cqw, 100cqh);
+  width: var(--go-board-size);
+  grid-area: auto;
+  top: 0;
+}
 @media (width >= 900px) {
+  .is-record-review .table-layout {
+    height: 100dvh;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    padding: 12px;
+  }
+  .is-record-review .player-station.is-far { grid-column: 1; grid-row: 1; }
+  .is-record-review .player-station.is-near { grid-column: 1; grid-row: 3; }
+  .is-record-review .board-space { grid-column: 1; grid-row: 2; }
   .record-review-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
   .record-review-panel strong { grid-column: 1 / -1; grid-row: 1; text-align: center; }
   .is-record-review .replay-scrubber { grid-template-columns: 26px 26px minmax(0,1fr) 26px 26px; gap: 3px; }
@@ -64,5 +88,7 @@
 }
 @media (width < 900px) and (orientation: landscape) {
   .go-layout.is-record-review { grid-template-rows: minmax(0,1fr); grid-template-areas: "board actions"; }
+  .is-record-review .board-space { grid-area: board; }
   .is-record-review .action-panel { align-self: center; max-height: 100%; overflow: auto; }
+  .is-record-review .record-winrate svg { height: 100px; }
 }

@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { PerspectiveCamera } from "three";
+import { Box3, PerspectiveCamera, Vector3 } from "three";
+import { GO_TABLE_TOP } from "../games/go/table-model.js";
 import { GO_BOARD_TOP, configureSceneCamera, boardIntersection,
-  projectScenePoint, sceneIntersection, screenOnPlane } from "../games/go/scene-geometry.js";
+  projectBounds, projectScenePoint, sceneIntersection, screenOnPlane } from "../games/go/scene-geometry.js";
 
 function view(width, height, side) {
   const viewport = { width, height };
@@ -46,5 +47,35 @@ test("bowl anchors at different heights round-trip without mixing camera angles"
     const projected = projectScenePoint(p.x, p.y, p.z, camera, viewport);
     assert.ok(Math.abs(projected.x - 160) < 1e-8);
     assert.ok(Math.abs(projected.y - 440) < 1e-8);
+  }
+});
+
+test("review fits the complete projected board into the available area without changing perspective", () => {
+  const board = new Box3(new Vector3(-.5,GO_TABLE_TOP,-.5),new Vector3(.5,GO_BOARD_TOP,.5));
+  for (const [width,height,rect] of [
+    [390,844,{left:18,top:76,width:354,height:640}],
+    [390,844,{left:18,top:76,width:354,height:420}],
+    [375,667,{left:18,top:76,width:339,height:275}],
+    [844,390,{left:28,top:80,width:528,height:290}],
+    [1280,900,{left:20,top:108,width:1020,height:680}],
+  ]) {
+    const viewport={width,height}, camera=new PerspectiveCamera(30,1,.1,100);
+    configureSceneCamera(camera,rect,viewport);
+    const position=camera.position.clone(), rotation=camera.quaternion.clone();
+    configureSceneCamera(camera,rect,viewport,{fitBoard:true});
+    const bounds=projectBounds(board,camera,viewport);
+    assert.ok(bounds.left>=rect.left-1e-6 && bounds.right<=rect.left+rect.width+1e-6);
+    assert.ok(bounds.top>=rect.top-1e-6 && bounds.bottom<=rect.top+rect.height+1e-6);
+    assert.ok(Math.abs((bounds.left+bounds.right)/2-(rect.left+rect.width/2))<1e-6);
+    assert.ok(Math.abs((bounds.top+bounds.bottom)/2-(rect.top+rect.height/2))<1e-6);
+    assert.ok(Math.max((bounds.right-bounds.left)/rect.width,(bounds.bottom-bounds.top)/rect.height)>.999,
+      "use the available area for the board, not the surrounding furniture");
+    assert.deepEqual(camera.position,position);
+    assert.deepEqual(camera.quaternion.toArray(),rotation.toArray());
+    for (const row of [0,9,18]) for (const column of [0,9,18]) {
+      const p=boardIntersection(row,column,19);
+      assert.deepEqual(sceneIntersection(projectScenePoint(p.x,GO_BOARD_TOP,p.z,camera,viewport),camera,viewport,19),
+        {row:row+1,column:column+1});
+    }
   }
 });

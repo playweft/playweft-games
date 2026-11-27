@@ -1,4 +1,4 @@
-import { Plane, Raycaster, Vector2, Vector3 } from "three";
+import { Box3, Plane, Raycaster, Vector2, Vector3 } from "three";
 import { GO_TABLE_TOP } from "./table-model.js";
 
 export const GO_VIEW_ANGLE = 26 * Math.PI / 180;
@@ -7,7 +7,7 @@ const CAMERA_DISTANCE = 3.5;
 const ray = new Raycaster();
 const plane = new Plane(new Vector3(0, 1, 0), -GO_BOARD_TOP);
 
-export function configureSceneCamera(camera, rect, viewport) {
+export function configureSceneCamera(camera, rect, viewport, { fitBoard = false } = {}) {
   // Keep perspective consistent across portrait and landscape, fitting the board
   // at its center rather than changing the camera's physical distance.
   camera.fov = 2 * Math.atan(viewport.height / (2 * CAMERA_DISTANCE * rect.width)) * 180 / Math.PI;
@@ -21,6 +21,19 @@ export function configureSceneCamera(camera, rect, viewport) {
     viewport.width, viewport.height);
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld();
+  if (fitBoard) {
+    const board = new Box3(new Vector3(-.5, GO_TABLE_TOP, -.5), new Vector3(.5, GO_BOARD_TOP, .5));
+    let bounds = projectBounds(board, camera, viewport);
+    const scale = Math.min(rect.width / (bounds.right - bounds.left), rect.height / (bounds.bottom - bounds.top));
+    camera.fov = 2 * Math.atan(Math.tan(camera.fov * Math.PI / 360) / scale) * 180 / Math.PI;
+    camera.updateProjectionMatrix();
+    bounds = projectBounds(board, camera, viewport);
+    // Center the projected board, including its thickness, without changing the viewing angle.
+    camera.setViewOffset(viewport.width, viewport.height,
+      camera.view.offsetX + (bounds.left + bounds.right - rect.left * 2 - rect.width) / 2,
+      camera.view.offsetY + (bounds.top + bounds.bottom - rect.top * 2 - rect.height) / 2,
+      viewport.width, viewport.height);
+  }
 }
 
 export function boardIntersection(row, column, size) {
