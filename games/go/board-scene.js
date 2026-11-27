@@ -66,10 +66,10 @@ function boardTexture(size, grain) {
     }
     ctx.stroke();
     const stars = size === 9 ? [2, 4, 6] : size === 13 ? [3, 6, 9] : [3, 9, 15];
-    ctx.fillStyle = "#49331e";
+    ctx.fillStyle = "#302116";
     for (const row of stars) for (const col of stars) {
       ctx.beginPath();
-      ctx.arc((col + .5) * step, (row + .5) * step, Math.max(2.7, step * .085), 0, Math.PI * 2);
+      ctx.arc((col + .5) * step, (row + .5) * step, step * .12, 0, Math.PI * 2);
       ctx.fill();
     }
   });
@@ -94,12 +94,12 @@ function bowlGroup(stoneGeometry, stoneMaterial, wood) {
   const rim = mesh(new THREE.TorusGeometry(.443, .014, 8, 48), wood, cup);
   rim.rotation.x = Math.PI / 2;
   rim.position.y = .44;
-  const lid = mesh(new THREE.SphereGeometry(.36, 32, 12), wood, group);
+  const lid = mesh(new THREE.SphereGeometry(.46, 32, 12), wood, group);
   lid.scale.y = .12;
-  lid.position.set(-.7, .044, -.44);
-  const ring = mesh(new THREE.TorusGeometry(.30, .006, 5, 48), wood, group);
+  lid.position.set(-1.03, .056, 0);
+  const ring = mesh(new THREE.TorusGeometry(.39, .006, 5, 48), wood, group);
   ring.rotation.x = Math.PI / 2;
-  ring.position.set(-.7, .070, -.44);
+  ring.position.set(-1.03, .087, 0);
   const pile = new THREE.InstancedMesh(stoneGeometry, stoneMaterial, 128);
   pile.castShadow = pile.receiveShadow = true;
   pile.count = 0;
@@ -348,9 +348,9 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
       }
       const positionKey = `${nextLayoutKey}:${near}`;
       if (layoutChanged || bowl.positionKey !== positionKey) {
-        const lidOffset = near ? -.94 : .94;
-        bowl.lid.position.set(isLandscape ? 0 : lidOffset, .044, isLandscape ? lidOffset : 0);
-        bowl.ring.position.set(bowl.lid.position.x, .070, bowl.lid.position.z);
+        const lidOffset = near ? -1.03 : 1.03;
+        bowl.lid.position.set(isLandscape ? 0 : lidOffset, .056, isLandscape ? lidOffset : 0);
+        bowl.ring.position.set(bowl.lid.position.x, .087, bowl.lid.position.z);
         bowl.group.position.copy(tableBowlPosition(near, isLandscape));
         const cup = projectScenePoint(bowl.group.position.x, GO_TABLE_TOP + GO_BOWL_SCALE * .4,
           bowl.group.position.z, camera, viewport);

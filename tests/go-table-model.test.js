@@ -28,8 +28,8 @@ test("the high table has four floor-contact legs, supporting aprons and a thin t
 test("the near feet project below the tabletop silhouette, making its height visible", () => {
   const camera=new PerspectiveCamera(30,1,.1,100),viewport={width:390,height:844};
   configureSceneCamera(camera,{left:55,top:270,width:280,height:280},viewport);
-  for (const x of [-.53,.53]) {
-    const foot=projectScenePoint(x,0,.72,camera,viewport);
+  for (const x of [-GO_TABLE_WIDTH/2+.11,GO_TABLE_WIDTH/2-.11]) {
+    const foot=projectScenePoint(x,0,GO_TABLE_DEPTH/2-.11,camera,viewport);
     const edge=projectScenePoint(x,GO_TABLE_TOP,GO_TABLE_DEPTH/2,camera,viewport);
     assert.ok(foot.y-edge.y>30,"visible leg length comes from real elevation and perspective");
   }

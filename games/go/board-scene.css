@@ -96,7 +96,7 @@
 
 @media (width >= 900px) {
   .go-layout.has-scene {
-    --go-board-size: clamp(220px, min(calc((100dvh - 42px) / 1.85), calc((100vw - 244px) / 1.32)), 820px);
+    --go-board-size: clamp(220px, min(calc((100dvh - 42px) / 2.2), calc((100vw - 244px) / 1.5)), 820px);
   }
 
   .has-scene .table-layout {
@@ -111,7 +111,7 @@
 
 @media (width >= 900px) and (orientation: landscape) {
   .go-layout.has-scene {
-    --go-board-size: clamp(220px, min(calc((100dvh - 42px) / 1.6), calc((100vw - 244px) / 1.8)), 820px);
+    --go-board-size: clamp(220px, min(calc((100dvh - 42px) / 1.6), calc((100vw - 244px) / 2.2)), 820px);
   }
 
   .has-scene .player-station {
@@ -151,8 +151,9 @@
   }
 
   .has-scene .board-shell {
-    --go-board-size: min(calc(100cqw / 1.32), calc(100cqh / 1.85));
+    --go-board-size: min(calc(100cqw / 1.15), calc(100cqh / 1.7));
     width: var(--go-board-size);
+    top: calc(var(--go-board-size) * -.1);
   }
 
   .has-scene .stone-bowl {
@@ -178,7 +179,7 @@
   }
 
   .has-scene .board-shell {
-    --go-board-size: min(calc((100dvh - 84px) / 1.6), calc((100vw - 300px) / 1.8));
+    --go-board-size: min(calc((100dvh - 84px) / 1.6), calc((100vw - 300px) / 2.2));
     width: var(--go-board-size);
     grid-area: board;
     align-self: center;

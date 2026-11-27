@@ -1,17 +1,17 @@
 import { Vector3 } from "three";
-import { GO_TABLE_TOP, GO_TABLE_WIDTH } from "./table-model.js";
+import { GO_TABLE_TOP, GO_TABLE_WIDTH, GO_TABLE_DEPTH } from "./table-model.js";
 
-// Bowl diameter is .1692 of the board's width, regardless of the viewport.
-export const GO_BOWL_SCALE = .18;
+// Bowl diameter is .329 of the board's width (about 15 cm on a 45 cm board).
+export const GO_BOWL_SCALE = .35;
 
 export function tableBowlPosition(near, landscape = false) {
   const direction = near ? 1 : -1;
-  // In landscape the table's width becomes its front-to-back depth. Leave
-  // about 2 cm between the cup's rim and the player's end of the tabletop.
-  const landscapeEnd = GO_TABLE_WIDTH / 2 - GO_BOWL_SCALE * .47 - .04;
+  // Leave about 2 cm between the cup's rim and the tabletop edge.
+  const end = GO_TABLE_DEPTH / 2 - GO_BOWL_SCALE * .47 - .04;
+  const side = GO_TABLE_WIDTH / 2 - GO_BOWL_SCALE * .47 - .04;
   return landscape
-    ? new Vector3(direction * .68, GO_TABLE_TOP, direction * landscapeEnd)
-    : new Vector3(direction * .28, GO_TABLE_TOP, direction * .70);
+    ? new Vector3(direction * end, GO_TABLE_TOP, direction * side)
+    : new Vector3(direction * .28, GO_TABLE_TOP, direction * end);
 }
 
 // Enlarge the pickup target into nearby empty space, while excluding the board
@@ -37,13 +37,15 @@ export function bowlStoneLayout(size, seed = 89) {
   };
   const points = [], limit = Math.max(0, .425 - radius * .95);
   const count = Math.min(64, Math.max(1, Math.round((.425 / radius) ** 2 * .65)));
-  for (let layer = 0; layer < 2; layer++) {
+  const layers = radius < .1 ? 3 : 2;
+  const base = .31 - (layers - 2) * radius * .72;
+  for (let layer = 0; layer < layers; layer++) {
     const group = [];
     for (let attempt = 0; attempt < count * 150 && group.length < count; attempt++) {
       const r = group.length ? limit * Math.sqrt(random()) : Math.min(limit, radius * .2) * random();
       const angle = random() * Math.PI * 2;
       const x = Math.cos(angle) * r, z = Math.sin(angle) * r;
-      const y = .22 + radius * (.32 + layer * .72 + random() * .55);
+      const y = base + radius * (.32 + layer * .72 + random() * .55);
       // Respect the lens's flatter vertical profile, allowing natural overlap in
       // projection when stones sit at different heights, without a visible grid.
       if (group.some(p => ((x-p.x)**2+(z-p.z)**2)/(radius*1.7)**2 +

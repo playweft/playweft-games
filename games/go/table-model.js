@@ -4,7 +4,7 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 // Board width is one world unit (about 45 cm).
 export const GO_TABLE_TOP = 1.7;
 export const GO_TABLE_WIDTH = 1.28;
-export const GO_TABLE_DEPTH = 1.66;
+export const GO_TABLE_DEPTH = 2;
 
 export function createGoTable(material) {
   const table = new Group();
@@ -20,14 +20,15 @@ export function createGoTable(material) {
   const legHeight = GO_TABLE_TOP - .06;
   const legs = new CylinderGeometry(.055,.043,legHeight,4);
   legs.rotateY(Math.PI/4);
-  for (const x of [-.53,.53]) for (const z of [-.72,.72]) {
+  const legX = GO_TABLE_WIDTH / 2 - .11, legZ = GO_TABLE_DEPTH / 2 - .11;
+  for (const x of [-legX,legX]) for (const z of [-legZ,legZ]) {
     part("leg",legs,x,legHeight/2,z);
   }
   const apronY = legHeight - .075;
-  const cross = new RoundedBoxGeometry(1.06,.15,.04,2,.006);
-  const side = new RoundedBoxGeometry(.04,.15,1.44,2,.006);
-  for (const z of [-.72,.72]) part("apron",cross,0,apronY,z);
-  for (const x of [-.53,.53]) part("apron",side,x,apronY,0);
+  const cross = new RoundedBoxGeometry(legX * 2,.15,.04,2,.006);
+  const side = new RoundedBoxGeometry(.04,.15,legZ * 2,2,.006);
+  for (const z of [-legZ,legZ]) part("apron",cross,0,apronY,z);
+  for (const x of [-legX,legX]) part("apron",side,x,apronY,0);
   return table;
 }
 
