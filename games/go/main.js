@@ -36,6 +36,7 @@ import {
 import {
   canResumeGoRecord,
   createGoHistoryStore,
+  goRecordAnalysisKey,
   goRecordToReplayFrames,
   goRecordToReview,
   goRecordToSgf,
@@ -45,6 +46,7 @@ import {
   restoreGoResumeState,
   updateGoResumeSnapshot,
   updateGoHistory,
+  updateGoRecordAnalysis,
 } from "./history.js";
 import { createOverlayDialog } from "../../src/components/overlay-dialog.js";
 import {
@@ -322,6 +324,11 @@ const goAi = createGoAiController({
 const recordReview = createGoRecordReview({ root: elements.gameScreen,
   enabled: Boolean(GO_AI_MODELS.b18), onSelect: showReplayFrame,
   beforeAnalysis: () => goAi.destroy(),
+  onSave(analysis) {
+    const records = historyStore.load();
+    const next = updateGoRecordAnalysis(records, reviewingRecord?.id, GO_AI_MODELS.b18?.url, analysis);
+    if (next !== records) historyStore.save(next);
+  },
 });
 document.querySelector("#record-review-back").addEventListener("click", () => {
   showStartScreen();
@@ -2087,11 +2094,11 @@ function openHistoryReview(recordId) {
   hideReplayImmediately();
   elements.gameScreen.classList.add("is-record-review");
   document.querySelector("#record-review-panel").hidden = false;
-  recordReview.open(`${record.id}:${record.lastVersion}:${GO_AI_MODELS.b18?.url}`, replayFrames.length, index => {
+  recordReview.open(goRecordAnalysisKey(record, GO_AI_MODELS.b18?.url), replayFrames.length, index => {
     const frame = replayFrames[index];
     return goAiPosition({ ...state, board: frame.board, moves: frame.moveNumber, current: frame.current },
       replayFrames.slice(0,index+1));
-  });
+  }, record.analysis);
   setHistoryOpen(false);
   renderStartScreen();
   setReplayOpen(true);

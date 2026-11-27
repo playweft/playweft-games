@@ -125,10 +125,19 @@ export function createGoAiRuntime({ modelId = DEFAULT_GO_AI_MODEL_ID, backends =
       if (shouldAbort()) return;
       await search.run({ visits: 32, maxTimeMs: 1000, batchSize: 1, shouldAbort });
       if (shouldAbort()) return;
-      const result = search.getAnalysis({ topK: 1, analysisPvLen: 0 });
+      const result = search.getAnalysis({ topK: 2, analysisPvLen: 0 });
       // The engine's values are always from Black's perspective, even on White's turn.
       return { blackWinRate: result.rootWinRate, scoreLead: result.rootScoreLead,
-        visits: result.rootVisits };
+        visits: result.rootVisits,
+        // Keep the engine's recommendation order, including pass, without
+        // running another search or saving the full search tree.
+        // getAnalysis may expand symmetric equivalents after applying topK.
+        candidates: result.moves.slice(0, 2).map(move => ({
+          ...(move.x < 0 || move.y < 0 ? { type: "pass" }
+            : { type: "play", row: move.y + 1, column: move.x + 1 }),
+          blackWinRate: move.winRate, scoreLead: move.scoreLead, visits: move.visits,
+        })),
+      };
     },
   };
 }

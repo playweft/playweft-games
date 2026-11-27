@@ -25,7 +25,8 @@ export function createGoHistoryStore(getStorage = () => window.localStorage) {
               ? parsed.records
               : [];
           memory = nonEmptyHistoryRecords(sourceRecords);
-          if (memory.length !== sourceRecords.length) {
+          if (memory.length !== sourceRecords.length ||
+              memory.some(record => !sourceRecords.includes(record))) {
             writeArchive(storage, memory);
           }
         }
@@ -55,7 +56,52 @@ function nonEmptyHistoryRecords(records) {
       Number(record.formatVersion) === ARCHIVE_VERSION &&
       Array.isArray(record.moves) &&
       record.moves.length > 0,
-  );
+  ).map(record => {
+    const moves = normalizeMoveTimes(record.moves);
+    return moves === record.moves ? record : { ...record, moves };
+  });
+}
+
+// Older archives stored each turn's duration and that colour's total clock.
+// Reading an archive upgrades these fields once through the same storage backend.
+function normalizeMoveTimes(moves = []) {
+  let elapsed = 0;
+  let changed = false;
+  const clocks = { B: 0, W: 0 };
+  const normalized = moves.map(original => {
+    const { elapsedMs, cumulativeMs, ...move } = original;
+    const duration = Number.isFinite(elapsedMs) ? Math.max(0, elapsedMs)
+      : Number.isFinite(cumulativeMs) ? Math.max(0, cumulativeMs - clocks[move.color]) : 0;
+    const next = Number.isFinite(move.elapsedFromStartMs)
+      ? Math.max(elapsed, move.elapsedFromStartMs) : elapsed + duration;
+    clocks[move.color] = (clocks[move.color] ?? 0) + next - elapsed;
+    elapsed = next;
+    if (!("elapsedMs" in original) && !("cumulativeMs" in original) &&
+        move.elapsedFromStartMs === elapsed) return original;
+    changed = true;
+    return { ...move, elapsedFromStartMs: elapsed };
+  });
+  return changed ? normalized : moves;
+}
+
+// Include only inputs that affect analysis. Clock, status and save revisions
+// must not invalidate results; changing the model or the position must.
+export function goRecordAnalysisKey(record, modelUrl) {
+  const settings = record.settings ?? {};
+  return JSON.stringify([1, modelUrl, settings.size, settings.rules,
+    settings.komi, settings.handicap, record.initialBlack ?? [],
+    record.moves.map(move => [move.color, Boolean(move.pass),
+      move.pass ? 0 : move.row, move.pass ? 0 : move.column])]);
+}
+
+export function updateGoRecordAnalysis(records, recordId, modelUrl, analysis) {
+  const record = records.find(entry => entry.id === recordId);
+  if (!record || !modelUrl || analysis?.formatVersion !== 1 || !Array.isArray(analysis.results) ||
+      analysis.key !== goRecordAnalysisKey(record, modelUrl) ||
+      analysis.results.length !== record.moves.length + 1) return records;
+  return records.map(entry => entry === record ? { ...entry,
+    analysis: { ...structuredClone(analysis), modelUrl },
+  } : entry);
 }
 
 function writeArchive(storage, records) {
@@ -79,7 +125,7 @@ export function updateGoHistory(records, snapshot, recordedAt = Date.now()) {
     ...record,
     settings: { ...record.settings },
     initialBlack: [...(record.initialBlack ?? [])],
-    moves: [...(record.moves ?? [])],
+    moves: [...normalizeMoveTimes(record.moves)],
     captures: [...(record.captures ?? [])],
     timeUsed: [...(record.timeUsed ?? [])],
     resume: record.resume ? structuredClone(record.resume) : null,
@@ -153,6 +199,9 @@ export function updateGoHistory(records, snapshot, recordedAt = Date.now()) {
   record.mode = snapshot.mode ?? record.mode ?? "room";
   record.status = state.ended ? "ended" : state.phase;
   record.settings = { ...state.settings };
+  if (record.analysis && record.analysis.key !== goRecordAnalysisKey(record, record.analysis.modelUrl)) {
+    delete record.analysis;
+  }
   record.blackIndex = Number(state.blackIndex);
   if (record.mode === "solo" && state.settings?.opponent === "ai") {
     const blackIsHuman = Number(state.blackIndex) === 1;
@@ -279,7 +328,7 @@ function replayGoRecord(record) {
 
   let replayState = started.state;
   const frames = [createReplayFrame(replayState)];
-  for (const [index, move] of record.moves.entries()) {
+  for (const [index, move] of normalizeMoveTimes(record.moves).entries()) {
     const currentIndex = Number(replayState.current) - 1;
     const currentColor = currentIndex + 1 === blackIndex ? "B" : "W";
     if (move.color !== currentColor) return;
@@ -288,7 +337,7 @@ function replayGoRecord(record) {
       move.pass
         ? { type: "pass" }
         : { type: "play", row: move.row, column: move.column },
-      { now: Number(record.createdAt) || 0 },
+      { now: (Number(record.createdAt) || 0) + move.elapsedFromStartMs },
     );
     if (!result.accepted) return;
     replayState = result.state;
@@ -357,6 +406,7 @@ function createReplayFrame(state, move) {
     current: state.current || (state.lastEvent?.playerIndex === 1 ? 2 : 1),
     captures: [...state.captures],
     moveNumber: Math.max(0, Number(state.moves) || 0),
+    elapsedFromStartMs: (state.timeUsed ?? []).reduce((sum, value) => sum + value, 0),
     board: (state.board ?? []).map((row) => [...row]),
     lastMove: { ...state.lastMove },
     lastEvent: { ...state.lastEvent },
@@ -419,20 +469,15 @@ function appendMove(record, event, state, version) {
   const playerIndex = state.players?.indexOf(event.player) ?? -1;
   const blackIndex = Math.max(0, Number(state.blackIndex) - 1);
   const color = playerIndex === blackIndex ? "B" : "W";
-  const cumulativeMs = Math.max(
-    0,
-    Number(state.timeUsed?.[playerIndex]) || 0,
+  const elapsedFromStartMs = (state.timeUsed ?? []).reduce(
+    (sum, value) => sum + Math.max(0, Number(value) || 0), 0,
   );
-  const previous = [...record.moves]
-    .reverse()
-    .find((move) => move.color === color);
   record.moves.push({
     color,
     pass: event.type === "passed",
     row: Number(event.row) || 0,
     column: Number(event.column) || 0,
-    elapsedMs: Math.max(0, cumulativeMs - (previous?.cumulativeMs ?? 0)),
-    cumulativeMs,
+    elapsedFromStartMs: Math.max(record.moves.at(-1)?.elapsedFromStartMs ?? 0, elapsedFromStartMs),
     ...(version === undefined ? {} : { version }),
   });
 }

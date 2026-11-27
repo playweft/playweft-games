@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import { Window } from "happy-dom";
 import { initializeGoStorage } from "../games/go/storage.js";
-import { GO_HISTORY_KEY } from "../games/go/history.js";
+import { GO_HISTORY_KEY, createGoHistoryStore } from "../games/go/history.js";
 
 const previous = { window: globalThis.window, document: globalThis.document,
   indexedDB: Object.getOwnPropertyDescriptor(globalThis, "indexedDB") };
@@ -92,4 +92,27 @@ test("Go platform read and save failures require retry without falling back to l
   document.querySelector("button").click();
   await until(() => !document.querySelector('[role="alertdialog"]'));
   assert.equal(value, next);
+});
+
+test("old move times automatically upgrade in the selected platform or standalone backend", async () => {
+  for (const embedded of [false, true]) {
+    const local = mount(embedded);
+    const old = archive([{ format: "playweft-go-record", formatVersion: 1, id: "timed",
+      moves: [{ color: "B", row: 1, column: 1, elapsedMs: 100, cumulativeMs: 100 },
+        { color: "W", pass: true, elapsedMs: 200, cumulativeMs: 200 }] }]);
+    local.setItem(GO_HISTORY_KEY, old);
+    let platformValue = old;
+    const storage = await initializeGoStorage({ localStorage: {
+      async getItem() { return platformValue; },
+      async setItem(_key, value) { platformValue = value; },
+    } });
+    const store = createGoHistoryStore(() => storage);
+    assert.deepEqual(store.load()[0].moves.map(move => move.elapsedFromStartMs), [100, 300]);
+    await storage.flush();
+    const saved = JSON.parse(embedded ? platformValue : local.getItem(GO_HISTORY_KEY));
+    assert.deepEqual(saved.records[0].moves.map(move => move.elapsedFromStartMs), [100, 300]);
+    assert.equal("elapsedMs" in saved.records[0].moves[0], false);
+    if (embedded) assert.equal(local.getItem(GO_HISTORY_KEY), old, "do not touch the other backend");
+    await browser.happyDOM.abort();
+  }
 });

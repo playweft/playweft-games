@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   canResumeGoRecord,
   createGoHistoryStore,
+  goRecordAnalysisKey,
   goRecordToReplayFrames,
   goRecordToReview,
   goRecordToSgf,
@@ -13,7 +14,9 @@ import {
   restoreGoResumeState,
   updateGoResumeSnapshot,
   updateGoHistory,
+  updateGoRecordAnalysis,
 } from "../games/go/history.js";
+import { applySoloGoAction, createSoloGoState } from "../games/go/solo.js";
 
 function gameState(overrides = {}) {
   return {
@@ -111,11 +114,92 @@ test("Go history records moves once and exports SGF", () => {
     pass: false,
     row: 4,
     column: 4,
-    elapsedMs: 3500,
-    cumulativeMs: 3500,
+    elapsedFromStartMs: 3500,
     version: 2,
   });
   assert.match(goRecordToSgf(records[0]), /SZ\[9\].*KM\[6.5\].*;B\[dd\]/);
+});
+
+test("Go move times are cumulative active time across saving, resuming and passes", () => {
+  let state = applySoloGoAction(createSoloGoState(), {
+    type: "start", ...gameState().settings, blackMode: "player1",
+  }, { now: 1000 }).state;
+  let records = [], version = 0;
+  function act(action, now) {
+    const result = applySoloGoAction(state, action, { now });
+    assert.equal(result.accepted, true);
+    state = result.state;
+    records = updateGoHistory(records, { matchId: "timed", mode: "solo",
+      version: ++version, state, events: result.events }, now);
+  }
+  act({ type: "play", row: 1, column: 1 }, 1100);
+  records = updateGoResumeSnapshot(records, "timed", state, 2000);
+  state = restoreGoResumeState(records[0], 100_000);
+  act({ type: "play", row: 2, column: 1 }, 100_250);
+  act({ type: "pass" }, 101_000);
+  assert.deepEqual(records[0].moves.map(move => move.elapsedFromStartMs), [100, 1250, 2000]);
+  const review = goRecordToReview(records[0]);
+  assert.deepEqual(review.frames.map(frame => frame.elapsedFromStartMs), [0, 100, 1250, 2000]);
+  assert.deepEqual(review.state.timeUsed, [850, 1150], "review reconstructs the actual clocks");
+  act({ type: "undo" }, 102_000);
+  act({ type: "play", row: 3, column: 1 }, 102_500);
+  assert.deepEqual(records[0].moves.map(move => move.elapsedFromStartMs), [100, 1250, 1750]);
+});
+
+test("reading old archives converts move times once and preserves the rest of the record", () => {
+  const record = { format: "playweft-go-record", formatVersion: 1, id: "old",
+    settings: gameState().settings, updatedAt: 123, resume: { state: gameState() },
+    result: { winnerColor: "B" }, moves: [
+      { color: "B", row: 1, column: 1, elapsedMs: 3500, cumulativeMs: 3500 },
+      { color: "W", row: 2, column: 1, cumulativeMs: 1000 },
+      { color: "B", pass: true, cumulativeMs: 6000 },
+      { color: "W", row: 3, column: 1, elapsedFromStartMs: 8000 },
+      { color: "B", pass: true, elapsedMs: 500, cumulativeMs: 6500 },
+    ] };
+  let raw = JSON.stringify({ format: "playweft-go-history", formatVersion: 1, records: [record] });
+  let writes = 0;
+  const store = createGoHistoryStore(() => ({ getItem: () => raw,
+    setItem(_key, value) { raw = value; writes++; } }));
+  const converted = store.load()[0];
+  assert.deepEqual(converted.moves.map(move => move.elapsedFromStartMs), [3500, 4500, 7000, 8000, 8500]);
+  assert.deepEqual(converted.resume, record.resume);
+  assert.deepEqual(converted.result, record.result);
+  assert.equal(converted.updatedAt, record.updatedAt);
+  assert.ok(converted.moves.every(move => !("elapsedMs" in move) && !("cumulativeMs" in move)));
+  assert.deepEqual(JSON.parse(raw).records[0], converted, "conversion is saved automatically");
+  store.load();
+  assert.equal(writes, 1, "already converted archives are not rewritten");
+});
+
+test("analysis saves round-trip without changing history order and reject stale positions", () => {
+  let records = updateGoHistory([], { matchId: "analyzed", version: 1,
+    state: gameState({ moves: 1, current: 2, lastMove: { row: 1, column: 1 },
+      lastEvent: { kind: "play", playerIndex: 1 } }),
+  }, 100);
+  const key = goRecordAnalysisKey(records[0], "/model-a.gz");
+  const analysis = { formatVersion: 1, key,
+    results: [{ blackWinRate: .5, scoreLead: -7, visits: 32, candidates: [
+      { type: "play", row: 2, column: 2, blackWinRate: .55, scoreLead: 1, visits: 20 },
+      { type: "pass", blackWinRate: .4, scoreLead: -2, visits: 11 },
+    ] }, null] };
+  records = updateGoRecordAnalysis(records, records[0].id, "/model-a.gz", analysis);
+  let raw;
+  const store = createGoHistoryStore(() => ({ getItem: () => raw, setItem(_key, value) { raw = value; } }));
+  store.save(records);
+  assert.deepEqual(store.load()[0].analysis, { ...analysis, modelUrl: "/model-a.gz" });
+  assert.equal(store.load()[0].updatedAt, 100);
+  assert.equal(updateGoRecordAnalysis(records, records[0].id, "/model-b.gz", analysis), records);
+  assert.equal(goRecordAnalysisKey({ ...records[0], lastVersion: 99, timeUsed: [9999, 8888] }, "/model-a.gz"), key);
+  assert.notEqual(goRecordAnalysisKey({ ...records[0], settings: { ...records[0].settings, komi: 7 } }, "/model-a.gz"), key);
+  const previous = structuredClone(records);
+  const original = records;
+  records = updateGoHistory(records, { matchId: "analyzed", version: 2,
+    state: gameState({ moves: 2, current: 1, lastMove: { row: 2, column: 1 },
+      lastEvent: { kind: "play", playerIndex: 2 } }),
+  }, 200);
+  assert.deepEqual(original, previous, "recording a move must not mutate previous snapshots");
+  assert.equal(records[0].analysis, undefined, "a changed line never displays obsolete results");
+  assert.equal(updateGoRecordAnalysis(records, records[0].id, "/model-a.gz", analysis), records);
 });
 
 test("Go history stores the confirmed result", () => {

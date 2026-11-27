@@ -28,7 +28,23 @@ opening a record or its chart does not start a model download. Positions are
 searched sequentially (up to 32 visits / 1 second per position), with Black's
 estimated win rate shown consistently across turns. Pausing, leaving review or
 backgrounding the page terminates the analysis worker. Completed points are
-retained in memory for up to eight records during the page session.
+saved with the record, including win rate, score lead and visit count, plus the
+top two engine-ranked moves (one-based row/column or pass) with their Black win
+rates, score leads and visit counts. These reuse the same search and retain its
+recommendation order. There may be fewer than two searched moves. Reopening
+a record restores completed points without loading the engine; continuing an
+unfinished analysis searches only missing points. Results are tied to the model
+URL, analysis version, rules, komi and move sequence. Changed inputs invalidate
+them. Storage uses the existing platform archive when embedded and localStorage
+when standalone; analysing a record does not change its last-played order.
+Older saved win rates remain visible; pressing Continue Analysis fills in missing
+move recommendations. This never starts automatically on opening a record.
+
+Move timestamps store cumulative effective milliseconds from the start of play
+(`elapsedFromStartMs`), excluding time between saving/exiting and resuming.
+Reading an older archive automatically converts its per-turn `elapsedMs` and
+per-colour `cumulativeMs` fields through the same storage backend. Records without
+timing data remain readable, with unknown durations treated as zero.
 
 The b6 model (`g170-b6c96-s175395328-d26788732`) is bundled with the game as
 `games/go/assets/katago-b6.bin.gz` (3,827,339 bytes, CC0-1.0), from
