@@ -5,6 +5,7 @@ import {
   canResumeGoRecord,
   createGoHistoryStore,
   goRecordToReplayFrames,
+  goRecordToReview,
   goRecordToSgf,
   historyResultLabel,
   latestGoResumeRecord,
@@ -38,6 +39,23 @@ function gameState(overrides = {}) {
     ...overrides,
   };
 }
+
+test("completed and legacy records can be reviewed without a resume snapshot or changing the archive",()=>{
+  const record={settings:gameState().settings,moves:[{color:"B",row:1,column:1},
+    {color:"W",pass:true},{color:"B",row:2,column:1}],resume:null,
+    status:"ended",result:{winnerColor:"B"}};
+  const before=structuredClone(record);
+  const review=goRecordToReview(record);
+  assert.equal(review.frames.length,4);
+  assert.equal(review.frames[0].board[0][0],0);
+  assert.equal(review.frames[1].board[0][0],1);
+  assert.equal(review.frames[2].move.pass,true);
+  assert.equal(review.frames[3].current,2);
+  assert.deepEqual(record,before,"review is read-only");
+  assert.equal(goRecordToReview({...record,partial:true}),undefined);
+  assert.equal(goRecordToReview({...record,moves:[{color:"W",row:1,column:1}]}),undefined,
+    "do not invent a position when the initial move is missing");
+});
 
 test("home resume chooses the newest unfinished local game and labels only its mode", () => {
   const local = settings => updateGoHistory([], {

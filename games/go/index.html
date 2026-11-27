@@ -597,6 +597,11 @@
       </section>
 
       <aside class="action-panel">
+        <header id="record-review-panel" class="record-review-panel" hidden>
+          <button id="record-review-back" type="button">返回棋谱</button>
+          <strong>棋谱回看</strong>
+          <button id="record-winrate-toggle" type="button" aria-expanded="false" aria-controls="record-winrate" hidden>胜率图</button>
+        </header>
         <div class="sidebar-move-number" data-move-number hidden>开局</div>
         <section class="move-log" aria-labelledby="move-log-title">
           <header class="move-log-heading">
@@ -677,6 +682,22 @@
                 <i data-lucide="chevrons-right"></i>
               </button>
             </div>
+            <section id="record-winrate" class="record-winrate" aria-label="胜率分析" hidden>
+              <div class="record-winrate-heading">
+                <strong>黑棋胜率</strong>
+                <output id="record-winrate-value" aria-live="polite">尚未分析</output>
+              </div>
+              <svg id="record-winrate-chart" viewBox="0 0 320 120" role="img" aria-label="黑棋胜率随手数变化，使用回看进度可选择局面">
+                <path d="M12 10H308M12 60H308M12 110H308" class="winrate-grid"/>
+                <text x="14" y="22">100%</text><text x="14" y="58">50%</text><text x="14" y="108">0%</text>
+                <path id="record-winrate-line" class="winrate-line"/>
+                <path id="record-winrate-cursor" class="winrate-cursor"/>
+              </svg>
+              <div class="record-winrate-footer">
+                <span id="record-winrate-status" role="status">按需分析，不会自动下载资源</span>
+                <button id="record-winrate-start" type="button">开始分析</button>
+              </div>
+            </section>
           </section>
         </section>
         <div class="turn-actions">

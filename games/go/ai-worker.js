@@ -18,13 +18,16 @@ self.onmessage = ({ data }) => {
       } else if (type === "choose") {
         const result = await runtime.choose(data.position, () => cancelled.has(id));
         if (!cancelled.has(id)) postMessage({ id, type: "move", ...result });
+      } else if (type === "analyze") {
+        const result = await runtime.analyze(data.position, () => cancelled.has(id));
+        if (!cancelled.has(id)) postMessage({ id, type: "analysis", ...result });
       }
     } catch (error) {
       if (!cancelled.has(id)) {
         console.error("Go AI request failed", error);
         postMessage({ id, type: "error", message: type === "init"
           ? "AI 准备失败，请检查网络后重试，或换用其他浏览器"
-          : "AI 暂时无法落子，请重试" });
+          : type === "analyze" ? "分析失败，请重试" : "AI 暂时无法落子，请重试" });
       }
     } finally {
       cancelled.delete(id);

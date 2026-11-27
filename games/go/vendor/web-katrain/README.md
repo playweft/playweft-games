@@ -23,6 +23,13 @@ Set `VITE_GO_AI_MODEL_URL` at build time to enable enhanced difficulty using
 a hosted b18 or v17 Transformer model. Unset or blank values omit this difficulty entirely. There
 is no default external URL. The external host must allow CORS GET.
 
+The same URL enables win-rate analysis in saved-game review. Analysis is opt-in:
+opening a record or its chart does not start a model download. Positions are
+searched sequentially (up to 32 visits / 1 second per position), with Black's
+estimated win rate shown consistently across turns. Pausing, leaving review or
+backgrounding the page terminates the analysis worker. Completed points are
+retained in memory for up to eight records during the page session.
+
 The b6 model (`g170-b6c96-s175395328-d26788732`) is bundled with the game as
 `games/go/assets/katago-b6.bin.gz` (3,827,339 bytes, CC0-1.0), from
 https://github.com/lightvector/KataGo/tree/master/cpp/tests/models .

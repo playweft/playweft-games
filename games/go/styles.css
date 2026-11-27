@@ -4,6 +4,7 @@
 @import "./start-screen.css";
 @import "./result-dialog.css";
 @import "./board-scene.css";
+@import "./record-review.css";
 
 body {
   background: #eeece6;
@@ -199,7 +200,8 @@ a:focus-visible {
 }
 
 .history-export,
-.history-resume {
+.history-resume,
+.history-review {
   min-height: 30px;
   padding: 0 10px;
   border: 1px solid #c8c9c3;

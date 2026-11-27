@@ -1,0 +1,68 @@
+.record-review-panel {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: .85rem;
+}
+.record-review-panel button,
+.record-winrate button {
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #435866;
+  font-size: .8rem;
+}
+.record-review-panel button:focus-visible,
+.record-winrate button:focus-visible { background: rgb(67 88 102 / 10%); }
+@media (hover: hover) and (pointer: fine) {
+  .record-review-panel button:hover:not(:disabled),
+  .record-winrate button:hover:not(:disabled) { background: rgb(67 88 102 / 6%); }
+  .record-review-panel button:active:not(:disabled),
+  .record-winrate button:active:not(:disabled) { background: rgb(67 88 102 / 12%); }
+}
+.record-winrate { margin-top: 10px; border-top: 1px solid #ded8cd; padding-top: 8px; }
+.record-winrate-heading,
+.record-winrate-footer { display: flex; gap: 8px; justify-content: space-between; align-items: center; }
+.record-winrate-heading { font-size: .75rem; }
+.record-winrate-footer { min-height: 48px; }
+.record-winrate-footer span { flex: 1; font-size: .7rem; color: #77746c; }
+.record-winrate svg { display: block; width: 100%; height: 120px; cursor: crosshair; }
+.record-winrate text { font-size: 14px; fill: #999389; }
+.winrate-grid { fill: none; stroke: #e5dfd5; stroke-width: 1; }
+.winrate-line { fill: none; stroke: #435866; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.winrate-cursor { fill: none; stroke: #a56c31; stroke-width: 1; stroke-dasharray: 3 3; }
+.is-record-review .turn-actions { display: none; }
+.is-record-review .replay-controls { position: static; width: 100%; min-width: 0; grid-template-columns: minmax(0,1fr); }
+.is-record-review .replay-scrubber { grid-template-columns: 32px 32px minmax(0,1fr) 32px 32px; gap: 4px; }
+.is-record-review .replay-scrubber button { width: 32px; height: 32px; }
+.is-record-review .replay-slider-field { min-width: 0; }
+.is-record-review #replay-button { display: none; }
+@media (width >= 900px) {
+  .record-review-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .record-review-panel strong { grid-column: 1 / -1; grid-row: 1; text-align: center; }
+  .is-record-review .replay-scrubber { grid-template-columns: 26px 26px minmax(0,1fr) 26px 26px; gap: 3px; }
+  .is-record-review .replay-scrubber button { width: 26px; }
+  .record-winrate text { font-size: 16px; }
+}
+@media (width < 900px) {
+  .is-record-review .player-station { display: none; }
+  .is-record-review .move-log { display: contents; }
+  .is-record-review .move-log-heading,
+  .is-record-review .move-log-list { display: none; }
+}
+@media (width < 900px) and (orientation: portrait) {
+  .go-layout.is-record-review { display: flex; flex-direction: column; padding: 8px 10px; gap: 8px; }
+  .is-record-review .table-layout { display: contents; }
+  .is-record-review .board-space { flex: 1; }
+  .is-record-review .action-panel { flex: none; gap: 0; }
+  .is-record-review .record-review-panel { order: 1; }
+  .is-record-review .replay-controls { margin: 0; }
+}
+@media (width < 900px) and (orientation: landscape) {
+  .go-layout.is-record-review { grid-template-rows: minmax(0,1fr); grid-template-areas: "board actions"; }
+  .is-record-review .action-panel { align-self: center; max-height: 100%; overflow: auto; }
+}

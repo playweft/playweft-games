@@ -37,6 +37,7 @@ import {
   canResumeGoRecord,
   createGoHistoryStore,
   goRecordToReplayFrames,
+  goRecordToReview,
   goRecordToSgf,
   historyResultLabel,
   latestGoResumeRecord,
@@ -57,6 +58,8 @@ import { createStartScreen } from "./start-screen.js";
 import { createGoResultDialog } from "./result-dialog.js";
 import { createGoStoneDrag } from "./stone-drag.js";
 import { createGoSceneView } from "./scene-view.js";
+import { goAiPosition } from "./ai-position.js";
+import { createGoRecordReview } from "./record-review.js";
 import { goTableView } from "./table-view.js";
 import "../../src/game-storage.css";
 import "../../src/components/board-stones.css";
@@ -200,6 +203,7 @@ let localTimeAtSync;
 let replayGameKey = "";
 let replayFrames = [];
 let replayIndex;
+let reviewingRecord;
 let setupSource = "new";
 let selectedResumeRecordId = "";
 let startingAi = false;
@@ -315,6 +319,14 @@ const goAi = createGoAiController({
     renderAiFeedback();
   },
 });
+const recordReview = createGoRecordReview({ root: elements.gameScreen,
+  enabled: Boolean(GO_AI_MODELS.b18), onSelect: showReplayFrame,
+  beforeAnalysis: () => goAi.destroy(),
+});
+document.querySelector("#record-review-back").addEventListener("click", () => {
+  showStartScreen();
+  setHistoryOpen(true);
+});
 
 function updateAiTurn() {
   goAi.update(
@@ -377,7 +389,7 @@ const historyDialog = createOverlayDialog({
   surface: elements.historyDialog,
   closeButtons: [elements.historyClose],
   initialFocus: elements.historyDialog,
-  returnFocus: () => menuVisible ? elements.historyOpen : elements.more,
+  returnFocus: () => reviewingRecord ? elements.replaySlider : menuVisible ? elements.historyOpen : elements.more,
   beforeOpen: renderHistory,
   beforeClose: resetHistoryClear,
 });
@@ -485,6 +497,10 @@ function isAiMenu() {
 function showStartScreen() {
   pendingRoomStates.length = 0;
   persistSoloResumeSnapshot();
+  recordReview.close();
+  reviewingRecord = undefined;
+  elements.gameScreen.classList.remove("is-record-review");
+  document.querySelector("#record-review-panel").hidden = true;
   if (isAiMenu()) goAi.destroy();
   else goAi.cancel();
   menuVisible = true;
@@ -700,8 +716,10 @@ window.addEventListener("pagehide", () => {
     .catch(() => {})
     .finally(() => client?.destroy());
   goAi.destroy();
+  recordReview.close();
 });
 document.addEventListener("visibilitychange", () => {
+  if (document.hidden) recordReview.pause();
   if (document.visibilityState === "hidden") persistSoloResumeSnapshot();
   updateAiTurn();
 });
@@ -958,6 +976,8 @@ elements.moveLogList.addEventListener("click", (event) => {
   if (entry) showReplayMove(Number(entry.dataset.moveNumber));
 });
 elements.historyList.addEventListener("click", (event) => {
+  const reviewButton = event.target.closest("[data-history-review]");
+  if (reviewButton) { openHistoryReview(reviewButton.dataset.historyReview); return; }
   const resumeButton = event.target.closest("[data-history-resume]");
   if (resumeButton) {
     resumeHistoryRecord(resumeButton.dataset.historyResume);
@@ -1049,6 +1069,7 @@ function requiresMoveConfirmation(event) {
 }
 
 function sendAction(action, renderPendingState = true) {
+  if (reviewingRecord) return false;
   if (pendingAction || !state) return;
   clearPendingMove();
   const requestId = dispatchAction(action);
@@ -1228,6 +1249,7 @@ function recordReplayFrame(message) {
 }
 
 function setReplayOpen(open) {
+  if (reviewingRecord && !open) return;
   if (open === isReplayOpen()) return;
   if (open && replayFrames.length <= 1) return;
   if (open) setMoreMenuOpen(false);
@@ -1283,6 +1305,7 @@ function renderReplayControls() {
   );
   const frame = replayFrames[selectedIndex];
   const moveNumber = frame?.moveNumber ?? 0;
+  if (reviewingRecord) recordReview.select(selectedIndex);
   const replayRatio = latestIndex > 0 ? selectedIndex / latestIndex : 0;
   elements.replayOpen.disabled = replayFrames.length <= 1;
   elements.portraitReplay.disabled = elements.replayOpen.disabled;
@@ -1400,8 +1423,8 @@ function render(nextState) {
   const blackIndex = Math.max(0, Number(nextState.blackIndex) - 1);
   const ended = Boolean(nextState.ended);
   const isScoring = nextState.phase === "scoring";
-  elements.resultOpen.hidden = !ended && !isScoring;
-  resultDialog.update(nextState, {
+  elements.resultOpen.hidden = Boolean(reviewingRecord) || (!ended && !isScoring);
+  if (!reviewingRecord) resultDialog.update(nextState, {
     key: replayGameKey,
     participant: ownIndex >= 0,
     local: playMode === "solo",
@@ -1456,6 +1479,7 @@ function render(nextState) {
   const isUndoRequester = hasUndoRequest && undoRequesterIndex === ownIndex;
   const previewColor = tableView.currentColor;
   const canAct =
+    !reviewingRecord &&
     Boolean(state) &&
     !ended &&
     !isScoring &&
@@ -1466,6 +1490,7 @@ function render(nextState) {
     !actionPending &&
     !isReviewingPast;
   const canResign =
+    !reviewingRecord &&
     Boolean(state) &&
     !ended &&
     !isScoring &&
@@ -1492,6 +1517,7 @@ function render(nextState) {
   const canUndoAi =
     playMode === "solo" && nextState.settings?.opponent === "ai";
   const canUndo =
+    !reviewingRecord &&
     Boolean(state) &&
     (canUndoAi || (!ended && !isScoring)) &&
     !hasUndoRequest &&
@@ -1517,7 +1543,7 @@ function render(nextState) {
   elements.resign.disabled = !canResign;
   elements.resign.hidden = ended || isScoring;
   if (!canResign) resetResignConfirmation();
-  elements.settings.hidden = !state || !ended || ownIndex < 0;
+  elements.settings.hidden = Boolean(reviewingRecord) || !state || !ended || ownIndex < 0;
   elements.settings.disabled = actionPending;
   renderReplayControls();
   renderClocks();
@@ -1570,7 +1596,9 @@ function renderPlayerCards(
     panel.classList.toggle("is-near", near);
     panel.classList.toggle("is-far", !near);
     const detail = panel.querySelector("[data-player-detail]");
-    if (ended && nextState.lastEvent?.kind === "resigned") {
+    if (reviewingRecord) {
+      detail.textContent = `提子 ${Number(nextState.captures?.[playerIndex]) || 0}`;
+    } else if (ended && nextState.lastEvent?.kind === "resigned") {
       detail.textContent =
         Number(nextState.winnerIndex) - 1 === playerIndex ? "获胜" : "已认输";
     } else if (ended && nextState.scores) {
@@ -1612,7 +1640,7 @@ function setMoreMenuOpen(open, focusFirst = false) {
   elements.more.setAttribute("aria-expanded", String(open));
 
   if (open) {
-    if (isReplayOpen()) setReplayOpen(false);
+    if (isReplayOpen() && !reviewingRecord) setReplayOpen(false);
     elements.moreMenu.hidden = false;
     elements.moreMenu.dataset.state = "open";
     if (focusFirst) {
@@ -1942,6 +1970,15 @@ function renderHistory() {
     const buttons = document.createElement("div");
     buttons.className = "history-entry-buttons";
 
+    const reviewButton = document.createElement("button");
+    reviewButton.type = "button";
+    reviewButton.className = "history-review";
+    reviewButton.dataset.historyReview = record.id;
+    reviewButton.textContent = "回看";
+    reviewButton.disabled = Boolean(record.partial);
+    if (record.partial) reviewButton.title = "这份棋谱记录不完整，暂时无法回看";
+    buttons.append(reviewButton);
+
     if (canResume) {
       const resumeButton = document.createElement("button");
       resumeButton.type = "button";
@@ -2026,7 +2063,42 @@ async function resumeHistoryRecord(recordId) {
   });
 }
 
+function openHistoryReview(recordId) {
+  const record = historyStore.load().find(entry => entry.id === recordId);
+  if (!record || pendingAction || startingAi || roomState) return;
+  const replay = goRecordToReview(record);
+  if (!replay || replay.frames.length <= 1) {
+    showActionError("这份棋谱记录不完整，暂时无法回看");
+    return;
+  }
+  goAi.destroy();
+  reviewingRecord = record;
+  playMode = "solo";
+  menuVisible = false;
+  state = { ...replay.state, phase: "review", ended: true,
+    settings: { ...replay.state.settings, opponent: "local" },
+    timeUsed: [...(record.timeUsed ?? [0, 0])], turnStartedAt: 0,
+    playerNames: replay.state.blackIndex === 1
+      ? [record.blackPlayer, record.whitePlayer] : [record.whitePlayer, record.blackPlayer],
+  };
+  playerId = undefined;
+  replayGameKey = `review:${record.id}`;
+  replayFrames = replay.frames;
+  hideReplayImmediately();
+  elements.gameScreen.classList.add("is-record-review");
+  document.querySelector("#record-review-panel").hidden = false;
+  recordReview.open(`${record.id}:${record.lastVersion}:${GO_AI_MODELS.b18?.url}`, replayFrames.length, index => {
+    const frame = replayFrames[index];
+    return goAiPosition({ ...state, board: frame.board, moves: frame.moveNumber, current: frame.current },
+      replayFrames.slice(0,index+1));
+  });
+  setHistoryOpen(false);
+  renderStartScreen();
+  setReplayOpen(true);
+}
+
 function persistSoloResumeSnapshot() {
+  if (reviewingRecord) return;
   if (playMode !== "solo" || !localMatchId || !state) return;
   historyStore.save(
     updateGoResumeSnapshot(

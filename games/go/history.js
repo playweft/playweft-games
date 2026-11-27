@@ -109,6 +109,7 @@ export function updateGoHistory(records, snapshot, recordedAt = Date.now()) {
       matchId,
       mode: snapshot.mode ?? "room",
       round: Number(state.round) || 1,
+      blackIndex: Number(state.blackIndex),
       createdAt: recordedAt,
       updatedAt: recordedAt,
       status: state.phase,
@@ -152,6 +153,7 @@ export function updateGoHistory(records, snapshot, recordedAt = Date.now()) {
   record.mode = snapshot.mode ?? record.mode ?? "room";
   record.status = state.ended ? "ended" : state.phase;
   record.settings = { ...state.settings };
+  record.blackIndex = Number(state.blackIndex);
   if (record.mode === "solo" && state.settings?.opponent === "ai") {
     const blackIsHuman = Number(state.blackIndex) === 1;
     const aiName = goAiPlayerName(state.settings);
@@ -252,16 +254,22 @@ export function goRecordToReplayFrames(record) {
   return replayGoRecord(record)?.frames ?? [];
 }
 
+export function goRecordToReview(record) {
+  if (!record || record.partial) return;
+  return replayGoRecord(record);
+}
+
 function replayGoRecord(record) {
   if (!Array.isArray(record?.moves) || !record.settings) return;
-  const blackIndex = Number(record.resume?.state?.blackIndex);
+  const blackIndex = Number(record.blackIndex ?? record.resume?.state?.blackIndex ??
+    (record.settings.blackMode === "player2" ? 2 : 1));
   if (blackIndex !== 1 && blackIndex !== 2) return;
 
   const setup = createSoloGoState();
   setup.round = Number(record.round) || 1;
   const started = applySoloGoAction(
     setup,
-    { type: "start", ...record.settings },
+    { type: "start", ...record.settings, blackMode: blackIndex === 1 ? "player1" : "player2" },
     {
       now: Number(record.createdAt) || 0,
       random: () => (blackIndex === 1 ? 0 : 1),
@@ -346,6 +354,8 @@ function createResumeSnapshot(state, savedAt) {
 
 function createReplayFrame(state, move) {
   return {
+    current: state.current || (state.lastEvent?.playerIndex === 1 ? 2 : 1),
+    captures: [...state.captures],
     moveNumber: Math.max(0, Number(state.moves) || 0),
     board: (state.board ?? []).map((row) => [...row]),
     lastMove: { ...state.lastMove },

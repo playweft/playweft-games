@@ -116,5 +116,19 @@ export function createGoAiRuntime({ modelId = DEFAULT_GO_AI_MODEL_ID, backends =
 
       return { moves, backend, visits: result.rootVisits };
     },
+    async analyze(position, shouldAbort = () => false) {
+      setBoardSize(position.board.length);
+      await loadModel(position.board.length, () => {});
+      const search = await MctsSearch.create({ ...position, model,
+        nnRandomize: false, maxChildren: 16, ownershipMode: "none",
+        wideRootNoise: 0, rootSymmetrySamples: 1 });
+      if (shouldAbort()) return;
+      await search.run({ visits: 32, maxTimeMs: 1000, batchSize: 1, shouldAbort });
+      if (shouldAbort()) return;
+      const result = search.getAnalysis({ topK: 1, analysisPvLen: 0 });
+      // The engine's values are always from Black's perspective, even on White's turn.
+      return { blackWinRate: result.rootWinRate, scoreLead: result.rootScoreLead,
+        visits: result.rootVisits };
+    },
   };
 }
