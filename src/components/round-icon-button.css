@@ -11,22 +11,29 @@
   color: inherit;
   cursor: pointer;
   place-items: center;
-  transition: background-color var(--round-button-transition-duration, 120ms) ease;
+  transition: background-color var(--round-button-transition-duration, 120ms)
+    ease;
 }
 
 .round-icon-button > svg,
 .round-icon-button > svg.lucide {
-  width: var(--round-button-icon-size, 20px);
-  height: var(--round-button-icon-size, 20px);
+  width: 24px;
+  height: 24px;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .round-icon-button:hover:not(:disabled) {
-    background-color: var(--round-button-hover-background, rgba(32, 34, 41, 0.04));
+    background-color: var(
+      --round-button-hover-background,
+      rgba(32, 34, 41, 0.04)
+    );
   }
 
   .round-icon-button:active:not(:disabled) {
-    background-color: var(--round-button-active-background, rgba(32, 34, 41, 0.08));
+    background-color: var(
+      --round-button-active-background,
+      rgba(32, 34, 41, 0.08)
+    );
   }
 }
 

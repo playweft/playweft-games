@@ -170,7 +170,7 @@
   .go-layout.has-scene {
     display: grid;
     width: 100%;
-    height: calc(100dvh - 60px);
+    height: 100dvh;
     min-height: 0;
     grid-template-columns: minmax(0, 1fr) 240px;
     grid-template-rows: auto auto minmax(0, 1fr);
@@ -192,7 +192,7 @@
   }
 
   .has-scene .board-shell {
-    --go-board-size: min(calc((100dvh - 84px) / 1.2), calc((100vw - 300px) / 2));
+    --go-board-size: min(calc((100dvh - 24px) / 1.2), calc((100vw - 300px) / 2));
     width: var(--go-board-size);
     grid-area: auto;
     align-self: center;

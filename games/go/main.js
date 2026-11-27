@@ -12,6 +12,7 @@ import {
 } from "./ai-model.js";
 import {
   Bot,
+  ChartNoAxesCombined,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -25,6 +26,7 @@ import {
   Globe,
   NotebookPen,
   Play,
+  Pause,
   Settings2,
   SkipForward,
   Trash2,
@@ -223,6 +225,7 @@ const pendingRoomStates = [];
 createIcons({
   icons: {
     Bot,
+    ChartNoAxesCombined,
     ChevronLeft,
     ChevronRight,
     ChevronsLeft,
@@ -236,6 +239,7 @@ createIcons({
     Globe,
     NotebookPen,
     Play,
+    Pause,
     Settings2,
     SkipForward,
     Trash2,
@@ -329,10 +333,6 @@ const recordReview = createGoRecordReview({ root: elements.gameScreen,
     const next = updateGoRecordAnalysis(records, reviewingRecord?.id, GO_AI_MODELS.b18?.url, analysis);
     if (next !== records) historyStore.save(next);
   },
-});
-document.querySelector("#record-review-back").addEventListener("click", () => {
-  showStartScreen();
-  setHistoryOpen(true);
 });
 
 function updateAiTurn() {
@@ -473,6 +473,7 @@ function renderStartScreen(message = "") {
   elements.gameScreen.hidden = menuVisible;
   sceneView.setVisible(!menuVisible);
   elements.gameBack.hidden = menuVisible || playMode !== "solo";
+  elements.gameBack.setAttribute("aria-label", reviewingRecord ? "返回棋谱" : "返回首页");
   elements.gameBackSpacer.hidden = elements.gameBack.hidden;
   document.querySelector(".game-header").hidden = menuVisible;
   const record =
@@ -508,7 +509,6 @@ function showStartScreen() {
   recordReview.close();
   reviewingRecord = undefined;
   elements.gameScreen.classList.remove("is-record-review");
-  document.querySelector("#record-review-panel").hidden = true;
   if (isAiMenu()) goAi.destroy();
   else goAi.cancel();
   menuVisible = true;
@@ -749,7 +749,11 @@ elements.setupPanel.addEventListener("cancel", () => {
   if (isSetupMenu()) setSetupOpen(false);
 });
 elements.home.addEventListener("click", showStartScreen);
-elements.gameBack.addEventListener("click", showStartScreen);
+elements.gameBack.addEventListener("click", () => {
+  const returnToHistory = Boolean(reviewingRecord);
+  showStartScreen();
+  if (returnToHistory) setHistoryOpen(true);
+});
 document.addEventListener("pointerdown", (event) => {
   if (
     pendingMove &&
@@ -2094,7 +2098,6 @@ function openHistoryReview(recordId) {
   replayFrames = replay.frames;
   hideReplayImmediately();
   elements.gameScreen.classList.add("is-record-review");
-  document.querySelector("#record-review-panel").hidden = false;
   recordReview.open(goRecordAnalysisKey(record, GO_AI_MODELS.b18?.url), replayFrames.length, index => {
     const frame = replayFrames[index];
     return goAiPosition({ ...state, board: frame.board, moves: frame.moveNumber, current: frame.current },

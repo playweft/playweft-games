@@ -598,11 +598,7 @@
       </section>
 
       <aside class="action-panel">
-        <header id="record-review-panel" class="record-review-panel" hidden>
-          <button id="record-review-back" type="button">返回棋谱</button>
-          <strong>棋谱回看</strong>
-          <button id="record-winrate-toggle" type="button" aria-expanded="false" aria-controls="record-winrate" hidden>胜率图</button>
-        </header>
+        <nav id="record-review-panel" class="record-review-panel" aria-label="棋谱导航" hidden></nav>
         <div class="sidebar-move-number" data-move-number hidden>开局</div>
         <section class="move-log" aria-labelledby="move-log-title">
           <header class="move-log-heading">
@@ -631,59 +627,63 @@
             hidden
           >
             <div class="replay-scrubber">
-              <button
-                id="replay-first"
-                type="button"
-                aria-label="回到开局"
-                title="回到开局"
-              >
-                <i data-lucide="chevrons-left"></i>
-              </button>
-              <button
-                id="replay-previous"
-                type="button"
-                aria-label="上一手"
-                title="上一手"
-              >
-                <i data-lucide="chevron-left"></i>
-              </button>
+              <div class="replay-buttons" role="group" aria-label="复盘操作">
+                <button
+                  id="replay-first"
+                  class="round-icon-button"
+                  type="button"
+                  aria-label="回到开局"
+                  title="回到开局"
+                >
+                  <i data-lucide="chevrons-left"></i>
+                </button>
+                <button
+                  id="replay-previous"
+                  class="round-icon-button"
+                  type="button"
+                  aria-label="上一手"
+                  title="上一手"
+                >
+                  <i data-lucide="chevron-left"></i>
+                </button>
+                <button id="record-replay-play" class="round-icon-button" type="button" aria-label="播放" title="播放" aria-pressed="false" hidden>
+                  <i data-lucide="play" data-play-icon aria-hidden="true"></i>
+                  <i data-lucide="pause" data-pause-icon aria-hidden="true" hidden></i>
+                </button>
+                <button
+                  id="replay-next"
+                  class="round-icon-button"
+                  type="button"
+                  aria-label="下一手"
+                  title="下一手"
+                >
+                  <i data-lucide="chevron-right"></i>
+                </button>
+                <button
+                  id="replay-last"
+                  class="round-icon-button"
+                  type="button"
+                  aria-label="回到最后"
+                  title="回到最后"
+                >
+                  <i data-lucide="chevrons-right"></i>
+                </button>
+                <button id="record-winrate-toggle" class="round-icon-button" type="button" aria-label="AI 分析" title="AI 分析" aria-expanded="false" aria-controls="record-winrate" hidden>
+                  <i data-lucide="chart-no-axes-combined" aria-hidden="true"></i>
+                </button>
+              </div>
               <div id="replay-slider-field" class="replay-slider-field">
                 <div class="replay-status-track" aria-hidden="true">
-                  <output
-                    id="replay-status"
-                    class="replay-status"
-                    for="replay-slider"
-                    >0</output
-                  >
+                  <output id="replay-status" class="replay-status" for="replay-slider">0</output>
                 </div>
-                <input
-                  id="replay-slider"
-                  type="range"
-                  min="0"
-                  max="0"
-                  value="0"
-                  step="1"
-                  aria-label="回看进度"
-                />
+                <input id="replay-slider" type="range" min="0" max="0" value="0" step="1" aria-label="回看进度" />
               </div>
-              <button
-                id="replay-next"
-                type="button"
-                aria-label="下一手"
-                title="下一手"
-              >
-                <i data-lucide="chevron-right"></i>
-              </button>
-              <button
-                id="replay-last"
-                type="button"
-                aria-label="回到最新"
-                title="回到最新"
-              >
-                <i data-lucide="chevrons-right"></i>
-              </button>
             </div>
-            <section id="record-winrate" class="record-winrate" aria-label="胜率分析" hidden>
+          </section>
+        </section>
+        <section id="record-winrate" class="record-winrate" aria-label="胜率分析" hidden>
+          <div class="record-winrate-content">
+            <div class="record-winrate-body">
               <div class="record-winrate-heading">
                 <strong>黑棋胜率</strong>
                 <output id="record-winrate-value" aria-live="polite">尚未分析</output>
@@ -698,8 +698,8 @@
                 <span id="record-winrate-status" role="status">按需分析，不会自动下载资源</span>
                 <button id="record-winrate-start" type="button">开始分析</button>
               </div>
-            </section>
-          </section>
+            </div>
+          </div>
         </section>
         <div class="turn-actions">
           <button id="undo-button" class="undo-action" type="button" disabled>

@@ -1012,7 +1012,6 @@ a:focus-visible {
 }
 
 .more-action {
-  --round-button-icon-size: 21px;
   min-height: 44px;
 }
 
@@ -1410,6 +1409,8 @@ a:focus-visible {
   gap: 3px;
 }
 
+.replay-buttons { display: contents; }
+
 .replay-scrubber button {
   display: grid;
   width: 26px;
@@ -1423,27 +1424,11 @@ a:focus-visible {
   place-items: center;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .replay-scrubber button:hover:not(:disabled) {
-    background: #e8dfd2;
-    color: #7e4d1e;
-  }
-}
-
-.replay-scrubber button:active:not(:disabled) {
-  background: #eee6d9;
-}
-
 .replay-scrubber button:disabled {
   background: transparent;
   color: #b4b4ae;
   cursor: default;
   opacity: 0.62;
-}
-
-.replay-scrubber button svg {
-  width: 15px;
-  height: 15px;
 }
 
 .replay-slider-field {
@@ -1452,6 +1437,8 @@ a:focus-visible {
   position: relative;
   display: grid;
   min-width: 0;
+  grid-column: 3;
+  grid-row: 1;
   align-items: center;
 }
 
@@ -1647,7 +1634,7 @@ a:focus-visible {
     gap: 3px;
   }
 
-  .action-panel .turn-actions svg {
+  .action-panel .turn-actions .icon-button-content svg {
     width: 15px;
     height: 15px;
   }
@@ -2037,4 +2024,21 @@ a:focus-visible {
     left: 10px;
     width: calc(100% - 20px);
   }
+}
+
+@media (orientation: landscape) {
+  .game-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: block;
+    width: 64px;
+    height: auto;
+    min-height: 0;
+    padding: 6px 8px;
+  }
+  .game-header h1,
+  .game-back-spacer { display: none; }
+  .game-header .game-back { display: grid; margin: 0; }
+  .go-layout { min-height: 100dvh; }
 }

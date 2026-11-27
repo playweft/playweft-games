@@ -46,14 +46,15 @@ Import it at the top of the game's own stylesheet:
 ```
 
 Add `round-icon-button` alongside the button's game-specific class. The shared
-rules provide a transparent, borderless 44 px circle, a centered 20 px SVG,
+rules provide a transparent, borderless 44 px circle, a centered 24 px SVG
+(matching MUI's default icon size),
 and hover/active backgrounds on devices with a fine pointer and hover support.
 Keyboard focus uses the existing `src/base.css` styles; reduced-motion settings
 disable the background transition. Disabled buttons do not receive hover or
 active backgrounds.
 
 Keep positioning and foreground colors in the game's class. Override
-`--round-button-size`, `--round-button-icon-size`,
+`--round-button-size`,
 `--round-button-hover-background`, `--round-button-active-background`, or
 `--round-button-transition-duration` there when needed.
 

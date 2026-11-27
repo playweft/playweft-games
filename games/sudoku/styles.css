@@ -9,7 +9,6 @@ body {
 
 .pause-button {
   --round-button-size: 38px;
-  --round-button-icon-size: 18px;
   --round-button-hover-background: #e5ede7;
   --round-button-active-background: #d2dfd5;
   --round-button-transition-duration: var(--hover-transition-duration);

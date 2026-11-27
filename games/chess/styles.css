@@ -54,7 +54,6 @@ body.chess-game {
 
 .chess-settings-close {
   --round-button-size: 34px;
-  --round-button-icon-size: 17px;
   color: #555851;
 }
 
