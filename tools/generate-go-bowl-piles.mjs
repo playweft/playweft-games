@@ -3,6 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { Euler, Quaternion, Vector3 } from "three";
 import { GO_BOWL_SCALE } from "../games/go/bowl-layout.js";
 import { STONE_PROFILE } from "../games/go/stone-shape.js";
+import { stoneRadius } from "../games/go/stone-size.js";
 
 // Supporting planes of the actual lens keep different tilted layers apart.
 const contactNormals = [new Vector3(0, 1, 0)];
@@ -30,7 +31,7 @@ function support(normal, inverse, radius) {
 }
 
 function generatePile(size, seed) {
-  const radius = .435 / size / GO_BOWL_SCALE;
+  const radius = stoneRadius(size) / GO_BOWL_SCALE;
   const random = () => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     return seed / 4294967296;

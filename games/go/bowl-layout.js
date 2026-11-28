@@ -1,6 +1,7 @@
 import { Vector3 } from "three";
 import { GO_TABLE_TOP, GO_TABLE_WIDTH, GO_TABLE_DEPTH } from "./table-model.js";
 import piles from "./assets/bowl-piles.js";
+import { stoneRadius } from "./stone-size.js";
 
 // Bowl diameter is .329 of the board's width (about 15 cm on a 45 cm board).
 export const GO_BOWL_SCALE = .35;
@@ -36,7 +37,7 @@ const pileCache = new Map();
 export function bowlStoneLayout(size, seed = 89) {
   const key = `${size}:${seed}`;
   if (!pileCache.has(key)) {
-    const radius = .435 / size / GO_BOWL_SCALE;
+    const radius = stoneRadius(size) / GO_BOWL_SCALE;
     const coordinates = piles[key];
     if (!coordinates) throw new RangeError("Unsupported Go bowl layout");
     pileCache.set(key, Object.freeze(coordinates.map(([x, y, z, tiltX, turn, tiltZ, contacts = []]) =>

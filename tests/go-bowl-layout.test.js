@@ -43,13 +43,13 @@ test("bowl piles use fixed physical dimensions for each board size", () => {
   const small=bowlStoneLayout(19), large=bowlStoneLayout(9);
   assert.ok(large.length<small.length);
   for (const size of [9,13,19]) {
-    const radius=.435/size/GO_BOWL_SCALE, stones=bowlStoneLayout(size);
+    const radius=.475/size/GO_BOWL_SCALE, stones=bowlStoneLayout(size);
     assert.ok(stones.length>0 && stones.length<=128);
     assert.ok(stones.some(p=>Math.hypot(p.x,p.z)<radius*.5), "cover the well's center");
     assert.ok(new Set(stones.map(p=>p.y)).size>1, "stagger layers to cover gaps");
     for (const p of stones) {
       assert.equal(p.radius,radius);
-      assert.ok(Math.abs(p.radius*GO_BOWL_SCALE-.435/size)<1e-10, "same world radius as board stones");
+      assert.ok(Math.abs(p.radius*GO_BOWL_SCALE-.475/size)<1e-10, "same world radius as board stones, with diameter 95% of grid spacing");
       assert.ok(Math.hypot(p.x,p.z)+radius<=.45);
     }
   }

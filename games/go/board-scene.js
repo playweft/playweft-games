@@ -4,6 +4,7 @@ import { GO_BOARD_TOP, GO_VIEW_ANGLE, configureSceneCamera, projectScenePoint, p
   sceneIntersection, boardIntersection } from "./scene-geometry.js";
 import { stoneDragPoint } from "./stone-drag.js";
 import { createGoStoneGeometry, STONE_TOP, STONE_BOTTOM, stoneLandingPose } from "./stone-shape.js";
+import { stoneRadius } from "./stone-size.js";
 import { createCourtyard } from "./courtyard.js";
 import { createTableWood } from "./wooden-table.js";
 import { createGoTable, GO_TABLE_TOP } from "./table-model.js";
@@ -334,7 +335,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
         const point = board.children[i], color = Number(point.dataset.piece);
         if (color !== 1 && color !== 2) continue;
         const position = boardIntersection(Math.floor(i / size), i % size, size);
-        const radius = .435 / size;
+        const radius = stoneRadius(size);
         dummy.quaternion.identity();
         dummy.position.set(position.x, GO_BOARD_TOP + STONE_BOTTOM * radius, position.z);
         dummy.scale.setScalar(radius);
@@ -386,7 +387,7 @@ export function createGoBoardScene({ root, board, bowls: bowlElements, onUnavail
     if (previewStone.visible) {
       const index = [...board.children].indexOf(previewPoint);
       const p = boardIntersection(Math.floor(index / size), index % size, size);
-      const radius = .435 / size;
+      const radius = stoneRadius(size);
       previewStone.position.set(p.x, GO_BOARD_TOP + STONE_BOTTOM * radius, p.z);
       previewStone.scale.setScalar(radius);
       previewStone.material = previewMaterials[previewPoint.classList.contains("piece-white") ? 1 : 0];

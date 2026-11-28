@@ -825,7 +825,7 @@ a:focus-visible {
 .go-point::before {
   position: absolute;
   z-index: 1;
-  inset: 4%;
+  inset: 2.5%;
   border: 0;
   border-radius: 50%;
   content: "";

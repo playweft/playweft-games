@@ -62,6 +62,21 @@ test("Go stone drag lifts above the finger and amplifies motion consistently acr
   }
 });
 
+test("picked-up stones match 95% grid spacing across board sizes and keep a minimum touch preview", async () => {
+  const h=harness();
+  try {
+    const board=h.document.querySelector("#board");
+    for(const width of [120,360,720]) for(const size of [9,13,19]) {
+      h.drag.cancel();
+      board.getBoundingClientRect=()=>({left:10,top:100,width,height:width});
+      h.drag.update({...h.context,size});
+      h.pointer("pointerdown");h.hold();
+      assert.ok(Math.abs(parseFloat(h.stone.style.width)-Math.max(18,width/size*.95))<.000001);
+    }
+    h.drag.cancel();
+  } finally { await h.close(); }
+});
+
 test("quick taps never pick up or place; holding shows a stone and release places exactly once", async () => {
   const h = harness();
   try {

@@ -1,3 +1,5 @@
+import { STONE_DIAMETER_RATIO } from "./stone-size.js";
+
 export const STONE_PICKUP_DELAY = 160;
 export const STONE_DRAG_GAIN = 2;
 const STONE_LIFT = 64;
@@ -69,7 +71,7 @@ export function createGoStoneDrag({ sources, board, stone, getPoint, onPlay, onP
     gesture.active = true;
     gesture.anchor = { ...gesture.pointer };
     gesture.rect = board.getBoundingClientRect();
-    const diameter = Math.max(18, gesture.rect.width / context.size * .84);
+    const diameter = Math.max(18, gesture.rect.width / context.size * STONE_DIAMETER_RATIO);
     gesture.radius = diameter / 2;
     stone.style.width = `${diameter}px`;
     stone.classList.toggle("go-stone--black", gesture.color === 1);
